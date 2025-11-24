@@ -178,6 +178,13 @@ export default function Home() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <PostCard
+              slug="pfplay"
+              title="PFPlay"
+              description="PFP NFT와 디제잉을 결합한 Web3 소셜 플랫폼"
+              date="2024.08 ~ 2025.02"
+              image="/pfplay-thumb.png"
+            />
+            <PostCard
               slug="hello-world"
               title="첫 번째 글"
               description="블로그를 시작하며 남기는 첫 번째 글입니다."

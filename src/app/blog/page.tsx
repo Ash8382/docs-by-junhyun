@@ -15,6 +15,13 @@ export default function BlogPage() {
       image: "/pfplay-thumb.png",
     },
     {
+      slug: "tix2u",
+      title: "Tix2U",
+      description: "전시, 공연 등 다양한 문화생활 티켓 구매 서비스",
+      date: "2023.11 ~ 2023.12",
+      image: "/tix2u-thumb.png",
+    },
+    {
       slug: "hello-world",
       title: "첫 번째 글",
       description: "블로그를 시작하며 남기는 첫 번째 글입니다.",

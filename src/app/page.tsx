@@ -192,6 +192,13 @@ export default function Home() {
               image="/tix2u-thumb.png"
             />
             <PostCard
+              slug="stock2u"
+              title="Stock2U"
+              description="위치 기반 재고 공유 서비스"
+              date="2023.09 ~ 2023.11"
+              image="/stock2u-thumb.png"
+            />
+            <PostCard
               slug="hello-world"
               title="첫 번째 글"
               description="블로그를 시작하며 남기는 첫 번째 글입니다."

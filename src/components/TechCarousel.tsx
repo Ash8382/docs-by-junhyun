@@ -27,7 +27,7 @@ export function TechCarousel() {
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   
   // Duplicate the array for seamless loop
   const duplicatedTech = [...techStack, ...techStack];

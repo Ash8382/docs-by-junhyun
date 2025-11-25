@@ -85,7 +85,7 @@ export default function Home() {
                 Frontend
               </h3>
               <div className="flex flex-wrap gap-2">
-                {["React", "Next.js", "TypeScript", "Tailwind CSS", "HTML/CSS", "JavaScript", "Zustand", "Framer Motion"].map((skill) => (
+                {["React", "Next.js", "TypeScript", "Tailwind CSS", "HTML/CSS", "JavaScript", "Zustand", "Framer Motion", "Three.js", "WebGL", "Storybook", "i18n"].map((skill) => (
                   <span key={skill} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm font-medium">
                     {skill}
                   </span>

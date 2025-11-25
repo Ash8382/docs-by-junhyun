@@ -3,18 +3,30 @@
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
-import * as random from "maath/random/dist/maath-random.esm";
+
+function generateSpherePoints(count: number, radius: number) {
+  const points = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const u = Math.random();
+    const v = Math.random();
+    const theta = 2 * Math.PI * u;
+    const phi = Math.acos(2 * v - 1);
+    const r = Math.cbrt(Math.random()) * radius; // Cubic root for uniform distribution
+
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta);
+    const z = r * Math.cos(phi);
+
+    points[i * 3] = x;
+    points[i * 3 + 1] = y;
+    points[i * 3 + 2] = z;
+  }
+  return points;
+}
 
 function Stars(props: any) {
   const ref = useRef<any>(null);
-  const sphere = useMemo(() => {
-    const data = random.inSphere(new Float32Array(5000), { radius: 1.5 });
-    // Validate data to ensure no NaNs
-    for (let i = 0; i < data.length; i++) {
-      if (isNaN(data[i])) data[i] = 0;
-    }
-    return data;
-  }, []);
+  const sphere = useMemo(() => generateSpherePoints(5000, 1.5), []);
 
   useFrame((state, delta) => {
     if (ref.current) {

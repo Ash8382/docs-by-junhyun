@@ -78,14 +78,14 @@ export default function Home() {
       <FadeIn delay={0.2}>
         <section className="space-y-6">
           <h2 className="text-3xl font-bold tracking-tight border-b pb-2">기술 및 도구</h2>
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-4">
               <h3 className="text-xl font-semibold flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                Mainly Used (Frontend)
+                Frontend
               </h3>
               <div className="flex flex-wrap gap-2">
-                {["React", "Next.js", "TypeScript", "Tailwind CSS", "HTML/CSS", "JavaScript"].map((skill) => (
+                {["React", "Next.js", "TypeScript", "Tailwind CSS", "HTML/CSS", "JavaScript", "Zustand", "Framer Motion"].map((skill) => (
                   <span key={skill} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm font-medium">
                     {skill}
                   </span>
@@ -95,10 +95,23 @@ export default function Home() {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                Experience (Backend & Others)
+                Backend
               </h3>
               <div className="flex flex-wrap gap-2">
-                {["Node.js", "Supabase", "Java", "Git", "Linux"].map((skill) => (
+                {["Node.js", "Supabase", "Java", "Linux"].map((skill) => (
+                  <span key={skill} className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm font-medium">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                Collaboration & Tools
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {["Git", "GitHub", "Figma", "Jira", "Slack"].map((skill) => (
                   <span key={skill} className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm font-medium">
                     {skill}
                   </span>

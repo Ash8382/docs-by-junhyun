@@ -98,7 +98,7 @@ export default function Home() {
                 Backend
               </h3>
               <div className="flex flex-wrap gap-2">
-                {["Node.js", "Supabase", "Java", "Linux"].map((skill) => (
+                {["Node.js", "Supabase", "Java"].map((skill) => (
                   <span key={skill} className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm font-medium">
                     {skill}
                   </span>

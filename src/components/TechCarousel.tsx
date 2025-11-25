@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface TechItem {
   name: string;
-  logo: string; // URL to logo
+  logo: string;
 }
 
 const techStack: TechItem[] = [
@@ -25,19 +25,48 @@ const techStack: TechItem[] = [
 
 export function TechCarousel() {
   const [isPaused, setIsPaused] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Duplicate the array for seamless loop
   const duplicatedTech = [...techStack, ...techStack];
 
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    let animationId: number;
+    let currentPosition = 0;
+    const speed = 0.5; // pixels per frame
+
+    const animate = () => {
+      if (!isPaused) {
+        currentPosition -= speed;
+        
+        // Reset position when we've scrolled through one full set
+        const resetPoint = -(scrollContainer.scrollWidth / 2);
+        if (currentPosition <= resetPoint) {
+          currentPosition = 0;
+        }
+        
+        scrollContainer.style.transform = `translateX(${currentPosition}px)`;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, [isPaused]);
+
   return (
     <div className="w-full overflow-hidden py-8 bg-muted/30 rounded-lg">
       <div 
+        ref={scrollRef}
         className="flex gap-12"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        style={{
-          animation: isPaused ? 'none' : 'scroll 30s linear infinite',
-        }}
       >
         {duplicatedTech.map((tech, index) => (
           <div
@@ -58,17 +87,6 @@ export function TechCarousel() {
           </div>
         ))}
       </div>
-      
-      <style jsx>{`
-        @keyframes scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-      `}</style>
     </div>
   );
 }

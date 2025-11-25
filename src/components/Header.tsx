@@ -16,7 +16,7 @@ export function Header() {
               블로그
             </Link>
             <Link
-              href="https://github.com/Ash8382" // Assuming github username from context or placeholder
+              href="https://github.com/Ash8382"
               target="_blank"
               rel="noreferrer"
               className="transition-colors hover:text-foreground/80 text-foreground/60"

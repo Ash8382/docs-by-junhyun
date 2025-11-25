@@ -7,7 +7,7 @@ interface PostPageProps {
   }>;
 }
 
-// Mock data lookup
+
 function getPost(slug: string) {
   const posts: Record<string, { title: string; content: string; date: string }> = {
     "hello-world": {
@@ -40,8 +40,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const post = getPost(slug);
 
   if (!post) {
-    // For demo purposes, if not found, show a generic placeholder instead of 404
-    // return notFound();
+
     return (
       <article className="container py-6 lg:py-10">
         <div className="prose dark:prose-invert max-w-none">

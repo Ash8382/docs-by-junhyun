@@ -29,24 +29,20 @@ export function TechCarousel() {
   const positionRef = useRef(0);
   const animationRef = useRef<number | undefined>(undefined);
   
-  // Duplicate the array for seamless loop
   const duplicatedTech = [...techStack, ...techStack];
 
   useEffect(() => {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer) return;
 
-    const speed = 0.5; // pixels per frame
+    const speed = 0.5;
 
     const animate = () => {
       if (!isPaused) {
         positionRef.current -= speed;
         
-        // Calculate the width of one set of items
-        const itemWidth = 112; // min-w-[100px] + gap-12
+        const itemWidth = 112;
         const totalWidth = techStack.length * itemWidth;
-        
-        // Reset position when we've scrolled through one full set
         if (positionRef.current <= -totalWidth) {
           positionRef.current = 0;
         }
@@ -63,7 +59,7 @@ export function TechCarousel() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPaused]); // isPaused를 의존성으로 유지하되, positionRef로 위치 보존
+  }, [isPaused]);
 
   return (
     <div className="w-full overflow-hidden py-8 bg-muted/30 rounded-lg">

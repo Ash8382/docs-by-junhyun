@@ -11,7 +11,7 @@ function generateSpherePoints(count: number, radius: number) {
     const v = Math.random();
     const theta = 2 * Math.PI * u;
     const phi = Math.acos(2 * v - 1);
-    const r = Math.cbrt(Math.random()) * radius; // Cubic root for uniform distribution
+    const r = Math.cbrt(Math.random()) * radius;
 
     const x = r * Math.sin(phi) * Math.cos(theta);
     const y = r * Math.sin(phi) * Math.sin(theta);
@@ -31,15 +31,11 @@ function Stars(props: any) {
 
   useFrame((state, delta) => {
     if (ref.current) {
-      // Continuous rotation
       rotationRef.current.x -= delta / 10;
       rotationRef.current.y -= delta / 15;
 
-      // Mouse interaction (offset)
       const x = (state.pointer.x || 0) * 0.2;
       const y = (state.pointer.y || 0) * 0.2;
-      
-      // Apply combined rotation
       ref.current.rotation.x = rotationRef.current.x + y;
       ref.current.rotation.y = rotationRef.current.y + x;
     }
@@ -50,7 +46,7 @@ function Stars(props: any) {
       <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
         <PointMaterial
           transparent
-          color="#888888" // Neutral gray to work with both light/dark
+          color="#888888"
           size={0.005}
           sizeAttenuation={true}
           depthWrite={false}

@@ -35,6 +35,13 @@ export default function BlogPage() {
       date: "2023.09 ~ 2023.10",
       image: "/eutcha-thumb.png",
     },
+    {
+      slug: "todo-app",
+      title: "Todo App",
+      description: "HTML, CSS, JS로 구현한 투두 리스트 앱",
+      date: "2023.05 ~ 2023.06",
+      image: "/todo-app-thumb.png",
+    },
   ];
 
   return (

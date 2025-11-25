@@ -42,6 +42,13 @@ export default function BlogPage() {
       date: "2023.05 ~ 2023.06",
       image: "/todo-app-thumb.png",
     },
+    {
+      slug: "kokoa-clone",
+      title: "코코아톡 (Kokoa Clone)",
+      description: "HTML, CSS로 구현한 카카오톡 클론 코딩",
+      date: "2023.04 ~ 2023.05",
+      image: "/kokoa-clone-thumb.png",
+    },
   ];
 
   return (

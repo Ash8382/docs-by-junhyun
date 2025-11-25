@@ -29,25 +29,11 @@ export default function BlogPage() {
       image: "/stock2u-thumb.png",
     },
     {
-      slug: "hello-world",
-      title: "첫 번째 글",
-      description: "블로그를 시작하며 남기는 첫 번째 글입니다.",
-      date: "2025년 11월 24일",
-      image: "https://images.unsplash.com/photo-1499750310159-5b5f38e31638?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      slug: "building-this-blog",
-      title: "Next.js로 블로그 만들기",
-      description: "Next.js, Tailwind CSS, Vercel을 사용하여 이 블로그를 만든 과정을 공유합니다.",
-      date: "2025년 11월 23일",
-      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      slug: "future-plans",
-      title: "앞으로의 계획",
-      description: "이 블로그와 저의 커리어에 대한 앞으로의 계획을 정리해봅니다.",
-      date: "2025년 11월 20일",
-      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      slug: "eutcha",
+      title: "EUTCHA",
+      description: "리액트와 협업에 익숙해지기 위한 프론트엔드 비기너 프로젝트",
+      date: "2023.09 ~ 2023.10",
+      image: "/eutcha-thumb.png",
     },
   ];
 

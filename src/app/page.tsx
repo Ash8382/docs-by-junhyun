@@ -198,27 +198,6 @@ export default function Home() {
               date="2023.09 ~ 2023.11"
               image="/stock2u-thumb.png"
             />
-            <PostCard
-              slug="hello-world"
-              title="첫 번째 글"
-              description="블로그를 시작하며 남기는 첫 번째 글입니다."
-              date="2025년 11월 24일"
-              image="https://images.unsplash.com/photo-1499750310159-5b5f38e31638?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            />
-            <PostCard
-              slug="building-this-blog"
-              title="Next.js로 블로그 만들기"
-              description="Next.js, Tailwind CSS, Vercel을 사용하여 이 블로그를 만든 과정을 공유합니다."
-              date="2025년 11월 23일"
-              image="https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            />
-            <PostCard
-              slug="side-project-1"
-              title="사이드 프로젝트: 투두 리스트"
-              description="React와 Firebase를 활용하여 만든 간단한 투두 리스트 앱입니다."
-              date="2025년 11월 15일"
-              image="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            />
           </div>
         </section>
       </FadeIn>

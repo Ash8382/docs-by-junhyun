@@ -7,7 +7,6 @@ import * as THREE from "three";
 
 function generateSpherePoints(count: number, radius: number) {
   const points = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
   
   for (let i = 0; i < count; i++) {
     const u = Math.random();
@@ -23,16 +22,21 @@ function generateSpherePoints(count: number, radius: number) {
     points[i * 3] = x;
     points[i * 3 + 1] = y;
     points[i * 3 + 2] = z;
-    
-    sizes[i] = Math.random() * 1.5 + 0.5;
   }
-  return { points, sizes };
+  return points;
 }
+
+const starColors = [
+  { color: "#ffffff", count: 1200, size: 0.012 },  // 흰색 별 (기본)
+  { color: "#fffacd", count: 300, size: 0.018 },   // 노란색 별 (태양 같은)
+  { color: "#ffa500", count: 200, size: 0.020 },   // 주황색 별
+  { color: "#87ceeb", count: 200, size: 0.016 },   // 파란색 별
+  { color: "#ff6b6b", count: 100, size: 0.022 },   // 붉은색 별
+];
 
 function Stars(props: any) {
   const ref = useRef<any>(null);
   const rotationRef = useRef({ x: 0, y: 0 });
-  const { points, sizes } = useMemo(() => generateSpherePoints(5000, 1.5), []);
 
   useFrame((state, delta) => {
     if (ref.current) {
@@ -47,18 +51,24 @@ function Stars(props: any) {
   });
 
   return (
-    <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={points} stride={3} frustumCulled={false} {...props}>
-        <PointMaterial
-          transparent
-          color="#ffffff"
-          size={0.008}
-          sizeAttenuation={true}
-          depthWrite={false}
-          opacity={0.8}
-          blending={THREE.AdditiveBlending}
-        />
-      </Points>
+    <group ref={ref} rotation={[0, 0, Math.PI / 4]}>
+      {starColors.map((starType, index) => {
+        const positions = useMemo(() => generateSpherePoints(starType.count, 1.5), [starType.count]);
+        
+        return (
+          <Points key={index} positions={positions} stride={3} frustumCulled={false} {...props}>
+            <PointMaterial
+              transparent
+              color={starType.color}
+              size={starType.size}
+              sizeAttenuation={true}
+              depthWrite={false}
+              opacity={0.7}
+              blending={THREE.AdditiveBlending}
+            />
+          </Points>
+        );
+      })}
     </group>
   );
 }

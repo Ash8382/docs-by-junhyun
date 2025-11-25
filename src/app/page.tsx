@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PostCard } from "@/components/PostCard";
 import { FadeIn } from "@/components/FadeIn";
 import { TypewriterEffect } from "@/components/TypewriterEffect";
+import { TechCarousel } from "@/components/TechCarousel";
 
 export default function Home() {
   return (
@@ -78,47 +79,7 @@ export default function Home() {
       <FadeIn delay={0.2}>
         <section className="space-y-6">
           <h2 className="text-3xl font-bold tracking-tight border-b pb-2">기술 및 도구</h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                Frontend
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {["React", "Next.js", "TypeScript", "Tailwind CSS", "HTML/CSS", "JavaScript", "Zustand", "Framer Motion", "Three.js", "WebGL", "Storybook", "i18n"].map((skill) => (
-                  <span key={skill} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm font-medium">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                Backend
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {["Node.js", "Supabase", "Java"].map((skill) => (
-                  <span key={skill} className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm font-medium">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                Collaboration & Tools
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {["Git", "GitHub", "Figma", "Jira", "Slack"].map((skill) => (
-                  <span key={skill} className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm font-medium">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          <TechCarousel />
         </section>
       </FadeIn>
 

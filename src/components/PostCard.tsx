@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 interface PostCardProps {
   slug: string;
@@ -11,14 +14,18 @@ interface PostCardProps {
 
 export function PostCard({ slug, title, description, date, image }: PostCardProps) {
   return (
-    <article className="group relative flex flex-col space-y-2 overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
+    <motion.article 
+      whileHover={{ y: -5 }}
+      transition={{ type: "spring", stiffness: 300 }}
+      className="group relative flex flex-col space-y-2 overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow duration-300"
+    >
       {image && (
         <div className="relative aspect-video w-full overflow-hidden">
           <Image
             src={image}
             alt={title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </div>
       )}
@@ -30,6 +37,6 @@ export function PostCard({ slug, title, description, date, image }: PostCardProp
         <p className="text-muted-foreground line-clamp-2 text-sm">{description}</p>
         <p className="text-xs text-muted-foreground pt-2">{date}</p>
       </div>
-    </article>
+    </motion.article>
   );
 }

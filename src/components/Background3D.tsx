@@ -13,6 +13,14 @@ function Stars(props: any) {
     if (ref.current) {
       ref.current.rotation.x -= delta / 10;
       ref.current.rotation.y -= delta / 15;
+
+      // Mouse interaction
+      // state.pointer.x ranges from -1 to 1
+      const x = state.pointer.x * 0.2;
+      const y = state.pointer.y * 0.2;
+      
+      ref.current.rotation.x += (y - ref.current.rotation.x) * delta * 0.2;
+      ref.current.rotation.y += (x - ref.current.rotation.y) * delta * 0.2;
     }
   });
 
@@ -33,7 +41,7 @@ function Stars(props: any) {
 
 export function Background3D() {
   return (
-    <div className="fixed inset-0 -z-10 h-full w-full opacity-50">
+    <div className="fixed inset-0 -z-10 h-full w-full opacity-50 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 1] }}>
         <Stars />
       </Canvas>

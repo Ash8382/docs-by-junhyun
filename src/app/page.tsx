@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PostCard } from "@/components/PostCard";
 import { FadeIn } from "@/components/FadeIn";
+import { TypewriterEffect } from "@/components/TypewriterEffect";
 
 export default function Home() {
   return (
@@ -11,8 +12,8 @@ export default function Home() {
         <section className="flex flex-col-reverse lg:flex-row gap-10 items-center lg:items-start justify-between">
           <div className="flex flex-col items-start gap-6 flex-1">
             <div className="space-y-2">
-              <h1 className="text-4xl font-bold tracking-tight lg:text-6xl">
-                이준현
+              <h1 className="text-4xl font-bold tracking-tight lg:text-6xl min-h-[1.5em]">
+                <TypewriterEffect text="이준현" />
               </h1>
               <p className="text-xl text-muted-foreground lg:text-2xl font-medium">
                 사용자를 위한 창의적 몰입, 성장을 즐기는 프론트엔드 개발자

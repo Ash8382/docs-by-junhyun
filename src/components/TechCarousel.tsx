@@ -26,6 +26,8 @@ const techStack: TechItem[] = [
 export function TechCarousel() {
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const positionRef = useRef(0);
+  const animationRef = useRef<number>();
   
   // Duplicate the array for seamless loop
   const duplicatedTech = [...techStack, ...techStack];
@@ -34,31 +36,34 @@ export function TechCarousel() {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer) return;
 
-    let animationId: number;
-    let currentPosition = 0;
     const speed = 0.5; // pixels per frame
 
     const animate = () => {
       if (!isPaused) {
-        currentPosition -= speed;
+        positionRef.current -= speed;
+        
+        // Calculate the width of one set of items
+        const itemWidth = 112; // min-w-[100px] + gap-12
+        const totalWidth = techStack.length * itemWidth;
         
         // Reset position when we've scrolled through one full set
-        const resetPoint = -(scrollContainer.scrollWidth / 2);
-        if (currentPosition <= resetPoint) {
-          currentPosition = 0;
+        if (positionRef.current <= -totalWidth) {
+          positionRef.current = 0;
         }
         
-        scrollContainer.style.transform = `translateX(${currentPosition}px)`;
+        scrollContainer.style.transform = `translateX(${positionRef.current}px)`;
       }
-      animationId = requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(animate);
     };
 
-    animationId = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      cancelAnimationFrame(animationId);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
-  }, [isPaused]);
+  }, [isPaused]); // isPaused를 의존성으로 유지하되, positionRef로 위치 보존
 
   return (
     <div className="w-full overflow-hidden py-8 bg-muted/30 rounded-lg">

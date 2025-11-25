@@ -7,20 +7,29 @@ import * as random from "maath/random/dist/maath-random.esm";
 
 function Stars(props: any) {
   const ref = useRef<any>(null);
-  const sphere = useMemo(() => random.inSphere(new Float32Array(5000), { radius: 1.5 }), []);
+  const sphere = useMemo(() => {
+    const data = random.inSphere(new Float32Array(5000), { radius: 1.5 });
+    // Validate data to ensure no NaNs
+    for (let i = 0; i < data.length; i++) {
+      if (isNaN(data[i])) data[i] = 0;
+    }
+    return data;
+  }, []);
 
   useFrame((state, delta) => {
     if (ref.current) {
       ref.current.rotation.x -= delta / 10;
       ref.current.rotation.y -= delta / 15;
 
-      // Mouse interaction
-      // state.pointer.x ranges from -1 to 1
-      const x = state.pointer.x * 0.2;
-      const y = state.pointer.y * 0.2;
+      // Mouse interaction with safety checks
+      const x = (state.pointer.x || 0) * 0.2;
+      const y = (state.pointer.y || 0) * 0.2;
       
-      ref.current.rotation.x += (y - ref.current.rotation.x) * delta * 0.2;
-      ref.current.rotation.y += (x - ref.current.rotation.y) * delta * 0.2;
+      // Smoothly interpolate rotation, avoiding NaN propagation
+      if (!isNaN(x) && !isNaN(y)) {
+        ref.current.rotation.x += (y - ref.current.rotation.x) * delta * 0.2;
+        ref.current.rotation.y += (x - ref.current.rotation.y) * delta * 0.2;
+      }
     }
   });
 

@@ -18,7 +18,15 @@ export function TypewriterEffect({ text, className, cursorClassName }: Typewrite
       const timeout = setTimeout(() => {
         setDisplayedText((prev) => prev + text[currentIndex]);
         setCurrentIndex((prev) => prev + 1);
-      }, 100); // Typing speed
+      }, 150); // Typing speed
+
+      return () => clearTimeout(timeout);
+    } else {
+      // Reset after delay
+      const timeout = setTimeout(() => {
+        setDisplayedText("");
+        setCurrentIndex(0);
+      }, 3000); // Wait 3 seconds before restarting
 
       return () => clearTimeout(timeout);
     }

@@ -26,22 +26,22 @@ function generateSpherePoints(count: number, radius: number) {
 
 function Stars(props: any) {
   const ref = useRef<any>(null);
+  const rotationRef = useRef({ x: 0, y: 0 });
   const sphere = useMemo(() => generateSpherePoints(5000, 1.5), []);
 
   useFrame((state, delta) => {
     if (ref.current) {
-      ref.current.rotation.x -= delta / 10;
-      ref.current.rotation.y -= delta / 15;
+      // Continuous rotation
+      rotationRef.current.x -= delta / 10;
+      rotationRef.current.y -= delta / 15;
 
-      // Mouse interaction with safety checks
+      // Mouse interaction (offset)
       const x = (state.pointer.x || 0) * 0.2;
       const y = (state.pointer.y || 0) * 0.2;
       
-      // Smoothly interpolate rotation, avoiding NaN propagation
-      if (!isNaN(x) && !isNaN(y)) {
-        ref.current.rotation.x += (y - ref.current.rotation.x) * delta * 0.2;
-        ref.current.rotation.y += (x - ref.current.rotation.y) * delta * 0.2;
-      }
+      // Apply combined rotation
+      ref.current.rotation.x = rotationRef.current.x + y;
+      ref.current.rotation.y = rotationRef.current.y + x;
     }
   });
 

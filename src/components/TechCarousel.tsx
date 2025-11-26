@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 
 interface TechItem {
@@ -8,7 +7,6 @@ interface TechItem {
   logo: string;
 }
 
-// Technologies
 const technologies: TechItem[] = [
   { name: "React", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" },
   { name: "Next.js", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" },
@@ -21,7 +19,6 @@ const technologies: TechItem[] = [
   { name: "Java", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" },
 ];
 
-// Tools & Frameworks
 const tools: TechItem[] = [
   { name: "Git", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" },
   { name: "GitHub", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" },
@@ -34,95 +31,66 @@ const tools: TechItem[] = [
   { name: "Docker", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" },
 ];
 
-const ANIMATION_SPEED = 0.8; // Fast speed
-
-
-interface CarouselRowProps {
+interface MarqueeProps {
   items: TechItem[];
-  direction: "left" | "right";
-  isPaused: boolean;
+  reverse?: boolean;
 }
 
-function CarouselRow({ items, direction, isPaused }: CarouselRowProps) {
-  // Quadruple items for ultra-seamless loop (no visible reset)
-  const duplicatedItems = [...items, ...items, ...items, ...items];
-
+function Marquee({ items, reverse = false }: MarqueeProps) {
   return (
-    <div className="w-full overflow-hidden">
-      <div 
-        className="flex gap-6"
-        style={{
-          animationName: `carousel-scroll-${direction}`,
-          animationDuration: '30s',
-          animationTimingFunction: 'linear',
-          animationIterationCount: 'infinite',
-          animationPlayState: isPaused ? 'paused' : 'running',
-          willChange: 'transform',
-        }}
-      >
-        {duplicatedItems.map((item, index) => (
+    <div className="group flex overflow-hidden gap-6 [--duration:30s] [--gap:1.5rem]">
+      {Array(4)
+        .fill(0)
+        .map((_, i) => (
           <div
-            key={`${item.name}-${index}`}
-            className="flex flex-col items-center justify-center gap-2 flex-shrink-0"
+            key={i}
+            className={`flex shrink-0 gap-6 ${
+              reverse ? "animate-marquee-reverse" : "animate-marquee"
+            } group-hover:[animation-play-state:paused]`}
           >
-            {/* Icon Card with Background and Shadow */}
-            <div className="bg-card rounded-2xl p-5 shadow-lg dark:shadow-xl hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 group cursor-pointer border border-border">
-              <div className="relative w-12 h-12 transition-all duration-300 group-hover:scale-110">
-                <Image
-                  src={item.logo}
-                  alt={item.name}
-                  fill
-                  className={`object-contain ${
-                    item.name === "Three.js" || item.name === "GitHub"
-                      ? "dark:invert"
-                      : ""
-                  }`}
-                />
+            {items.map((item, index) => (
+              <div
+                key={`${item.name}-${index}`}
+                className="flex flex-col items-center justify-center flex-shrink-0"
+              >
+                <div className="bg-card rounded-2xl p-5 shadow-lg dark:shadow-xl hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 group/item cursor-pointer border border-border">
+                  <div className="relative w-12 h-12 transition-all duration-300 group-hover/item:scale-110">
+                    <Image
+                      src={item.logo}
+                      alt={item.name}
+                      fill
+                      className={`object-contain ${
+                        item.name === "Three.js" || item.name === "GitHub"
+                          ? "dark:invert"
+                          : ""
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            {/* Hidden label */}
-            <span className="text-xs font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap sr-only">
-              {item.name}
-            </span>
+            ))}
           </div>
         ))}
-      </div>
     </div>
   );
 }
 
 export function TechCarousel() {
-  const [isPaused, setIsPaused] = useState(false);
-
   return (
     <div className="w-full max-w-5xl mx-auto">
-      <div 
-        className="py-6 bg-muted/30 dark:bg-muted/10 rounded-2xl border border-border/50 dark:border-border/30"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
-        {/* Technologies Row - Moving Right */}
+      <div className="py-6 bg-muted/30 dark:bg-muted/10 rounded-2xl border border-border/50 dark:border-border/30">
         <div className="mb-8">
           <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 dark:text-muted-foreground/60 mb-4 px-6">
             Technologies
           </h3>
-          <CarouselRow 
-            items={technologies} 
-            direction="right" 
-            isPaused={isPaused}
-          />
+          <Marquee items={technologies} />
         </div>
 
-        {/* Tools Row - Moving Left */}
         <div>
           <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 dark:text-muted-foreground/60 mb-4 px-6">
             Tools
           </h3>
-          <CarouselRow 
-            items={tools} 
-            direction="left" 
-            isPaused={isPaused}
-          />
+          <Marquee items={tools} reverse />
         </div>
       </div>
     </div>

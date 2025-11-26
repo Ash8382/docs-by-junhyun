@@ -57,13 +57,13 @@ export default async function PostPage({ params }: PostPageProps) {
     <article className="container py-6 lg:py-10">
       <div>
         <time className="block text-sm text-muted-foreground">{post.date}</time>
-        <h1 className="mt-2 inline-block font-bold text-4xl leading-tight lg:text-5xl">
+        <h1 className="mt-2 inline-block font-bold text-4xl leading-tight lg:text-5xl text-zinc-950 dark:text-zinc-50">
           {post.title}
         </h1>
       </div>
       <hr className="my-8 border-border" />
       <div 
-        className="prose dark:prose-invert max-w-none"
+        className="prose prose-zinc dark:prose-invert max-w-none prose-headings:text-zinc-950 dark:prose-headings:text-zinc-50 prose-p:text-zinc-800 dark:prose-p:text-zinc-200 prose-li:text-zinc-800 dark:prose-li:text-zinc-200"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
       <hr className="my-8 border-border" />

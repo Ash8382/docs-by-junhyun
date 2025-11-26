@@ -14,10 +14,9 @@ const SKILLS = [
   "HTML", "CSS", "JavaScript", "Python", "Vercel"
 ];
 
-function Particles({ count = 60 }) {
+function Particles({ count = 50 }) {
   const { viewport, mouse } = useThree();
   
-  // Generate random particles with skills
   const particles = useMemo(() => {
     return new Array(count).fill(0).map((_, i) => {
       const skill = i < SKILLS.length ? SKILLS[i] : null;
@@ -40,23 +39,20 @@ function Particles({ count = 60 }) {
 
   const lineGeometry = useMemo(() => new THREE.BufferGeometry(), []);
   const lineMaterial = useMemo(() => new THREE.LineBasicMaterial({ 
-    color: "#a78bfa", // violet-400
+    color: "#a78bfa",
     transparent: true, 
     opacity: 0.15,
     vertexColors: false
   }), []);
 
   useFrame((state) => {
-    // Update particle positions
     particles.forEach((particle) => {
       particle.position.add(particle.velocity);
 
-      // Bounce off walls (roughly)
       if (Math.abs(particle.position.x) > 8) particle.velocity.x *= -1;
       if (Math.abs(particle.position.y) > 8) particle.velocity.y *= -1;
       if (Math.abs(particle.position.z) > 8) particle.velocity.z *= -1;
 
-      // Mouse interaction (repel)
       const mousePos = new THREE.Vector3(
         (state.mouse.x * viewport.width) / 2,
         (state.mouse.y * viewport.height) / 2,
@@ -69,7 +65,6 @@ function Particles({ count = 60 }) {
       }
     });
 
-    // Update lines
     const positions: number[] = [];
     particles.forEach((p1, i) => {
       particles.forEach((p2, j) => {
@@ -93,7 +88,6 @@ function Particles({ count = 60 }) {
 
   return (
     <group>
-      {/* Particles (Skills) */}
       {particles.map((particle, i) => (
         <group key={i} position={particle.position}>
           <mesh>
@@ -121,7 +115,6 @@ function Particles({ count = 60 }) {
         </group>
       ))}
       
-      {/* Connections */}
       <lineSegments geometry={lineGeometry} material={lineMaterial} />
     </group>
   );
@@ -140,21 +133,19 @@ export default function ConstellationPage() {
         </Link>
       </div>
 
-      <Canvas camera={{ position: [0, 0, 10], fov: 60 }} dpr={[1, 2]}>
+      <Canvas camera={{ position: [0, 0, 10], fov: 60 }} dpr={[1, 1.5]}>
         <color attach="background" args={["#050505"]} />
         
-        {/* Background Effects */}
-        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        <Sparkles count={200} scale={12} size={2} speed={0.4} opacity={0.5} color="#fff" />
+        <Stars radius={100} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />
+        <Sparkles count={100} scale={12} size={2} speed={0.4} opacity={0.5} color="#fff" />
         
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         
-        <Particles count={60} />
+        <Particles count={50} />
         
         <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={0.5} autoRotate autoRotateSpeed={0.5} />
         
-        {/* Post Processing */}
         <EffectComposer>
           <Bloom luminanceThreshold={0.2} mipmapBlur intensity={1.5} radius={0.4} />
         </EffectComposer>

@@ -11,12 +11,12 @@ export default function PlaygroundPage() {
       borderColor: "group-hover:border-purple-500/50",
     },
     {
-      id: "gravity-vortex",
-      title: "Gravity Vortex 🌀",
-      description: "수천 개의 입자가 만들어내는 중력의 춤을 감상하세요.",
-      href: "/playground/gravity-vortex",
-      color: "from-blue-500/20 to-indigo-500/20",
-      borderColor: "group-hover:border-blue-500/50",
+      id: "fluid-aura",
+      title: "Fluid Aura 💧",
+      description: "손끝에서 피어나는 몽환적인 빛과 연기의 흐름을 느껴보세요.",
+      href: "/playground/fluid-aura",
+      color: "from-teal-500/20 to-emerald-500/20",
+      borderColor: "group-hover:border-teal-500/50",
     },
   ];
 

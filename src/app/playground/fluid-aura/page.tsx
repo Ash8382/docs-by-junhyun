@@ -7,8 +7,6 @@ import { useMemo, useRef } from "react";
 import Link from "next/link";
 import * as THREE from "three";
 
-// Simple noise function (or use a library, but inline is fine for simple needs)
-// Using a simple sin/cos based flow field for "fluid" look
 function FluidParticles({ count = 3000 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const { viewport, mouse } = useThree();
@@ -34,10 +32,8 @@ function FluidParticles({ count = 3000 }) {
     const mouseY = (state.mouse.y * viewport.height) / 2;
 
     particles.forEach((p, i) => {
-      // Flow field based on noise-like math
       const angle = (Math.sin(p.x * 0.5 + time * 0.5) + Math.cos(p.y * 0.5 + time * 0.5)) * Math.PI;
       
-      // Mouse interaction
       const dx = mouseX - p.x;
       const dy = mouseY - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -46,22 +42,19 @@ function FluidParticles({ count = 3000 }) {
       p.vx += Math.cos(angle) * 0.01 + (dx / dist) * force;
       p.vy += Math.sin(angle) * 0.01 + (dy / dist) * force;
       
-      // Friction
       p.vx *= 0.95;
       p.vy *= 0.95;
       
       p.x += p.vx;
       p.y += p.vy;
       
-      // Wrap around
       if (p.x > 15) p.x = -15;
       if (p.x < -15) p.x = 15;
       if (p.y > 10) p.y = -10;
       if (p.y < -10) p.y = 10;
 
-      // Color based on velocity
       const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      p.color.setHSL(0.5 + speed * 2, 0.8, 0.5); // Cyan/Blue range
+      p.color.setHSL(0.5 + speed * 2, 0.8, 0.5);
 
       dummy.position.set(p.x, p.y, 0);
       dummy.scale.setScalar(0.05 + speed * 0.2);

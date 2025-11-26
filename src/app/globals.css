@@ -2,7 +2,6 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  /* Light Mode - Zinc based */
   --background: #ffffff;
   --foreground: #09090b; /* zinc-950 */
   --card: #ffffff;
@@ -26,26 +25,25 @@
 }
 
 .dark {
-  /* Dark Mode - Zinc based */
-  --background: #09090b; /* zinc-950 */
-  --foreground: #fafafa; /* zinc-50 */
+  --background: #09090b;
+  --foreground: #fafafa;
   --card: #09090b;
   --card-foreground: #fafafa;
   --popover: #09090b;
   --popover-foreground: #fafafa;
   --primary: #fafafa;
   --primary-foreground: #18181b;
-  --secondary: #27272a; /* zinc-800 */
+  --secondary: #27272a;
   --secondary-foreground: #fafafa;
   --muted: #27272a;
-  --muted-foreground: #a1a1aa; /* zinc-400 */
+  --muted-foreground: #a1a1aa;
   --accent: #27272a;
   --accent-foreground: #fafafa;
   --destructive: #7f1d1d;
   --destructive-foreground: #fafafa;
   --border: #27272a;
   --input: #27272a;
-  --ring: #d4d4d8; /* zinc-300 */
+  --ring: #d4d4d8;
 }
 
 @theme inline {
@@ -85,7 +83,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography utilities */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -120,7 +117,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Carousel Animations */
 @keyframes marquee {
   from {
     transform: translateX(0);
@@ -148,43 +144,42 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
-/* Force prose text colors for light/dark mode */
 .prose {
-  color: #27272a !important; /* zinc-800 */
+  color: #27272a !important;
 }
 
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-  color: #09090b !important; /* zinc-950 */
+  color: #09090b !important;
 }
 
 .prose p, .prose li {
-  color: #27272a !important; /* zinc-800 */
+  color: #27272a !important;
 }
 
 .prose strong {
-  color: #18181b !important; /* zinc-900 */
+  color: #18181b !important;
 }
 
 .prose a {
-  color: #18181b !important; /* zinc-900 */
+  color: #18181b !important;
 }
 
 .dark .prose {
-  color: #e4e4e7 !important; /* zinc-200 */
+  color: #e4e4e7 !important;
 }
 
 .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4, .dark .prose h5, .dark .prose h6 {
-  color: #fafafa !important; /* zinc-50 */
+  color: #fafafa !important;
 }
 
 .dark .prose p, .dark .prose li {
-  color: #e4e4e7 !important; /* zinc-200 */
+  color: #e4e4e7 !important;
 }
 
 .dark .prose strong {
-  color: #f4f4f5 !important; /* zinc-100 */
+  color: #f4f4f5 !important;
 }
 
 .dark .prose a {
-  color: #fafafa !important; /* zinc-50 */
+  color: #fafafa !important;
 }

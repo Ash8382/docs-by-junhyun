@@ -88,7 +88,7 @@ export default function KokoaClonePage() {
         {/* Note */}
         <section>
           <div className="border-l-4 border-red-500 bg-red-50 dark:bg-red-950/30 p-4 rounded-r-lg">
-            <h3 className="text-red-800 dark:text-red-200 mt-0 mb-2 text-lg font-semibold">배포 상태 안내</h3>
+            <h3 className="text-red-800 dark:text-red-200 mt-0 mb-2 text-lg font-semibold">참고 사항</h3>
             <p className="text-red-700 dark:text-red-300 m-0 text-sm">
               현재 배포된 페이지에서 CSS 파일 로드 문제(CSP 정책 및 404 에러)로 인해 스타일이 정상적으로 적용되지 않을 수 있습니다. 
               정확한 구현 화면과 코드는 GitHub 저장소를 통해 확인해 주시면 감사하겠습니다.

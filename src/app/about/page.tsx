@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { FadeIn } from "@/components/FadeIn";
 import { TechCarousel } from "@/components/TechCarousel";
+import { SkillCards } from "@/components/SkillCards";
 
 export const metadata = {
   title: "소개 - 이준현",
@@ -73,6 +74,10 @@ export default function AboutPage() {
         <section className="space-y-4">
           <h2 className="text-2xl font-bold tracking-tight border-b pb-2">기술 및 도구</h2>
           <TechCarousel />
+          <p className="text-sm text-muted-foreground pt-2">
+            카드를 클릭하면 뒤집어서 상세 기술 스택을 확인할 수 있습니다.
+          </p>
+          <SkillCards />
         </section>
       </FadeIn>
 

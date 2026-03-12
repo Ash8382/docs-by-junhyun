@@ -191,6 +191,6 @@ export function getPostsByCategory(category?: PostCategory): Post[] {
 }
 
 export const categoryLabels: Record<PostCategory, string> = {
-  project: "프로젝트",
-  post: "글",
+  project: "Project",
+  post: "Post",
 };

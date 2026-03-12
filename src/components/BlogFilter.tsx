@@ -5,7 +5,7 @@ import type { PostCategory } from "@/data/posts";
 import { categoryLabels } from "@/data/posts";
 
 const categories: { key: PostCategory | "all"; label: string }[] = [
-  { key: "all", label: "전체" },
+  { key: "all", label: "All" },
   { key: "project", label: categoryLabels.project },
   { key: "post", label: categoryLabels.post },
 ];

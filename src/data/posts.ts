@@ -12,6 +12,22 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "ai-programming-semantic-drift",
+    title: "AI 코딩의 근본적 한계와 Semantic Drift 문제",
+    description: "LLM이 코드를 생성할 때 발생하는 의미적 드리프트 문제와, 임베딩 공간에 곡률을 부여해 버그 경로를 억제하는 아이디어 정리.",
+    date: "2026.03.12",
+    category: "post",
+    tags: ["AI", "LLM", "코딩"],
+  },
+  {
+    slug: "ai-ide-tools-2025",
+    title: "AI IDE 도구들 비교: Conductor, Claude Code, Antigravity 등",
+    description: "Conductor의 Git Worktree 병렬 작업, Claude Code CLI, Antigravity, Tavily RAG, Atlas 브라우저 등 AI 개발 도구 생태계 정리.",
+    date: "2026.02.13",
+    category: "post",
+    tags: ["AI", "IDE", "Claude Code", "개발도구"],
+  },
+  {
     slug: "react-server-components",
     title: "React Server Components 제대로 이해하기",
     description: "RSC가 기존 SSR과 어떻게 다른지, 그리고 Next.js App Router에서 실제로 어떻게 동작하는지 정리했습니다.",
@@ -76,6 +92,14 @@ export const posts: Post[] = [
     tags: ["JavaScript", "ES6"],
   },
   {
+    slug: "web3-i18n-nft",
+    title: "Web3, NFT, i18n 개념 정리 - PFPlay 프로젝트 사전 학습",
+    description: "PFPlay 합류 전 Web3 생태계, NFT(PFP) 개념, 그리고 다국어 지원(i18n) 구현 방법을 사전 학습한 기록.",
+    date: "2024.07.20",
+    category: "post",
+    tags: ["Web3", "NFT", "i18n"],
+  },
+  {
     slug: "pfplay",
     title: "PFPlay",
     description: "PFP NFT와 디제잉을 결합한 Web3 소셜 플랫폼",
@@ -83,6 +107,14 @@ export const posts: Post[] = [
     category: "project",
     tags: ["TypeScript", "Next.js", "React", "Tailwind CSS"],
     image: "/pfplay-thumb.png",
+  },
+  {
+    slug: "python-pycharm",
+    title: "Python & PyCharm 학습 기록",
+    description: "PyCharm IDE 설정부터 Python 기초 문법, 가상환경, 패키지 관리까지 학습하며 정리한 내용.",
+    date: "2023.10.28",
+    category: "post",
+    tags: ["Python", "PyCharm"],
   },
   {
     slug: "tix2u",
@@ -101,6 +133,14 @@ export const posts: Post[] = [
     category: "project",
     tags: ["React", "TypeScript"],
     image: "/stock2u-thumb.png",
+  },
+  {
+    slug: "typescript-basics",
+    title: "TypeScript 기초 정리 - 타입 시스템부터 제네릭까지",
+    description: "JavaScript에서 TypeScript로 넘어가며 배운 타입 시스템, 인터페이스, 제네릭, 유틸리티 타입 등 핵심 개념 정리.",
+    date: "2023.09.25",
+    category: "post",
+    tags: ["TypeScript"],
   },
   {
     slug: "eutcha",

@@ -11,7 +11,7 @@
 
 ## 🌐 Live
 
-**https://junhyun.vercel.app**
+**[LINK](https://docs-by-junhyun.vercel.app/)**
 
 ## 📝 License
 

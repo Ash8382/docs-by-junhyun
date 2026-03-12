@@ -1,4 +1,6 @@
-import { PostCard } from "@/components/PostCard";
+import { Suspense } from "react";
+import { BlogFilter } from "@/components/BlogFilter";
+import { BlogPostList } from "@/components/BlogPostList";
 
 export const metadata = {
   title: "블로그 - 이준현",
@@ -6,69 +8,21 @@ export const metadata = {
 };
 
 export default function BlogPage() {
-  const posts = [
-    {
-      slug: "pfplay",
-      title: "PFPlay",
-      description: "PFP NFT와 디제잉을 결합한 Web3 소셜 플랫폼",
-      date: "2024.08 ~ 2025.02",
-      image: "/pfplay-thumb.png",
-    },
-    {
-      slug: "tix2u",
-      title: "Tix2U",
-      description: "전시, 공연 등 다양한 문화생활 티켓 구매 서비스",
-      date: "2023.11 ~ 2023.12",
-      image: "/tix2u-thumb.png",
-    },
-    {
-      slug: "stock2u",
-      title: "Stock2U",
-      description: "위치 기반 재고 공유 서비스",
-      date: "2023.09 ~ 2023.11",
-      image: "/stock2u-thumb.png",
-    },
-    {
-      slug: "eutcha",
-      title: "EUTCHA",
-      description: "리액트와 협업에 익숙해지기 위한 프론트엔드 비기너 프로젝트",
-      date: "2023.09 ~ 2023.10",
-      image: "/eutcha-thumb.png",
-    },
-    {
-      slug: "todo-app",
-      title: "Todo App",
-      description: "HTML, CSS, JS로 구현한 투두 리스트 앱",
-      date: "2023.05 ~ 2023.06",
-      image: "/todo-app-thumb.png",
-    },
-    {
-      slug: "kokoa-clone",
-      title: "코코아톡 (Kokoa Clone)",
-      description: "HTML, CSS로 구현한 카카오톡 클론 코딩",
-      date: "2023.04 ~ 2023.05",
-      image: "/kokoa-clone-thumb.png",
-    },
-  ];
-
   return (
-    <main className="container py-6 lg:py-10">
-      <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
-        <div className="flex-1 space-y-4">
-          <h1 className="inline-block font-bold text-4xl tracking-tight lg:text-5xl">
-            블로그
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            생각, 튜토리얼, 그리고 메모들을 모아둔 공간입니다.
-          </p>
+    <main className="container py-10 lg:py-16 max-w-3xl mx-auto">
+      <div className="space-y-4 mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">블로그</h1>
+        <p className="text-muted-foreground">
+          프로젝트 회고, 기술 글, 그리고 생각들을 모아둔 공간입니다.
+        </p>
+      </div>
+
+      <Suspense>
+        <div className="space-y-6">
+          <BlogFilter />
+          <BlogPostList />
         </div>
-      </div>
-      <hr className="my-8 border-border" />
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {posts.map((post) => (
-          <PostCard key={post.slug} {...post} />
-        ))}
-      </div>
+      </Suspense>
     </main>
   );
 }

@@ -16,6 +16,12 @@ export function Header() {
               블로그
             </Link>
             <Link
+              href="/about"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              소개
+            </Link>
+            <Link
               href="/playground"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >

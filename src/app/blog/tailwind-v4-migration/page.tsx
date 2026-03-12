@@ -52,15 +52,9 @@ export default function TailwindV4MigrationPage() {
         <section>
           <h2>삽질 포인트</h2>
           <ul>
-            <li>
-              <strong>커스텀 색상 변수</strong>: CSS 변수로 정의한 색상을 <code>@theme inline</code>에서 매핑해야 Tailwind 클래스로 사용 가능
-            </li>
-            <li>
-              <strong>Typography 플러그인</strong>: <code>@plugin &quot;@tailwindcss/typography&quot;</code>로 변경
-            </li>
-            <li>
-              <strong>container 클래스</strong>: v4에서 자동 센터링이 빠져서 직접 CSS로 정의해야 함
-            </li>
+            <li><strong>커스텀 색상 변수</strong>: CSS 변수로 정의한 색상을 <code>@theme inline</code>에서 매핑해야 Tailwind 클래스로 사용 가능</li>
+            <li><strong>Typography 플러그인</strong>: <code>@plugin &quot;@tailwindcss/typography&quot;</code>로 변경</li>
+            <li><strong>container 클래스</strong>: v4에서 자동 센터링이 빠져서 직접 CSS로 정의해야 함</li>
           </ul>
         </section>
 

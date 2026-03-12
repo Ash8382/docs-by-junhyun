@@ -46,10 +46,6 @@ export default function TilZustandPersistPage() {
             커스텀 훅을 조합해서 해결했습니다.
             핵심은 클라이언트에서 hydration이 완료된 후에만 persist된 값을 사용하는 것입니다.
           </p>
-          <p>
-            <code>useEffect</code>에서 <code>rehydrate()</code>를 호출하고,
-            hydration 완료 전까지는 서버와 동일한 초기값을 반환하도록 처리했습니다.
-          </p>
         </section>
 
         <section>

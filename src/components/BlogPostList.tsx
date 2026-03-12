@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { posts } from "@/data/posts";
+import { sortedPosts } from "@/data/posts";
 import { PostListItem } from "@/components/PostListItem";
 import type { PostCategory } from "@/data/posts";
 
@@ -10,8 +10,8 @@ export function BlogPostList() {
   const category = searchParams.get("category") as PostCategory | null;
 
   const filtered = category
-    ? posts.filter((post) => post.category === category)
-    : posts;
+    ? sortedPosts.filter((post) => post.category === category)
+    : sortedPosts;
 
   if (filtered.length === 0) {
     return (

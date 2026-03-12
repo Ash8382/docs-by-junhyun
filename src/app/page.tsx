@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { posts } from "@/data/posts";
+import { sortedPosts } from "@/data/posts";
 import { PostListItem } from "@/components/PostListItem";
 import { FadeIn } from "@/components/FadeIn";
 
@@ -54,7 +54,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="divide-y divide-border">
-            {posts.map((post) => (
+            {sortedPosts.map((post) => (
               <PostListItem key={post.slug} {...post} />
             ))}
           </div>

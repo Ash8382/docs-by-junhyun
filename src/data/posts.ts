@@ -131,9 +131,23 @@ export const posts: Post[] = [
   },
 ];
 
+function parseDateForSort(date: string): string {
+  // "2024.08 ~ 2025.02" → "2025.02" (끝 날짜 기준)
+  // "2023.09.23" → "2023.09.23"
+  const parts = date.split("~").map((s) => s.trim());
+  return parts[parts.length - 1];
+}
+
+function sortByDateDesc(a: Post, b: Post): number {
+  return parseDateForSort(b.date).localeCompare(parseDateForSort(a.date));
+}
+
+export const sortedPosts = [...posts].sort(sortByDateDesc);
+
 export function getPostsByCategory(category?: PostCategory): Post[] {
-  if (!category) return posts;
-  return posts.filter((post) => post.category === category);
+  const sorted = sortedPosts;
+  if (!category) return sorted;
+  return sorted.filter((post) => post.category === category);
 }
 
 export const categoryLabels: Record<PostCategory, string> = {

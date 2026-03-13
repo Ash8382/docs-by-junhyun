@@ -12,6 +12,15 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "pickcare-frontend-architecture",
+    title: "픽케어 프론트엔드 아키텍처 — 10가지 설계 결정과 그 이유",
+    description: "선제적 토큰 리프레시, Query Key Factory, TipTap 에디터 확장 15개, Atomic Design 하이브리드 등 실무에서 직접 설계한 프론트엔드 아키텍처 패턴 정리.",
+    date: "2025.12.20",
+    category: "post",
+    tags: ["React", "Next.js", "TypeScript", "아키텍처", "React Query", "TipTap"],
+    image: "/posts/tiptap-og.jpg",
+  },
+  {
     slug: "ai-programming-semantic-drift",
     title: "AI 코딩의 근본적 한계와 Semantic Drift 문제",
     description: "LLM이 코드를 생성할 때 발생하는 의미적 드리프트 문제와, 임베딩 공간에 곡률을 부여해 버그 경로를 억제하는 아이디어 정리.",

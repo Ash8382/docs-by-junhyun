@@ -27,6 +27,15 @@ export default function AiIdeTools2025Page() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <figure className="my-8">
+          <img
+            src="/posts/ai-ide-tools.png"
+            alt="AI IDE 도구 생태계"
+            className="rounded-lg w-full"
+          />
+          <figcaption className="text-center text-sm text-muted-foreground mt-2">2025년 AI 개발 도구 생태계</figcaption>
+        </figure>
+
         <p>
           주변 개발자들과 AI 개발 도구에 대해 이야기를 나눴다.
           각자 사용하는 도구와 워크플로우가 달라서 흥미로웠고, 주요 내용을 정리해본다.

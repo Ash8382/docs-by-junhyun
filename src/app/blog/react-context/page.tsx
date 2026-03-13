@@ -27,6 +27,14 @@ export default function ReactContextPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/react-logo.png"
+            alt="React 로고"
+            className="h-28 sm:h-36 w-auto"
+          />
+        </div>
+
         <p>
           React 기초 학습의 마지막 파트. Context API와 Composition vs Inheritance 패턴을 정리한다.
           여기까지 오면 React의 공식 문서 &quot;주요 개념&quot; 섹션을 모두 커버하게 된다.

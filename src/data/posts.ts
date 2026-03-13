@@ -18,6 +18,7 @@ export const posts: Post[] = [
     date: "2026.03.12",
     category: "post",
     tags: ["AI", "LLM", "코딩"],
+    image: "/posts/ai-semantic-drift.png",
   },
   {
     slug: "ai-ide-tools-2025",
@@ -26,6 +27,7 @@ export const posts: Post[] = [
     date: "2026.02.13",
     category: "post",
     tags: ["AI", "IDE", "Claude Code", "개발도구"],
+    image: "/posts/ai-ide-tools.png",
   },
   {
     slug: "react-server-components",
@@ -34,6 +36,7 @@ export const posts: Post[] = [
     date: "2026.03.10",
     category: "post",
     tags: ["React", "Next.js", "RSC"],
+    image: "/posts/rsc-diagram.webp",
   },
   {
     slug: "tailwind-v4-migration",
@@ -42,6 +45,7 @@ export const posts: Post[] = [
     date: "2026.03.05",
     category: "post",
     tags: ["Tailwind CSS", "CSS"],
+    image: "/posts/tailwindcss-logo.png",
   },
   {
     slug: "til-zustand-persist",
@@ -50,6 +54,7 @@ export const posts: Post[] = [
     date: "2026.02.28",
     category: "post",
     tags: ["Zustand", "React", "TIL"],
+    image: "/posts/zustand-logo.png",
   },
   {
     slug: "react-context",
@@ -58,6 +63,7 @@ export const posts: Post[] = [
     date: "2023.09.23",
     category: "post",
     tags: ["React", "Context", "디자인패턴"],
+    image: "/posts/react-logo.png",
   },
   {
     slug: "react-forms-and-lifting-state",
@@ -66,6 +72,7 @@ export const posts: Post[] = [
     date: "2023.09.22",
     category: "post",
     tags: ["React", "Forms", "State"],
+    image: "/posts/react-logo.png",
   },
   {
     slug: "react-hooks-and-events",
@@ -74,6 +81,7 @@ export const posts: Post[] = [
     date: "2023.09.21",
     category: "post",
     tags: ["React", "Hooks", "이벤트"],
+    image: "/posts/react-logo.png",
   },
   {
     slug: "react-intro-jsx-components",
@@ -82,6 +90,7 @@ export const posts: Post[] = [
     date: "2023.09.20",
     category: "post",
     tags: ["React", "JSX", "컴포넌트"],
+    image: "/posts/react-logo.png",
   },
   {
     slug: "javascript-es6",
@@ -90,6 +99,7 @@ export const posts: Post[] = [
     date: "2023.09.19",
     category: "post",
     tags: ["JavaScript", "ES6"],
+    image: "/posts/javascript-logo.png",
   },
   {
     slug: "web3-i18n-nft",
@@ -98,6 +108,7 @@ export const posts: Post[] = [
     date: "2024.07.20",
     category: "post",
     tags: ["Web3", "NFT", "i18n"],
+    image: "/posts/web3-concept.jpg",
   },
   {
     slug: "pfplay",
@@ -115,6 +126,7 @@ export const posts: Post[] = [
     date: "2023.10.28",
     category: "post",
     tags: ["Python", "PyCharm"],
+    image: "/posts/pycharm-logo.jpg",
   },
   {
     slug: "tix2u",
@@ -141,6 +153,7 @@ export const posts: Post[] = [
     date: "2023.09.25",
     category: "post",
     tags: ["TypeScript"],
+    image: "/posts/typescript-logo.png",
   },
   {
     slug: "eutcha",

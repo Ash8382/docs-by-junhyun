@@ -27,6 +27,14 @@ export default function TypeScriptBasicsPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/typescript-logo.png"
+            alt="TypeScript 로고"
+            className="h-24 sm:h-32 w-auto rounded-lg"
+          />
+        </div>
+
         <p>
           ES6와 React 기초를 마치고, 이제 TypeScript를 학습한다.
           EUTCHA 프로젝트에서 TypeScript를 사용할 예정이라 미리 정리해둔다.

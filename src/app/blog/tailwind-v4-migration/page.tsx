@@ -27,6 +27,14 @@ export default function TailwindV4MigrationPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/tailwindcss-logo.png"
+            alt="Tailwind CSS 로고"
+            className="h-12 sm:h-16 w-auto"
+          />
+        </div>
+
         <section>
           <h2>왜 v4로 올렸나</h2>
           <p>

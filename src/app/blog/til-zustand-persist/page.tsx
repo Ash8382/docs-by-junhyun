@@ -27,6 +27,14 @@ export default function TilZustandPersistPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/zustand-logo.png"
+            alt="Zustand 로고"
+            className="rounded-lg max-h-48 w-auto"
+          />
+        </div>
+
         <section>
           <h2>문제 상황</h2>
           <p>

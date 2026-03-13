@@ -27,6 +27,15 @@ export default function Web3I18nNftPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <figure className="my-8">
+          <img
+            src="/posts/web3-concept.jpg"
+            alt="Web3 개념도"
+            className="rounded-lg w-full"
+          />
+          <figcaption className="text-center text-sm text-muted-foreground mt-2">Web3 생태계 개요</figcaption>
+        </figure>
+
         <p>
           PFPlay 프로젝트에 합류하기 전, 생소한 도메인이라 사전 학습이 필요했다.
           Web3 생태계, PFP NFT 개념, 그리고 글로벌 서비스를 위한 i18n(국제화) 구현 방법을 정리한다.

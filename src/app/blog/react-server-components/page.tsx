@@ -36,6 +36,15 @@ export default function ReactServerComponentsPage() {
           </p>
         </section>
 
+        <figure className="my-8">
+          <img
+            src="/posts/rsc-diagram.webp"
+            alt="React Server Components 아키텍처"
+            className="rounded-lg w-full"
+          />
+          <figcaption className="text-center text-sm text-muted-foreground mt-2">Server Component와 Client Component의 관계</figcaption>
+        </figure>
+
         <section>
           <h2>SSR vs RSC</h2>
           <p>

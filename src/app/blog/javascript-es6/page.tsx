@@ -27,6 +27,14 @@ export default function JavaScriptES6Page() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/javascript-logo.png"
+            alt="JavaScript 로고"
+            className="h-24 sm:h-32 w-auto rounded-lg"
+          />
+        </div>
+
         <p>
           React를 본격적으로 배우기 전에, ES6 문법을 먼저 정리했다.
           React 코드 곳곳에서 ES6 문법이 쓰이기 때문에 기초를 탄탄히 해두는 게 중요하다고 느꼈다.

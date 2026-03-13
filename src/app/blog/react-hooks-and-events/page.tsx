@@ -27,6 +27,14 @@ export default function ReactHooksAndEventsPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/react-logo.png"
+            alt="React 로고"
+            className="h-28 sm:h-36 w-auto"
+          />
+        </div>
+
         <p>
           React 기초를 이어서 Hooks, 이벤트 핸들링, 조건부 렌더링, 리스트와 Keys를 한번에 정리했다.
           이 부분이 실제 컴포넌트를 만들 때 가장 많이 쓰이는 핵심 개념들이다.

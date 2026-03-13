@@ -27,6 +27,14 @@ export default function PythonPycharmPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/pycharm-logo.jpg"
+            alt="PyCharm 로고"
+            className="h-10 sm:h-14 w-auto"
+          />
+        </div>
+
         <p>
           프론트엔드 중심으로 공부하다가, Python도 한번 경험해보고 싶어서 학습을 시작했다.
           PyCharm IDE 설정부터 Python 기초 문법까지 정리한다.

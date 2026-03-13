@@ -27,6 +27,14 @@ export default function ReactFormsAndLiftingStatePage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/react-logo.png"
+            alt="React 로고"
+            className="h-28 sm:h-36 w-auto"
+          />
+        </div>
+
         <p>
           Forms와 Lifting State Up은 실무에서 정말 많이 마주치는 패턴이다.
           폼 데이터를 어떻게 관리하고, 여러 컴포넌트 간에 상태를 어떻게 공유하는지 정리했다.

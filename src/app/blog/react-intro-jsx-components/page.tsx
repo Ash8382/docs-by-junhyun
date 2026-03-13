@@ -27,6 +27,14 @@ export default function ReactIntroPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <div className="flex justify-center my-8">
+          <img
+            src="/posts/react-logo.png"
+            alt="React 로고"
+            className="h-28 sm:h-36 w-auto"
+          />
+        </div>
+
         <p>
           ES6 정리를 마치고 드디어 React에 입문했다.
           Introduction to React부터 JSX, Rendering Elements, Components and Props, State and Lifecycle까지

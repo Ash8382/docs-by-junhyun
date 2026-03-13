@@ -27,6 +27,15 @@ export default function AiProgrammingSemanticDriftPage() {
       </div>
 
       <div className="prose dark:prose-invert max-w-none space-y-8">
+        <figure className="my-8">
+          <img
+            src="/posts/ai-semantic-drift.png"
+            alt="LLM Semantic Drift 개념도"
+            className="rounded-lg w-full"
+          />
+          <figcaption className="text-center text-sm text-muted-foreground mt-2">LLM의 의미적 드리프트 모니터링 개념</figcaption>
+        </figure>
+
         <p>
           흥미로운 글을 읽었다. AI로 코딩할 때 왜 &quot;그럴듯한 코드인데 실행하면 여기저기 터지는&quot; 현상이 반복되는지,
           그리고 그 근본 원인에 대한 새로운 시각을 제시하는 내용이었다.

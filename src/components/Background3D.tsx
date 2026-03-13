@@ -27,11 +27,11 @@ function generateSpherePoints(count: number, radius: number) {
 }
 
 const starColors = [
-  { color: "#ffffff", count: 1200, size: 0.012 },  // 흰색 별 (기본)
-  { color: "#fffacd", count: 300, size: 0.018 },   // 노란색 별 (태양 같은)
-  { color: "#ffa500", count: 200, size: 0.020 },   // 주황색 별
-  { color: "#87ceeb", count: 200, size: 0.016 },   // 파란색 별
-  { color: "#ff6b6b", count: 100, size: 0.022 },   // 붉은색 별
+  { color: "#ffffff", count: 400, size: 0.010 },   // 흰색 별 (기본)
+  { color: "#fffacd", count: 80, size: 0.014 },    // 노란색 별
+  { color: "#ffa500", count: 50, size: 0.016 },    // 주황색 별
+  { color: "#87ceeb", count: 60, size: 0.012 },    // 파란색 별
+  { color: "#ff6b6b", count: 30, size: 0.018 },    // 붉은색 별
 ];
 
 function Stars(props: any) {

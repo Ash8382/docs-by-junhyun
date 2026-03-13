@@ -66,6 +66,15 @@ export const posts: Post[] = [
     image: "/posts/zustand-logo.png",
   },
   {
+    slug: "chakra-ui-deep-dive",
+    title: "Chakra UI 레퍼런스를 통째로 씹어먹은 이야기",
+    description: "EUTCHA 프로젝트를 하면서 Chakra UI 공식 문서를 외우다시피 공부한 경험. Style Props, 테마 커스터마이징, Composition 패턴 등 실전 활용기.",
+    date: "2023.10.05",
+    category: "post",
+    tags: ["Chakra UI", "React", "CSS-in-JS", "EUTCHA"],
+    image: "/posts/chakra-ui-og.png",
+  },
+  {
     slug: "react-context",
     title: "React Context, Composition vs Inheritance 정리",
     description: "Context API를 활용한 전역 상태 관리와 합성(Composition) vs 상속(Inheritance) 패턴의 차이를 정리했다.",

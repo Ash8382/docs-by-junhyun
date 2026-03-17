@@ -12,6 +12,15 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "context7-mcp-guide",
+    title: "Context7 MCP 설치 및 사용법 — AI 코딩에 최신 문서를 주입하는 방법",
+    description: "Context7 MCP를 설치하고 활용하여 AI 코딩 시 최신 라이브러리 문서를 실시간으로 주입하는 방법 정리.",
+    date: "2026.03.17",
+    category: "post",
+    tags: ["AI", "MCP", "Context7", "Claude Code", "개발도구"],
+    image: "/posts/context7-og.png",
+  },
+  {
     slug: "pickcare-frontend-architecture",
     title: "픽케어 프론트엔드 아키텍처 — 10가지 설계 결정과 그 이유",
     description: "선제적 토큰 리프레시, Query Key Factory, TipTap 에디터 확장 15개, Atomic Design 하이브리드 등 실무에서 직접 설계한 프론트엔드 아키텍처 패턴 정리.",

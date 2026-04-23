@@ -12,6 +12,15 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "claude-code-harness-engineering",
+    title: "Claude Code 하네스 엔지니어링 — 소스 코드에서 뽑아낸 6가지 설계 원칙",
+    description: "Claude Code v2.1.88 소스 코드 역공학 분석에서 도출된 프롬프트 컨트롤 플레인, 캐시 인식 디자인, Fail-Closed 기본값 등 AI 에이전트 빌더를 위한 핵심 하네스 엔지니어링 원칙 정리.",
+    date: "2026.04.23",
+    category: "post",
+    tags: ["AI", "Claude Code", "LLM", "에이전트", "아키텍처"],
+    image: "/posts/claude-code-harness-og.png",
+  },
+  {
     slug: "context7-mcp-guide",
     title: "Context7 MCP 설치 및 사용법 — AI 코딩에 최신 문서를 주입하는 방법",
     description: "Context7 MCP를 설치하고 활용하여 AI 코딩 시 최신 라이브러리 문서를 실시간으로 주입하는 방법 정리.",

@@ -12,6 +12,14 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "safari-scroll-jank-web-animations",
+    title: "Safari에서 스크롤이 유독 끊기는 이유 — requestAnimationFrame, 비동기 스크롤, 그리고 Web Animations",
+    description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",
+    date: "2026.07.15",
+    category: "post",
+    tags: ["Safari", "WebKit", "성능", "애니메이션", "CSS", "JavaScript"],
+  },
+  {
     slug: "claude-code-harness-engineering",
     title: "Claude Code 하네스 엔지니어링 — 소스 코드에서 뽑아낸 6가지 설계 원칙",
     description: "Claude Code v2.1.88 소스 코드 역공학 분석에서 도출된 프롬프트 컨트롤 플레인, 캐시 인식 디자인, Fail-Closed 기본값 등 AI 에이전트 빌더를 위한 핵심 하네스 엔지니어링 원칙 정리.",

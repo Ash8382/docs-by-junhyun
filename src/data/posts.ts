@@ -155,6 +155,16 @@ export const posts: Post[] = [
     image: "/posts/web3-concept.jpg",
   },
   {
+    slug: "pickcare",
+    title: "PiCKCARE",
+    description:
+      "반려동물 스타트업의 프론트엔드를 단독으로 맡아 메인 서비스·B2B CRM·스튜디오·네이티브 앱·사내 자동화 도구까지 다섯 개 저장소를 구축한 기록",
+    date: "2025.09 ~ 진행중",
+    category: "project",
+    tags: ["Next.js", "React Native", "TypeScript"],
+    image: "/pickcare-thumb.webp",
+  },
+  {
     slug: "pfplay",
     title: "PFPlay",
     description: "PFP NFT와 디제잉을 결합한 Web3 소셜 플랫폼",
@@ -231,8 +241,10 @@ export const posts: Post[] = [
 function parseDateForSort(date: string): string {
   // "2024.08 ~ 2025.02" → "2025.02" (끝 날짜 기준)
   // "2023.09.23" → "2023.09.23"
+  // "2025.09 ~ 진행중" → "2025.09" (끝이 날짜가 아니면 시작 날짜 기준)
   const parts = date.split("~").map((s) => s.trim());
-  return parts[parts.length - 1];
+  const last = parts[parts.length - 1];
+  return /^\d{4}\.\d{2}/.test(last) ? last : parts[0];
 }
 
 function sortByDateDesc(a: Post, b: Post): number {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Context7 MCP 설치 및 사용법 — AI 코딩에 최신 문서를 주입하는 방법 - 이준현",
+  title: "Context7 MCP 설치하고 써본 후기 - 이준현",
   description: "Context7 MCP를 설치하고 활용하여 AI 코딩 시 최신 라이브러리 문서를 실시간으로 주입하는 방법 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function Context7McpGuidePage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          Context7 MCP 설치 및 사용법 — AI 코딩에 최신 문서를 주입하는 방법
+          Context7 MCP 설치하고 써본 후기
         </h1>
         <div className="flex flex-wrap gap-2">
           {["AI", "MCP", "Context7", "Claude Code", "개발도구"].map((tag) => (

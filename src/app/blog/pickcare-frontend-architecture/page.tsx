@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "픽케어 프론트엔드 아키텍처 10가지 설계 결정 - 이준현",
+  title: "픽케어 프론트엔드 아키텍처 설계 후기 - 이준현",
   description: "실무에서 직접 설계하고 구현한 프론트엔드 아키텍처 패턴 10가지. 토큰 리프레시, Query Key Factory, TipTap 에디터 확장 등.",
 };
 
@@ -15,7 +15,7 @@ export default function PickcareFrontendArchitecturePage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          픽케어 프론트엔드 아키텍처 — 10가지 설계 결정과 그 이유
+          픽케어 프론트엔드 아키텍처 설계 후기
         </h1>
         <div className="flex flex-wrap gap-2">
           {["React", "Next.js", "TypeScript", "아키텍처", "React Query", "TipTap"].map((tag) => (

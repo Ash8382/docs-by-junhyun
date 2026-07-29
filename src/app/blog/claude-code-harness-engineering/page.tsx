@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Claude Code 하네스 엔지니어링 — 소스 코드에서 뽑아낸 6가지 설계 원칙 - 이준현",
+  title: "Claude Code 하네스 엔지니어링 한국어판 읽은 후기 - 이준현",
   description: "Claude Code v2.1.88 소스 코드 역공학 분석에서 도출된 프롬프트 컨트롤 플레인, 캐시 인식 디자인, Fail-Closed 기본값 등 AI 에이전트 빌더를 위한 핵심 하네스 엔지니어링 원칙 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          Claude Code 하네스 엔지니어링 — 소스 코드에서 뽑아낸 6가지 설계 원칙
+          Claude Code 하네스 엔지니어링 한국어판 읽은 후기
         </h1>
         <div className="flex flex-wrap gap-2">
           {["AI", "Claude Code", "LLM", "에이전트", "아키텍처"].map((tag) => (

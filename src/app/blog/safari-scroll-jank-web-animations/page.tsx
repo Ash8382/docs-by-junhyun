@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Safari에서 스크롤이 유독 끊기는 이유 — requestAnimationFrame, 비동기 스크롤, 그리고 Web Animations - 이준현",
+  title: "Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글 - 이준현",
   description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function SafariScrollJankWebAnimationsPage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          Safari에서 스크롤이 유독 끊기는 이유 — requestAnimationFrame, 비동기 스크롤, 그리고 Web Animations
+          Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글
         </h1>
         <div className="flex flex-wrap gap-2">
           {["Safari", "WebKit", "성능", "애니메이션", "CSS", "JavaScript"].map((tag) => (

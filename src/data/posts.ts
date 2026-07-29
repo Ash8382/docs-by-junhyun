@@ -13,7 +13,7 @@ export interface Post {
 export const posts: Post[] = [
   {
     slug: "safari-scroll-jank-web-animations",
-    title: "Safari에서 스크롤이 유독 끊기는 이유 — requestAnimationFrame, 비동기 스크롤, 그리고 Web Animations",
+    title: "Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글",
     description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",
     date: "2026.07.15",
     category: "post",
@@ -21,7 +21,7 @@ export const posts: Post[] = [
   },
   {
     slug: "claude-code-harness-engineering",
-    title: "Claude Code 하네스 엔지니어링 — 소스 코드에서 뽑아낸 6가지 설계 원칙",
+    title: "Claude Code 하네스 엔지니어링 한국어판 읽은 후기",
     description: "Claude Code v2.1.88 소스 코드 역공학 분석에서 도출된 프롬프트 컨트롤 플레인, 캐시 인식 디자인, Fail-Closed 기본값 등 AI 에이전트 빌더를 위한 핵심 하네스 엔지니어링 원칙 정리.",
     date: "2026.04.23",
     category: "post",
@@ -30,7 +30,7 @@ export const posts: Post[] = [
   },
   {
     slug: "context7-mcp-guide",
-    title: "Context7 MCP 설치 및 사용법 — AI 코딩에 최신 문서를 주입하는 방법",
+    title: "Context7 MCP 설치하고 써본 후기",
     description: "Context7 MCP를 설치하고 활용하여 AI 코딩 시 최신 라이브러리 문서를 실시간으로 주입하는 방법 정리.",
     date: "2026.03.17",
     category: "post",
@@ -39,7 +39,7 @@ export const posts: Post[] = [
   },
   {
     slug: "pickcare-frontend-architecture",
-    title: "픽케어 프론트엔드 아키텍처 — 10가지 설계 결정과 그 이유",
+    title: "픽케어 프론트엔드 아키텍처 설계 후기",
     description: "선제적 토큰 리프레시, Query Key Factory, TipTap 에디터 확장 15개, Atomic Design 하이브리드 등 실무에서 직접 설계한 프론트엔드 아키텍처 패턴 정리.",
     date: "2025.12.20",
     category: "post",
@@ -48,7 +48,7 @@ export const posts: Post[] = [
   },
   {
     slug: "ai-programming-semantic-drift",
-    title: "AI 코딩의 근본적 한계와 Semantic Drift 문제",
+    title: "Semantic Drift 이야기를 읽고 나서야 납득이 갔다",
     description: "LLM이 코드를 생성할 때 발생하는 의미적 드리프트 문제와, 임베딩 공간에 곡률을 부여해 버그 경로를 억제하는 아이디어 정리.",
     date: "2026.03.12",
     category: "post",
@@ -138,7 +138,7 @@ export const posts: Post[] = [
   },
   {
     slug: "javascript-es6",
-    title: "JavaScript ES6 핵심 문법 총정리",
+    title: "JavaScript ES6 핵심 문법 정리",
     description: "let/const, 화살표 함수, 템플릿 리터럴, 구조분해 할당, 스프레드 연산자, Promise 등 ES6 핵심 문법을 섹션별로 정리했다.",
     date: "2023.09.19",
     category: "post",
@@ -192,7 +192,7 @@ export const posts: Post[] = [
   },
   {
     slug: "typescript-basics",
-    title: "TypeScript 기초 정리 - 타입 시스템부터 제네릭까지",
+    title: "TypeScript를 처음 배우며 정리한 노트",
     description: "JavaScript에서 TypeScript로 넘어가며 배운 타입 시스템, 인터페이스, 제네릭, 유틸리티 타입 등 핵심 개념 정리.",
     date: "2023.09.25",
     category: "post",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "AI 코딩의 근본적 한계와 Semantic Drift 문제 - 이준현",
+  title: "Semantic Drift 이야기를 읽고 나서야 납득이 갔다 - 이준현",
   description: "LLM이 코드를 생성할 때 발생하는 의미적 드리프트 문제와 해결 아이디어 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function AiProgrammingSemanticDriftPage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          AI 코딩의 근본적 한계와 Semantic Drift 문제
+          Semantic Drift 이야기를 읽고 나서야 납득이 갔다
         </h1>
         <div className="flex flex-wrap gap-2">
           {["AI", "LLM", "코딩"].map((tag) => (

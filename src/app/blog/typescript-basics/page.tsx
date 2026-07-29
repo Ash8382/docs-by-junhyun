@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "TypeScript 기초 정리 - 타입 시스템부터 제네릭까지 - 이준현",
+  title: "TypeScript를 처음 배우며 정리한 노트 - 이준현",
   description: "JavaScript에서 TypeScript로 넘어가며 배운 타입 시스템, 인터페이스, 제네릭, 유틸리티 타입 등 핵심 개념 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function TypeScriptBasicsPage() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          TypeScript 기초 정리 - 타입 시스템부터 제네릭까지
+          TypeScript를 처음 배우며 정리한 노트
         </h1>
         <div className="flex flex-wrap gap-2">
           {["TypeScript"].map((tag) => (

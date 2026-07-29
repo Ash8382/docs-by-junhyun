@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "JavaScript ES6 핵심 문법 총정리 - 이준현",
+  title: "JavaScript ES6 핵심 문법 정리 - 이준현",
   description: "let/const, 화살표 함수, 템플릿 리터럴, 구조분해 할당, 스프레드 연산자, Promise 등 ES6 핵심 문법 정리.",
 };
 
@@ -15,7 +15,7 @@ export default function JavaScriptES6Page() {
           <span>글</span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">
-          JavaScript ES6 핵심 문법 총정리
+          JavaScript ES6 핵심 문법 정리
         </h1>
         <div className="flex flex-wrap gap-2">
           {["JavaScript", "ES6"].map((tag) => (

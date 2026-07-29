@@ -56,7 +56,7 @@ export default function PFPlayPage() {
           <h2 className="text-2xl font-bold mb-4 text-zinc-950 dark:text-zinc-50">프로젝트 개요</h2>
           <p className="text-zinc-800 dark:text-zinc-200 mb-4">
             PFPlay는 PFP(Profile Picture) NFT와 디제잉 문화를 결합한 Web3 기반 소셜 플랫폼입니다. 
-            사용자는 자신의 NFT를 활용해 아이덴티티를 표현하고, 음악을 통해 다른 사용자들과 소통할 수 있습니다.
+            사용자는 자신의 NFT를 활용해 아이덴티티를 표현하고 음악을 통해 다른 사용자들과 소통할 수 있습니다.
           </p>
           <div className="bg-muted/50 p-4 rounded-lg text-sm">
             <strong className="text-zinc-900 dark:text-zinc-100">개발 인원 (총 9명)</strong>
@@ -75,10 +75,10 @@ export default function PFPlayPage() {
           <h2 className="text-2xl font-bold mb-4 text-zinc-950 dark:text-zinc-50">담당 역할</h2>
           <ul className="space-y-3 list-disc list-inside text-zinc-800 dark:text-zinc-200">
             <li>
-              <strong className="text-zinc-900 dark:text-zinc-100">디제잉 규칙 안내 모달 구현</strong>: 디제잉 등록 전 사용자에게 필수 규칙을 안내하는 모달을 구현하여 UX 흐름을 개선했습니다.
+              <strong className="text-zinc-900 dark:text-zinc-100">디제잉 규칙 안내 모달</strong>을 구현했습니다. 디제잉 등록 전 사용자에게 필수 규칙을 안내해 UX 흐름을 개선했습니다.
             </li>
             <li>
-              <strong className="text-zinc-900 dark:text-zinc-100">로그인 페이지 개편</strong>: 기존 로그인 페이지의 UI/UX를 전면적으로 리뉴얼하여 사용자 접근성을 높였습니다.
+              <strong className="text-zinc-900 dark:text-zinc-100">로그인 페이지 개편</strong>: 기존 로그인 페이지의 UI/UX를 전면적으로 리뉴얼해 사용자 접근성을 끌어올렸습니다.
             </li>
           </ul>
         </section>
@@ -91,10 +91,10 @@ export default function PFPlayPage() {
               <strong className="text-zinc-900 dark:text-zinc-100">실무 수준의 프론트엔드 환경 경험</strong>: 글로벌 사용자 대상의 Web3 플랫폼을 개발하며 다국어 지원(i18n), 디자인 시스템 구축(Storybook) 등 최신 개발 트렌드를 실전에서 익혔습니다.
             </li>
             <li>
-              <strong className="text-zinc-900 dark:text-zinc-100">협업 커뮤니케이션 능력 향상</strong>: PM, 백엔드, 디자이너, 마케터 등 다양한 직군과의 긴밀한 협업을 통해 대규모 프로젝트의 워크플로우를 이해했습니다.
+              <strong className="text-zinc-900 dark:text-zinc-100">협업 커뮤니케이션 능력</strong>이 늘었습니다. PM, 백엔드, 디자이너, 마케터 등 다양한 직군과 긴밀하게 협업하며 대규모 프로젝트의 워크플로우를 이해했습니다.
             </li>
             <li>
-              <strong className="text-zinc-900 dark:text-zinc-100">UX 중심의 기능 구현</strong>: 단순한 기능 구현을 넘어, 사용자 경험(UX)을 고려한 모달 및 로그인 페이지 설계를 통해 서비스 품질을 높였습니다.
+              <strong className="text-zinc-900 dark:text-zinc-100">UX 중심의 기능 구현</strong>: 단순히 기능만 구현하고 끝내지 않았습니다. 사용자 경험(UX)을 고려해 모달과 로그인 페이지를 설계했고 서비스 품질을 높였습니다.
             </li>
             <li>
               <strong className="text-zinc-900 dark:text-zinc-100">코드 품질 및 유지보수</strong>: 실무 멘토링을 통해 유지보수 가능한 코드 작성법과 컴포넌트 설계 원칙을 학습하고 적용했습니다.

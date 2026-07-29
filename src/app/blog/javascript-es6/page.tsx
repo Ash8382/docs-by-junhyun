@@ -43,17 +43,17 @@ export default function JavaScriptES6Page() {
         <section>
           <h2>let과 const</h2>
           <p>
-            <code>var</code>는 함수 스코프, <code>let</code>과 <code>const</code>는 블록 스코프를 가진다.
-            <code>const</code>는 재할당이 불가능하고, <code>let</code>은 재할당이 가능하다.
-            기본적으로 <code>const</code>를 사용하고, 재할당이 필요한 경우에만 <code>let</code>을 사용하는 것이 권장된다.
+            <code>var</code>는 함수 스코프, <code>let</code>과 <code>const</code>는 블록 스코프를 따른다.
+            <code>const</code>는 재할당이 불가능하고 <code>let</code>은 재할당이 가능하다.
+            기본적으로 <code>const</code>를 사용하고 재할당이 필요한 경우에만 <code>let</code>을 사용하는 것이 권장된다.
           </p>
         </section>
 
         <section>
           <h2>화살표 함수 (Arrow Function)</h2>
           <p>
-            <code>{`const add = (a, b) => a + b`}</code> 형태로, 기존 <code>function</code> 키워드보다 간결하게 작성할 수 있다.
-            특히 콜백 함수에서 <code>this</code> 바인딩이 상위 스코프를 따르기 때문에,
+            <code>{`const add = (a, b) => a + b`}</code> 형태로, 기존 <code>function</code> 키워드보다 간결하다.
+            특히 콜백 함수에서 <code>this</code> 바인딩이 상위 스코프를 따르기 때문에
             React 이벤트 핸들러에서 자주 사용된다.
           </p>
         </section>
@@ -61,7 +61,7 @@ export default function JavaScriptES6Page() {
         <section>
           <h2>템플릿 리터럴</h2>
           <p>
-            백틱(`)을 사용해서 문자열 안에 변수를 <code>{`\${variable}`}</code> 형태로 삽입할 수 있다.
+            백틱(`)을 사용해서 문자열 안에 변수를 <code>{`\${variable}`}</code> 형태로 삽입하고
             여러 줄 문자열도 자연스럽게 작성 가능하다.
           </p>
         </section>
@@ -69,9 +69,9 @@ export default function JavaScriptES6Page() {
         <section>
           <h2>구조분해 할당 (Destructuring)</h2>
           <p>
-            객체나 배열에서 값을 꺼내 변수에 담을 수 있다.
+            객체나 배열에서 값을 꺼내 변수에 담는다.
             React에서 props를 받을 때 <code>{`({ title, description })`}</code> 형태로 많이 사용한다.
-            배열 구조분해는 <code>useState</code>의 <code>{`const [state, setState]`}</code> 패턴에서 핵심적으로 쓰인다.
+            배열 구조분해는 <code>useState</code>의 <code>{`const [state, setState]`}</code> 패턴에서 쓰인다.
           </p>
         </section>
 
@@ -88,14 +88,14 @@ export default function JavaScriptES6Page() {
           <p>
             <code>Promise</code>는 비동기 작업의 결과를 나타내는 객체다.
             <code>async/await</code> 문법을 사용하면 비동기 코드를 동기적으로 읽히게 작성할 수 있다.
-            API 호출 시 필수적으로 사용되는 패턴이다.
+            API 호출 시 사용되는 패턴이다.
           </p>
         </section>
 
         <section>
           <h2>정리하며</h2>
           <p>
-            ES6 문법은 React를 배우기 위한 전제조건이라고 해도 과언이 아니다.
+            ES6 문법은 React를 배우기 위한 전제조건이다.
             특히 구조분해 할당, 스프레드 연산자, 화살표 함수는 React 코드에서 거의 매 줄 등장하니 확실히 익혀두자.
           </p>
         </section>

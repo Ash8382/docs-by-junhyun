@@ -36,19 +36,19 @@ export default function TypeScriptBasicsPage() {
         </div>
 
         <p>
-          ES6와 React 기초를 마치고, 이제 TypeScript를 학습한다.
+          ES6와 React 기초를 마치고 이제 TypeScript를 학습한다.
           EUTCHA 프로젝트에서 TypeScript를 사용할 예정이라 미리 정리해둔다.
         </p>
 
         <section>
           <h2>왜 TypeScript인가</h2>
           <p>
-            JavaScript는 동적 타입 언어라 런타임에서야 타입 에러를 발견할 수 있다.
+            JavaScript는 동적 타입 언어라 런타임에서야 타입 에러를 발견한다.
             TypeScript는 정적 타입을 추가해서 <strong>코드 작성 시점에 에러를 잡아준다</strong>.
             규모가 커질수록 이 차이가 극명해진다.
           </p>
           <p>
-            에디터의 자동완성과 리팩토링 지원도 크게 좋아진다.
+            에디터의 자동완성과 리팩토링 지원도 훨씬 좋아진다.
             &quot;이 변수에 뭐가 들어있지?&quot;를 항상 추론할 필요 없이 타입이 알려주니까.
           </p>
         </section>
@@ -72,7 +72,7 @@ export default function TypeScriptBasicsPage() {
             객체의 형태를 정의하는 두 가지 방법이다.
           </p>
           <p>
-            <strong>Interface</strong>는 <code>extends</code>로 확장 가능하고, 같은 이름으로 선언하면 자동 병합된다.
+            <strong>Interface</strong>는 <code>extends</code>로 확장 가능하고 같은 이름으로 선언하면 자동 병합된다.
             <strong>Type</strong>은 유니온(<code>|</code>), 인터섹션(<code>&amp;</code>) 등 더 유연한 조합이 가능하다.
           </p>
           <p>
@@ -83,7 +83,7 @@ export default function TypeScriptBasicsPage() {
         <section>
           <h2>제네릭 (Generics)</h2>
           <p>
-            타입을 매개변수로 받아서 재사용 가능한 코드를 만드는 기능이다.
+            제네릭은 타입을 매개변수로 받아서 재사용 가능한 코드를 만든다.
             함수, 인터페이스, 클래스 등에 적용할 수 있다.
           </p>
           <p>
@@ -95,7 +95,7 @@ export default function TypeScriptBasicsPage() {
         <section>
           <h2>유틸리티 타입</h2>
           <p>
-            TypeScript가 기본 제공하는 편리한 타입 변환 도구들이다.
+            TypeScript는 편리한 타입 변환 도구들을 기본으로 제공한다.
           </p>
           <ul>
             <li><code>{`Partial<T>`}</code> - 모든 속성을 선택적으로</li>
@@ -105,7 +105,7 @@ export default function TypeScriptBasicsPage() {
             <li><code>{`Record<K, V>`}</code> - 키-값 쌍의 타입 정의</li>
           </ul>
           <p>
-            이 유틸리티 타입들을 잘 활용하면 중복 타입 정의를 크게 줄일 수 있다.
+            이 유틸리티 타입들을 잘 활용하면 중복 타입 정의가 크게 줄어든다.
           </p>
         </section>
 

@@ -38,7 +38,7 @@ export default function AiIdeTools2025Page() {
 
         <p>
           주변 개발자들과 AI 개발 도구에 대해 이야기를 나눴다.
-          각자 사용하는 도구와 워크플로우가 달라서 흥미로웠고, 주요 내용을 정리해본다.
+          각자 사용하는 도구와 워크플로우가 달라서 흥미로웠고 주요 내용을 정리해본다.
         </p>
 
         <section>
@@ -49,12 +49,12 @@ export default function AiIdeTools2025Page() {
             가장 재미있는 점은 <strong>Git Worktree</strong>를 활용한다는 것이다.
           </p>
           <p>
-            AI 에이전트마다 독립된 작업 공간(워크트리)을 자동으로 생성해서 돌리기 때문에,
-            내 작업 흐름을 끊지 않고도 여러 브랜치의 작업을 동시에 AI에게 맡길 수 있다.
+            AI 에이전트마다 독립된 작업 공간(워크트리)을 자동으로 생성해서 돌린다.
+            그래서 내 작업 흐름을 끊지 않고도 여러 브랜치의 작업을 동시에 AI에게 맡길 수 있다.
             AI가 돌아가는 동안 다른 워크트리에서 리팩토링이나 UI 수정 작업을 병행하는 식이다.
           </p>
           <p>
-            워크트리에서 git push하면 PR도 자동 생성해주고, PR 내용도 Claude가 작성해준다.
+            워크트리에서 git push하면 PR도 자동 생성해주고 PR 내용도 Claude가 작성해준다.
             팀 단위 작업에서 특히 유용해 보인다.
           </p>
           <p>
@@ -70,7 +70,7 @@ export default function AiIdeTools2025Page() {
             VSCode extension도 있어서 에디터와 결합해서 쓸 수도 있다.
           </p>
           <p>
-            Git Worktree 기반 병렬 작업은 CC를 포함한 여러 플랫폼에서 지원하고 있다.
+            Git Worktree 기반 병렬 작업은 CC를 포함한 여러 플랫폼에서 지원한다.
             다만 Opus 등장 이후로는 굳이 워크트리를 안 써도 한 세션에서 여러 기능 작업 시
             충돌이 생각보다 적다는 의견도 있었다. 코드베이스에서 병렬로 작업을 진행시키는 것도
             나쁘지 않다는 것이다.
@@ -81,7 +81,7 @@ export default function AiIdeTools2025Page() {
           <h2>Antigravity</h2>
           <p>
             Antigravity IDE를 사용하되, 에디터 내장 AI 기능은 tab 자동완성 정도만 활용하고
-            실제 코딩 작업은 CLI 기반 AI에 의존하는 워크플로우도 있었다.
+            실제 코딩 작업은 CLI 기반 AI에 의존하는 워크플로우도 들었다.
             Antigravity의 Agent Manager 기능이 Conductor와 유사한 부분이 있다고 한다.
           </p>
         </section>
@@ -116,10 +116,10 @@ export default function AiIdeTools2025Page() {
         <section>
           <h2>느낀 점</h2>
           <p>
-            AI 개발 도구 생태계가 정말 빠르게 변하고 있다.
+            AI 개발 도구 생태계가 정말 빠르게 변한다.
             에디터를 거의 안 열고 CLI만으로 작업하는 워크플로우가 실제로 가능해졌다는 게 인상적이다.
-            Conductor처럼 병렬 작업을 시각화하고 관리하는 도구도 점점 나오고 있어서,
-            &quot;AI에게 일 시키고 다른 일 하기&quot;가 자연스러운 개발 방식이 되어가는 것 같다.
+            Conductor처럼 병렬 작업을 시각화하고 관리하는 도구도 점점 나오고 있다.
+            그러다 보니 &quot;AI에게 일 시키고 다른 일 하기&quot;가 자연스러운 개발 방식이 되어가는 것 같다.
           </p>
         </section>
       </div>

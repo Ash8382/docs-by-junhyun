@@ -45,7 +45,7 @@ export default function ReactIntroPage() {
           <h2>React란?</h2>
           <p>
             React는 사용자 인터페이스를 만들기 위한 JavaScript 라이브러리다.
-            컴포넌트 기반으로 UI를 구성하며, Virtual DOM을 통해 효율적으로 화면을 업데이트한다.
+            컴포넌트 기반으로 UI를 구성하며 Virtual DOM을 통해 효율적으로 화면을 업데이트한다.
             &quot;선언적(Declarative)&quot; 방식으로 UI를 작성한다는 것이 핵심이다.
           </p>
         </section>
@@ -54,11 +54,11 @@ export default function ReactIntroPage() {
           <h2>JSX (JavaScript XML)</h2>
           <p>
             JSX는 JavaScript 안에서 HTML과 유사한 마크업을 작성할 수 있게 해주는 문법 확장이다.
-            브라우저가 직접 이해하지는 못하고, Babel 같은 트랜스파일러가 <code>React.createElement()</code> 호출로 변환한다.
+            브라우저가 직접 이해하지는 못하고 Babel 같은 트랜스파일러가 <code>React.createElement()</code> 호출로 변환한다.
           </p>
           <p>
-            주의할 점은 <code>class</code> 대신 <code>className</code>을 사용하고,
-            모든 태그는 반드시 닫아야 한다는 것이다. 또한 JSX 내에서 JavaScript 표현식은
+            주의할 점이 있다. <code>class</code> 대신 <code>className</code>을 사용하고
+            모든 태그는 반드시 닫아야 한다. 또한 JSX 내에서 JavaScript 표현식은
             중괄호 <code>{`{}`}</code>로 감싸서 사용한다.
           </p>
         </section>
@@ -66,9 +66,9 @@ export default function ReactIntroPage() {
         <section>
           <h2>Rendering Elements</h2>
           <p>
-            Element는 React 앱의 가장 작은 단위다.
+            Element는 React 앱의 가장 작은 단위이고
             <code>ReactDOM.render()</code> (또는 React 18의 <code>createRoot</code>)를 통해
-            DOM에 렌더링된다. React Element는 불변 객체이기 때문에,
+            DOM에 렌더링된다. React Element는 불변 객체이기 때문에
             UI를 업데이트하려면 새로운 Element를 생성해서 전달해야 한다.
           </p>
         </section>
@@ -76,12 +76,12 @@ export default function ReactIntroPage() {
         <section>
           <h2>Components and Props</h2>
           <p>
-            컴포넌트는 UI를 재사용 가능한 독립적인 조각으로 나눈 것이다.
-            함수형 컴포넌트와 클래스형 컴포넌트가 있는데, 현재는 함수형 컴포넌트가 표준이다.
+            UI를 재사용 가능한 독립적인 조각으로 나눈 것이 컴포넌트다.
+            함수형 컴포넌트와 클래스형 컴포넌트가 있는데 현재는 함수형 컴포넌트가 표준이다.
           </p>
           <p>
             Props는 부모 컴포넌트가 자식에게 전달하는 데이터다.
-            중요한 규칙은 Props는 읽기 전용(Read-only)이라는 것.
+            Props는 읽기 전용(Read-only)이라는 중요한 규칙이 있다.
             컴포넌트는 자신의 Props를 직접 수정해서는 안 된다.
           </p>
         </section>
@@ -89,7 +89,7 @@ export default function ReactIntroPage() {
         <section>
           <h2>State and Lifecycle</h2>
           <p>
-            State는 컴포넌트 내부에서 관리하는 데이터다. Props와 달리 컴포넌트 스스로 변경할 수 있다.
+            State는 컴포넌트 내부에서 관리하는 데이터로 Props와 달리 컴포넌트 스스로 변경할 수 있다.
             State가 변경되면 React는 해당 컴포넌트를 다시 렌더링한다.
           </p>
           <p>

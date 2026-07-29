@@ -64,8 +64,8 @@ export default function EutchaPage() {
         <section>
           <h2>프로젝트 개요</h2>
           <p>
-            EUTCHA는 리액트와 협업에 익숙해지기 위해 진행한 프론트엔드 입문 프로젝트입니다. 
-            TMDB Open API를 활용하여 영화 정보를 제공하는 웹 애플리케이션을 구축했습니다.
+            TMDB Open API를 활용하여 영화 정보를 제공하는 웹 애플리케이션 EUTCHA를 구축했습니다.
+            리액트와 협업에 익숙해지려고 진행한 프론트엔드 입문 프로젝트입니다.
           </p>
           <div className="bg-muted/50 p-4 rounded-lg text-sm">
             <strong>주요 특징</strong>
@@ -85,13 +85,13 @@ export default function EutchaPage() {
           </p>
           <ul>
             <li>
-              <strong>공통 레이아웃 & 스타일</strong>: Header, Home, About 페이지의 CSS 스타일링을 전담하여 일관된 디자인을 구현했습니다.
+              <strong>공통 레이아웃 & 스타일</strong>: Header, Home, About 페이지의 CSS 스타일링을 전담해 디자인을 일관되게 맞췄습니다.
             </li>
             <li>
               <strong>상세 페이지 (Detail)</strong>: 영화 상세 정보(포스터, 트레일러, 평점, 줄거리 등)를 보여주는 페이지의 라우팅과 스타일을 구현했습니다.
             </li>
             <li>
-              <strong>기능 구현</strong>: 인피니트 스크롤(Infinite Scroll) 기능을 직접 구현하며 데이터 페칭 최적화를 학습했습니다.
+              <strong>기능 구현</strong>: 데이터 페칭 최적화는 인피니트 스크롤(Infinite Scroll) 기능을 직접 구현하며 익혔습니다.
             </li>
           </ul>
         </section>
@@ -102,7 +102,7 @@ export default function EutchaPage() {
           <ul>
             <li><strong>Framework/Library</strong>: React 18, Chakra UI, Emotion</li>
             <li><strong>Code Quality</strong>: ESLint, Prettier를 도입하여 코드 컨벤션을 유지했습니다.</li>
-            <li><strong>API</strong>: TMDB Open API를 활용하여 실제 영화 데이터를 다뤘습니다.</li>
+            <li><strong>API</strong>: TMDB Open API로 실제 영화 데이터를 다뤘습니다.</li>
           </ul>
         </section>
 

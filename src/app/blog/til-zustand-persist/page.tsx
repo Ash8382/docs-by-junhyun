@@ -38,12 +38,12 @@ export default function TilZustandPersistPage() {
         <section>
           <h2>문제 상황</h2>
           <p>
-            Zustand의 <code>persist</code> 미들웨어를 사용해서 로컬 스토리지에 상태를 저장하고 있었는데,
+            Zustand의 <code>persist</code> 미들웨어를 사용해서 로컬 스토리지에 상태를 저장하고 있었는데
             Next.js에서 페이지 로드 시 hydration mismatch 경고가 발생했습니다.
           </p>
           <p>
-            서버에서는 초기값으로 렌더링하고, 클라이언트에서는 로컬 스토리지의 값으로 렌더링하니까
-            HTML이 달라지는 거였습니다.
+            서버에서는 초기값으로 렌더링하고 클라이언트에서는 로컬 스토리지의 값으로 렌더링했습니다.
+            그래서 HTML이 달라지는 거였습니다.
           </p>
         </section>
 
@@ -52,14 +52,14 @@ export default function TilZustandPersistPage() {
           <p>
             Zustand에서 제공하는 <code>onRehydrateStorage</code> 콜백과
             커스텀 훅을 조합해서 해결했습니다.
-            핵심은 클라이언트에서 hydration이 완료된 후에만 persist된 값을 사용하는 것입니다.
+            핵심은 클라이언트에서 hydration이 완료되고 나서야 persist된 값을 사용하는 것입니다.
           </p>
         </section>
 
         <section>
           <h2>배운 점</h2>
           <p>
-            SSR 환경에서 클라이언트 전용 스토리지를 사용할 때는 항상 hydration 타이밍을 고려해야 합니다.
+            SSR 환경에서 클라이언트 전용 스토리지를 사용할 때는 hydration 타이밍을 고려해야 합니다.
             &quot;서버에서 이 값에 접근할 수 있는가?&quot;를 먼저 생각하는 습관이 중요하다는 걸 다시 느꼈습니다.
           </p>
         </section>

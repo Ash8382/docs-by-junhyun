@@ -30,9 +30,9 @@ export default function ReactServerComponentsPage() {
         <section>
           <h2>들어가며</h2>
           <p>
-            React Server Components(RSC)는 React 18에서 소개된 새로운 패러다임입니다.
-            기존 SSR과 혼동되기 쉽지만, 근본적으로 다른 개념이에요.
-            이 글에서는 RSC가 무엇인지, 왜 필요한지, 그리고 실제로 어떻게 사용하는지 정리해봤습니다.
+            React 18에서 React Server Components(RSC)라는 새로운 패러다임이 소개됐습니다.
+            기존 SSR과 혼동되기 쉽지만 근본적으로 다른 개념이에요.
+            이 글에서는 RSC가 무엇인지, 왜 필요한지, 실제로 어떻게 사용하는지 정리해봤습니다.
           </p>
         </section>
 
@@ -62,12 +62,12 @@ export default function ReactServerComponentsPage() {
         <section>
           <h2>Next.js App Router에서의 활용</h2>
           <p>
-            Next.js 13+ App Router에서는 기본적으로 모든 컴포넌트가 Server Component입니다.
+            Next.js 13+ App Router에서는 모든 컴포넌트가 기본적으로 Server Component로 동작합니다.
             클라이언트 인터랙션이 필요한 경우에만 <code>&quot;use client&quot;</code> 지시어를 추가합니다.
           </p>
           <p>
             이 패턴의 핵심은 &quot;서버에서 할 수 있는 건 서버에서&quot;라는 원칙입니다.
-            데이터 fetching, 무거운 라이브러리 사용, 민감한 로직 등을 서버에 두고,
+            데이터 fetching, 무거운 라이브러리 사용, 민감한 로직 등을 서버에 두고
             클라이언트에는 최소한의 인터랙션 코드만 보내는 거죠.
           </p>
         </section>

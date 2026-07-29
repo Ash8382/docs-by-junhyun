@@ -45,8 +45,9 @@ export default function PickcareFrontendArchitecturePage() {
             <figcaption className="text-center text-sm text-muted-foreground mt-2">JWT 토큰 리프레시 흐름</figcaption>
           </figure>
           <p>
-            인증 인터셉터를 설계할 때, 단순히 401이 터지면 리프레시하는 방식이 아니라
+            인증 인터셉터를 설계하면서
             <strong>토큰 만료 60초 전에 선제적으로 리프레시하는 proactive 전략</strong>을 채택했다.
+            401이 터지면 그때 리프레시하는 단순한 방식은 쓰지 않았다.
             사용자가 &quot;갑자기 로그아웃됐어요&quot;라고 느끼는 순간을 원천 차단하는 설계다.
           </p>
           <div className="bg-secondary/50 rounded-lg p-4 text-sm font-mono space-y-1 not-prose">
@@ -60,8 +61,8 @@ export default function PickcareFrontendArchitecturePage() {
             이건 실무에서 race condition 버그를 직접 겪어보지 않으면 넣기 어려운 방어 로직이다.
           </p>
           <p>
-            대부분의 프로젝트는 401 → 리프레시 → 재시도의 단순 흐름만 구현하는데,
             동시성 처리와 선제 리프레시까지 고려한 건 사용자 경험과 안정성 양쪽 모두를 챙긴 설계였다.
+            대부분의 프로젝트는 401 → 리프레시 → 재시도의 단순 흐름만 구현한다.
           </p>
         </section>
 
@@ -93,7 +94,7 @@ export default function PickcareFrontendArchitecturePage() {
             <code>as const</code>로 타입 추론도 잡혀서 실수가 어렵다.
           </p>
           <p>
-            TanStack Query 공식 문서에서도 권장하는 패턴이지만,
+            TanStack Query 공식 문서에서도 권장하는 패턴이지만
             실제 프로젝트 전반에 일관되게 적용하려면 아키텍처 레벨에서 컨벤션을 잡아야 한다.
           </p>
         </section>
@@ -140,11 +141,11 @@ export default function PickcareFrontendArchitecturePage() {
           </div>
           <p>
             Redux 슬라이스를 6개(<code>auth</code>, <code>modal</code>, <code>loading</code>, <code>notification</code>, <code>adminSection</code>, <code>chatHistory</code>)로
-            제한하고, 서버 데이터는 전부 React Query가 담당하게 했다.
-            Redux 보일러플레이트가 비대해지지 않으면서, 서버 상태의 캐싱/재검증/갱신은 React Query가 알아서 처리한다.
+            제한하고 서버 데이터는 전부 React Query가 담당하게 했다.
+            Redux 보일러플레이트가 비대해지지 않으면서 서버 상태의 캐싱/재검증/갱신은 React Query가 알아서 처리한다.
           </p>
           <p>
-            &quot;이 상태는 어디에 둬야 하지?&quot;라는 질문에 대한 답이 아키텍처 레벨에서 이미 정해져 있으니,
+            &quot;이 상태는 어디에 둬야 하지?&quot;라는 질문에 대한 답이 아키텍처 레벨에서 이미 정해져 있다.
             팀원이 합류해도 혼란 없이 따라갈 수 있는 구조다.
           </p>
         </section>
@@ -153,9 +154,9 @@ export default function PickcareFrontendArchitecturePage() {
         <section>
           <h2>4. Presigned URL 기반 파일 업로드 전환</h2>
           <p>
-            기존에는 클라이언트 사이드에서 S3에 직접 업로드하는 방식이었는데,
+            기존에는 클라이언트 사이드에서 S3에 직접 업로드하는 방식이었는데
             AWS Access Key를 <code>NEXT_PUBLIC_</code> 환경변수로 프론트에 노출하고 있었다.
-            이건 보안상 매우 위험한 패턴이다.
+            이건 보안상 위험한 패턴이다.
           </p>
           <p>
             <strong>Presigned URL 방식</strong>으로 전환하면서 프론트엔드에서 AWS 크레덴셜을 완전히 제거했다.
@@ -218,9 +219,9 @@ export default function PickcareFrontendArchitecturePage() {
             <figcaption className="text-center text-sm text-muted-foreground mt-2">Brad Frost의 Atomic Design 5단계</figcaption>
           </figure>
           <p>
-            220개 이상의 컴포넌트를 관리하면서도 구조가 무너지지 않은 건,
-            Atomic Design의 계층(Atoms → Molecules → Organisms → Templates)을 기본 뼈대로 잡되,
-            <strong>Molecules/Organisms 내부는 feature 기반으로 디렉토리를 분리</strong>했기 때문이다.
+            Atomic Design의 계층(Atoms → Molecules → Organisms → Templates)을 기본 뼈대로 잡되
+            <strong>Molecules/Organisms 내부는 feature 기반으로 디렉토리를 분리</strong>했다.
+            220개 이상의 컴포넌트를 관리하면서도 구조가 무너지지 않은 이유다.
           </p>
           <pre className="text-sm"><code>{`Molecule/
 ├── comments/     (댓글 기능 11개 컴포넌트)
@@ -230,9 +231,9 @@ export default function PickcareFrontendArchitecturePage() {
 ├── lounge/       (라운지 카드)
 └── admin/        (관리자 UI)`}</code></pre>
           <p>
-            순수 Atomic Design만 고집하면 &quot;이 컴포넌트가 Molecule인가 Organism인가&quot;로 끝없이 논쟁하게 되는데,
-            feature 디렉토리를 섞으면서 실용적으로 풀었다.
-            아키텍처 원칙을 교조적으로 따르지 않고, 팀의 현실에 맞게 변형한 것이 오히려 더 나은 결과를 만들었다.
+            순수 Atomic Design만 고집하면 &quot;이 컴포넌트가 Molecule인가 Organism인가&quot;로 끝없이 논쟁하게 된다.
+            feature 디렉토리를 섞어 실용적으로 풀었다.
+            아키텍처 원칙을 교조적으로 따르지 않고 팀의 현실에 맞게 변형한 것이 오히려 더 나은 결과를 만들었다.
           </p>
         </section>
 
@@ -258,7 +259,7 @@ export default function PickcareFrontendArchitecturePage() {
         <section>
           <h2>8. 접근성(a11y) 기본기</h2>
           <p>
-            화려하지는 않지만, 기본기를 잡아두는 데 신경 썼다.
+            화려하지는 않지만 기본기를 잡아두는 데 신경 썼다.
           </p>
           <ul>
             <li><strong>Skip Link</strong>: AppShell에 &quot;본문 바로가기&quot; 링크 (<code>sr-only</code> → 포커스 시 노출)</li>
@@ -299,8 +300,8 @@ if (isDev) console.log('🚀 [API REQUEST]', { url, method, params });`}</code><
             <li>환경변수 검증 유틸리티 (<code>validateEnv</code>)</li>
           </ul>
           <p>
-            &quot;내가 쓰기 편하게&quot; 만든 부분이지만, 이런 DX 투자가 개발 속도에 직접적으로 영향을 준다.
-            팀 프로젝트에서는 온보딩 시간도 줄어드는 효과가 있었다.
+            &quot;내가 쓰기 편하게&quot; 만든 부분이지만 이런 DX 투자가 개발 속도에 직접적으로 영향을 준다.
+            팀 프로젝트에서는 온보딩 시간도 줄었다.
           </p>
         </section>
 

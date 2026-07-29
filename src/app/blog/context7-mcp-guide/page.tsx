@@ -42,12 +42,12 @@ export default function Context7McpGuidePage() {
           AI로 코딩할 때 가장 답답한 순간은 언제일까?
           바로 AI가 <strong>이미 deprecated된 API</strong>를 자신 있게 추천하거나,
           <strong>존재하지 않는 함수</strong>를 만들어낼 때다.
-          LLM은 훈련 시점의 정적 데이터로만 학습하기 때문에, 라이브러리가 빠르게 업데이트되는 프론트엔드 생태계에서는 이 문제가 특히 심각하다.
+          LLM은 훈련 시점의 정적 데이터로만 학습하기 때문에 라이브러리가 빠르게 업데이트되는 프론트엔드 생태계에서는 이 문제가 특히 심각하다.
         </p>
 
         <p>
           <strong>Context7 MCP</strong>는 이 문제를 정면으로 해결한다.
-          Upstash에서 개발한 오픈소스 MCP 서버로, 프롬프트에 &quot;use context7&quot;만 붙이면
+          Upstash에서 개발한 오픈소스 MCP 서버다. 프롬프트에 &quot;use context7&quot;만 붙이면
           AI가 <strong>최신 라이브러리 문서와 코드 예제를 실시간으로 참조</strong>하면서 답변을 생성한다.
         </p>
 
@@ -55,7 +55,7 @@ export default function Context7McpGuidePage() {
         <section>
           <h2>기존 AI 코딩의 한계</h2>
           <p>
-            AI 코딩 도구를 써본 사람이라면 다음과 같은 경험이 한 번쯤은 있을 것이다.
+            AI 코딩 도구를 써본 사람이라면 이런 일을 한 번쯤은 겪어봤을 것이다.
           </p>
           <ul>
             <li><strong>Deprecated API 추천</strong> — React Query v3 문법을 v5 프로젝트에 제안</li>
@@ -73,10 +73,10 @@ export default function Context7McpGuidePage() {
         <section>
           <h2>Context7 MCP란?</h2>
           <p>
-            Context7은 MCP(Model Context Protocol) 서버로,
+            Context7은 MCP(Model Context Protocol) 서버다.
             AI 모델이 코드를 생성할 때 <strong>최신 라이브러리 문서를 자동으로 조회</strong>하여 컨텍스트에 주입해준다.
           </p>
-          <p>핵심 기능은 다음과 같다.</p>
+          <p>핵심 기능은 다섯 가지다.</p>
           <ul>
             <li><strong>resolve-library-id</strong> — 라이브러리 이름을 Context7 내부 ID로 자동 변환</li>
             <li><strong>get-library-docs</strong> — 해당 라이브러리의 최신 공식 문서를 실시간 조회</li>
@@ -85,7 +85,7 @@ export default function Context7McpGuidePage() {
             <li><strong>버전별 호환성</strong> — 사용 중인 버전에 맞는 예제 코드를 제공</li>
           </ul>
           <p>
-            완전 무료 오픈소스이며, GitHub에서 소스 코드를 확인할 수 있다.
+            완전 무료 오픈소스다. 소스 코드는 GitHub에서 확인할 수 있다.
             다만 실시간 문서 조회 방식이므로 인터넷 연결이 필수다.
           </p>
         </section>
@@ -137,9 +137,9 @@ export default function Context7McpGuidePage() {
         <section>
           <h2>사용 방법</h2>
           <p>
-            사용법은 놀라울 정도로 간단하다.
-            기존 프롬프트 끝에 <strong>&quot;use context7&quot;</strong>만 추가하면 된다.
-            그러면 Context7이 자동으로 관련 라이브러리를 감지하고, 최신 문서를 가져와서 AI 컨텍스트에 주입한다.
+            사용법은 놀라울 정도로 간단해서 기존 프롬프트 끝에
+            <strong>&quot;use context7&quot;</strong>만 추가하면 된다.
+            그러면 Context7이 자동으로 관련 라이브러리를 감지하고 최신 문서를 가져와서 AI 컨텍스트에 주입한다.
           </p>
 
           <h3>프론트엔드 예시</h3>
@@ -182,8 +182,8 @@ CORS 헤더를 설정하는 프록시 서버를 만들어줘. use context7`}</co
         <section>
           <h2>다른 MCP와 조합하기</h2>
           <p>
-            Context7의 진짜 힘은 다른 MCP 서버와 조합할 때 나온다.
-            MCP 생태계의 장점은 여러 서버를 동시에 연결할 수 있다는 것이다.
+            여러 서버를 동시에 연결할 수 있다는 게 MCP 생태계의 장점이다.
+            Context7의 진짜 힘도 다른 MCP 서버와 조합할 때 나온다.
           </p>
           <ul>
             <li>
@@ -210,8 +210,8 @@ CORS 헤더를 설정하는 프록시 서버를 만들어줘. use context7`}</co
             deprecated 코드를 받아서 삽질하는 시간이 확실히 줄었다.
           </p>
           <p>
-            다만 모든 라이브러리를 지원하지는 않고, 인터넷 연결이 필수라는 점은 알아둬야 한다.
-            주요 라이브러리 대부분은 지원하며, 미지원 라이브러리도 요청하면 추가해준다고 한다.
+            다만 모든 라이브러리를 지원하지는 않고 인터넷 연결이 필수라는 점은 알아둬야 한다.
+            주요 라이브러리 대부분은 지원하며 미지원 라이브러리도 요청하면 추가해준다고 한다.
           </p>
           <p>
             AI 코딩 도구를 본격적으로 쓰고 있다면 Context7은 거의 필수에 가까운 MCP라고 생각한다.

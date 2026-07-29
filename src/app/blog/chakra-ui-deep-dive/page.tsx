@@ -37,17 +37,17 @@ export default function ChakraUiDeepDivePage() {
 
         <p>
           EUTCHA 프로젝트를 시작하면서 UI 라이브러리로 Chakra UI를 선택했다.
-          React를 배운 지 2주밖에 안 된 시점이었는데,
+          React를 배운 지 2주밖에 안 된 시점이었는데
           &quot;어차피 쓸 거면 제대로 알고 쓰자&quot;는 생각으로
           <strong>공식 문서 레퍼런스를 거의 외우다시피 공부했다.</strong>
-          돌이켜보면 이때 잡은 기초가 이후 프로젝트에서도 계속 써먹을 수 있는 밑바탕이 됐다.
+          돌이켜보면 이때 잡은 기초가 이후 프로젝트에서도 계속 써먹는 밑바탕이 됐다.
         </p>
 
         <section>
           <h2>왜 Chakra UI였나</h2>
           <p>
             당시 선택지는 MUI, Ant Design, Chakra UI 정도였다.
-            MUI는 Material Design에 강하게 바인딩되어 있어서 커스터마이징이 번거로웠고,
+            MUI는 Material Design에 강하게 바인딩되어 있어서 커스터마이징이 번거로웠고
             Ant Design은 디자인 톤이 프로젝트와 맞지 않았다.
           </p>
           <p>
@@ -57,7 +57,7 @@ export default function ChakraUiDeepDivePage() {
             <li><strong>Style Props</strong> — CSS를 별도 파일 없이 컴포넌트에 직접 작성. React적인 사고와 잘 맞았다.</li>
             <li><strong>접근성 기본 내장</strong> — 모든 컴포넌트가 WAI-ARIA 표준을 따른다.</li>
             <li><strong>Composition 우선</strong> — 작은 컴포넌트를 조합해서 큰 컴포넌트를 만드는 React 패턴과 철학이 같다.</li>
-            <li><strong>문서가 좋다</strong> — 예제 코드가 풍부하고, 각 prop의 설명이 상세하다.</li>
+            <li><strong>문서가 좋다</strong> — 예제 코드가 풍부하고 각 prop의 설명이 상세하다.</li>
           </ul>
         </section>
 
@@ -65,17 +65,17 @@ export default function ChakraUiDeepDivePage() {
           <h2>공식 문서 공부법 — 전부 읽고, 전부 쳐보기</h2>
           <p>
             공부 방법은 단순했다. Chakra UI 공식 사이트의 컴포넌트 레퍼런스를
-            <strong>처음부터 끝까지 전부 읽고, 예제 코드를 전부 직접 쳐봤다.</strong>
+            <strong>처음부터 끝까지 전부 읽고 예제 코드를 전부 직접 쳐봤다.</strong>
           </p>
           <p>
-            Layout 컴포넌트(<code>Box</code>, <code>Flex</code>, <code>Grid</code>, <code>Stack</code>, <code>Container</code>)부터 시작해서,
+            Layout 컴포넌트(<code>Box</code>, <code>Flex</code>, <code>Grid</code>, <code>Stack</code>, <code>Container</code>)부터 시작해서
             Form 컴포넌트(<code>Input</code>, <code>Select</code>, <code>Checkbox</code>, <code>Radio</code>),
             Feedback 컴포넌트(<code>Toast</code>, <code>Alert</code>, <code>Skeleton</code>),
             Overlay 컴포넌트(<code>Modal</code>, <code>Drawer</code>, <code>Popover</code>, <code>Tooltip</code>)까지
             — 말 그대로 전 카테고리를 훑었다.
           </p>
           <p>
-            시간은 오래 걸렸지만, 이렇게 하니까 &quot;이런 UI를 만들려면 어떤 컴포넌트를 쓰면 되지?&quot;라는 질문에
+            시간은 오래 걸렸지만 이렇게 하니까 &quot;이런 UI를 만들려면 어떤 컴포넌트를 쓰면 되지?&quot;라는 질문에
             바로 답이 나왔다. 검색할 필요가 없어지니 구현 속도가 확 올랐다.
           </p>
         </section>
@@ -94,9 +94,9 @@ export default function ChakraUiDeepDivePage() {
   {/* mt={4}는 margin-top: 1rem (4 * 0.25rem) */}
 </Box>`}</code></pre>
           <p>
-            처음에는 <code>mt</code>, <code>px</code>, <code>bg</code> 같은 축약어가 익숙하지 않았는데,
+            처음에는 <code>mt</code>, <code>px</code>, <code>bg</code> 같은 축약어가 익숙하지 않았는데
             며칠 지나니 오히려 일반 CSS보다 빠르게 작성할 수 있었다.
-            숫자 기반 spacing 시스템(4 = 1rem, 8 = 2rem)도 일관된 간격을 유지하는 데 큰 도움이 됐다.
+            숫자 기반 spacing 시스템(4 = 1rem, 8 = 2rem)도 일관된 간격을 유지하는 데 큰 몫을 했다.
           </p>
           <p>
             특히 <strong>Responsive Style</strong>이 인상적이었다.
@@ -113,8 +113,8 @@ export default function ChakraUiDeepDivePage() {
   <Box flex={2}>메인 콘텐츠</Box>
 </Flex>`}</code></pre>
           <p>
-            EUTCHA 프로젝트가 모바일 중심 디자인(Max-width 1024px)이었는데,
-            이 반응형 문법 덕분에 미디어 쿼리를 하나도 직접 작성하지 않고도 전체 반응형을 구현할 수 있었다.
+            EUTCHA 프로젝트가 모바일 중심 디자인(Max-width 1024px)이었는데
+            이 반응형 문법 덕분에 미디어 쿼리를 하나도 직접 작성하지 않고도 전체 반응형을 구현했다.
           </p>
         </section>
 
@@ -129,8 +129,8 @@ export default function ChakraUiDeepDivePage() {
             <figcaption className="text-center text-sm text-muted-foreground mt-2">Chakra UI 테마 커스터마이징 시스템</figcaption>
           </figure>
           <p>
-            EUTCHA에서는 왓챠(Watcha)의 컬러셋을 레퍼런스로 활용했는데,
-            Chakra UI의 <code>extendTheme</code>으로 깔끔하게 적용할 수 있었다.
+            EUTCHA에서는 왓챠(Watcha)의 컬러셋을 레퍼런스로 활용했는데
+            Chakra UI의 <code>extendTheme</code>으로 깔끔하게 적용했다.
           </p>
           <pre className="text-sm"><code>{`const theme = extendTheme({
   colors: {
@@ -176,8 +176,8 @@ export default function ChakraUiDeepDivePage() {
   </ModalContent>
 </Modal>`}</code></pre>
           <p>
-            이 패턴에 익숙해지니, 나중에 다른 라이브러리(Radix UI, shadcn/ui 등)를 접해도
-            &quot;아, Compound Component 패턴이구나&quot; 하고 바로 이해할 수 있었다.
+            이 패턴에 익숙해지니 나중에 다른 라이브러리(Radix UI, shadcn/ui 등)를 접해도
+            &quot;아, Compound Component 패턴이구나&quot; 하고 바로 이해했다.
             Chakra UI에서 배운 Composition 사고방식이 가장 큰 수확이었다.
           </p>
         </section>
@@ -192,7 +192,7 @@ export default function ChakraUiDeepDivePage() {
             <li><strong>Skeleton</strong> — 영화 데이터 로딩 중 UI. <code>isLoaded</code> prop 하나로 로딩/완료 전환이 자동이다.</li>
             <li><strong>useDisclosure</strong> — 모달, 드로어의 open/close 상태를 관리하는 커스텀 훅. <code>isOpen</code>, <code>onOpen</code>, <code>onClose</code>를 한 번에 제공한다.</li>
             <li><strong>useToast</strong> — API 에러나 성공 알림을 한 줄로 표시. 위치, 지속 시간, 상태(success/error/warning) 설정이 간편하다.</li>
-            <li><strong>Image</strong> — fallback 이미지 지원이 내장되어 있어서, TMDB 포스터 이미지 로딩 실패 시 대체 이미지를 쉽게 설정했다.</li>
+            <li><strong>Image</strong> — fallback 이미지 지원이 내장되어 있어서 TMDB 포스터 이미지 로딩 실패 시 대체 이미지를 쉽게 설정했다.</li>
           </ul>
         </section>
 
@@ -200,13 +200,13 @@ export default function ChakraUiDeepDivePage() {
           <h2>Emotion과의 관계</h2>
           <p>
             Chakra UI 내부는 Emotion(CSS-in-JS 라이브러리)으로 동작한다.
-            대부분의 스타일링은 Style Props로 충분하지만, 가끔 Chakra UI가 제공하지 않는
-            세밀한 스타일이 필요할 때 Emotion의 <code>css</code> prop을 직접 사용할 수 있었다.
+            대부분의 스타일링은 Style Props로 충분하지만 가끔 Chakra UI가 제공하지 않는
+            세밀한 스타일이 필요할 때 Emotion의 <code>css</code> prop을 직접 썼다.
           </p>
           <p>
             이 과정에서 CSS-in-JS의 동작 원리(런타임 스타일 생성, className 해싱 등)를
-            자연스럽게 이해하게 됐다.
-            나중에 Tailwind CSS로 넘어갔을 때 &quot;런타임 vs 빌드타임 CSS&quot;의 차이를 체감할 수 있었던 것도
+            자연스럽게 익혔다.
+            나중에 Tailwind CSS로 넘어갔을 때 &quot;런타임 vs 빌드타임 CSS&quot;의 차이를 체감한 것도
             이때 Emotion을 직접 다뤄본 덕분이다.
           </p>
         </section>
@@ -228,10 +228,10 @@ export default function ChakraUiDeepDivePage() {
           <h2>정리하며</h2>
           <p>
             라이브러리 하나를 &quot;대충 필요한 것만 찾아 쓰기&quot;와 &quot;레퍼런스를 통째로 소화하기&quot;의 차이는
-            생각보다 크다. 전자는 매번 검색에 시간을 쓰고, 후자는 머릿속에 지도가 그려져 있으니 바로 구현으로 간다.
+            생각보다 크다. 전자는 매번 검색에 시간을 쓴다. 후자는 머릿속에 지도가 그려져 있으니 바로 구현으로 간다.
           </p>
           <p>
-            물론 모든 라이브러리를 이렇게 공부할 수는 없다. 하지만 프로젝트의 핵심 도구 하나쯤은
+            모든 라이브러리를 이렇게 공부할 수는 없지만, 프로젝트의 핵심 도구 하나쯤은
             공식 문서를 전부 읽어볼 가치가 있다. EUTCHA 때 Chakra UI에 투자한 시간이
             이후의 개발 생산성으로 몇 배나 돌아왔다고 확신한다.
           </p>

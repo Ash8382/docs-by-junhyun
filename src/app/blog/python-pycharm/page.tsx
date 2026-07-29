@@ -36,14 +36,14 @@ export default function PythonPycharmPage() {
         </div>
 
         <p>
-          프론트엔드 중심으로 공부하다가, Python도 한번 경험해보고 싶어서 학습을 시작했다.
-          PyCharm IDE 설정부터 Python 기초 문법까지 정리한다.
+          프론트엔드 중심으로 공부하다가, Python도 한번 경험해보고 싶어서 학습을 시작했고,
+          PyCharm IDE 설정부터 Python 기초 문법까지 정리해둔다.
         </p>
 
         <section>
           <h2>PyCharm 설정</h2>
           <p>
-            JetBrains에서 만든 Python 전용 IDE다. Community 버전은 무료로 사용할 수 있다.
+            JetBrains에서 만든 Python 전용 IDE인데, Community 버전은 무료다.
             VSCode에 비해 Python에 특화된 기능이 많아서 편했다.
           </p>
           <ul>
@@ -57,7 +57,7 @@ export default function PythonPycharmPage() {
         <section>
           <h2>Python 기초 문법</h2>
           <p>
-            JavaScript와 비교하면서 학습하니 더 빨리 이해할 수 있었다.
+            JavaScript와 비교해가며 익히니 이해가 더 빨랐다.
           </p>
           <ul>
             <li><strong>들여쓰기</strong>: 중괄호 대신 들여쓰기로 블록을 구분. 처음엔 어색했지만 코드가 깔끔해지는 장점이 있다.</li>

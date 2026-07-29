@@ -64,7 +64,7 @@ export default function TodoAppPage() {
         <section>
           <h2>프로젝트 개요</h2>
           <p>
-            HTML, CSS, 그리고 순수 JavaScript만을 사용하여 구현한 Todo List 애플리케이션입니다. 
+            HTML과 CSS, 순수 JavaScript만으로 구현한 Todo List 애플리케이션입니다.
             프론트엔드 개발의 기초를 다지기 위한 과제 프로젝트로 진행되었습니다.
           </p>
         </section>
@@ -74,13 +74,13 @@ export default function TodoAppPage() {
           <h2>성과 및 배운 점</h2>
           <ul>
             <li>
-              <strong>기본기 강화</strong>: HTML5와 CSS3를 활용하여 시맨틱한 마크업과 레이아웃을 구성하고, JavaScript로 동적인 기능을 구현하며 웹 개발의 핵심 기초를 다졌습니다.
+              <strong>기본기 강화</strong>: HTML5와 CSS3로 시맨틱한 마크업과 레이아웃을 구성했습니다. 동적인 기능은 JavaScript로 구현하며 웹 개발의 핵심 기초를 다졌습니다.
             </li>
             <li>
-              <strong>상태 관리 이해</strong>: 외부 라이브러리 없이 순수 JavaScript로 데이터의 상태(State)를 관리하고 UI에 반영하는 과정을 통해 프론트엔드 개발의 기본적인 데이터 흐름을 익혔습니다.
+              <strong>상태 관리 이해</strong>: 외부 라이브러리 없이 순수 JavaScript로 데이터의 상태(State)를 관리하고 UI에 반영하면서 프론트엔드 개발의 기본적인 데이터 흐름을 익혔습니다.
             </li>
             <li>
-              <strong>사용자 경험(UX) 고려</strong>: 단순한 기능 구현을 넘어, 사용자가 직관적으로 사용할 수 있는 디자인과 인터랙션을 고민하고 적용했습니다.
+              <strong>사용자 경험(UX) 고려</strong>: 단순한 기능 구현을 넘어 사용자가 직관적으로 사용할 수 있는 디자인과 인터랙션을 고민하고 적용했습니다.
             </li>
           </ul>
         </section>

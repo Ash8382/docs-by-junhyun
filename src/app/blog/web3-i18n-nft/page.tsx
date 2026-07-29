@@ -37,8 +37,8 @@ export default function Web3I18nNftPage() {
         </figure>
 
         <p>
-          PFPlay 프로젝트에 합류하기 전, 생소한 도메인이라 사전 학습이 필요했다.
-          Web3 생태계, PFP NFT 개념, 그리고 글로벌 서비스를 위한 i18n(국제화) 구현 방법을 정리한다.
+          PFPlay 프로젝트에 합류하기 전, 도메인이 생소해서 사전 학습부터 했다.
+          Web3 생태계와 PFP NFT 개념, 글로벌 서비스를 위한 i18n(국제화) 구현 방법을 정리한다.
         </p>
 
         <section>
@@ -53,7 +53,7 @@ export default function Web3I18nNftPage() {
             <li><strong>지갑 연결</strong>: 로그인 대신 MetaMask 같은 지갑으로 인증</li>
           </ul>
           <p>
-            프론트엔드 관점에서는 지갑 연결(wallet connect), 트랜잭션 서명, 스마트 컨트랙트 호출 등
+            프론트엔드 관점에서는 지갑 연결, 트랜잭션 서명, 스마트 컨트랙트 호출 등
             기존 Web2와는 다른 인터랙션 패턴을 알아야 했다.
           </p>
         </section>
@@ -62,13 +62,13 @@ export default function Web3I18nNftPage() {
           <h2>NFT와 PFP</h2>
           <p>
             NFT(Non-Fungible Token)는 대체 불가능한 디지털 자산을 의미한다.
-            그중 <strong>PFP(Profile Picture) NFT</strong>는 프로필 이미지로 사용하는 NFT를 말한다.
+            그중 <strong>PFP(Profile Picture) NFT</strong>는 프로필 이미지로 사용하는 NFT다.
             BAYC(Bored Ape Yacht Club), CryptoPunks 같은 프로젝트가 대표적이다.
           </p>
           <p>
-            PFPlay에서는 사용자가 자신의 PFP NFT를 프로필로 설정하고,
-            이를 통해 아이덴티티를 표현하는 소셜 기능을 구현해야 했다.
-            NFT 메타데이터 조회, 이미지 렌더링, 소유권 검증 등의 프론트엔드 작업이 필요했다.
+            PFPlay에서는 사용자가 자신의 PFP NFT를 프로필로 설정하고
+            그것으로 아이덴티티를 표현하는 소셜 기능을 구현해야 했다.
+            NFT 메타데이터를 조회하고 이미지를 렌더링하고 소유권을 검증하는 등의 프론트엔드 작업이 필요했다.
           </p>
         </section>
 

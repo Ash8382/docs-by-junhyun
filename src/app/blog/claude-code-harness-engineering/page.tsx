@@ -43,13 +43,13 @@ export default function ClaudeCodeHarnessEngineeringPage() {
         <p>
           최근 재밌는 사이트를 하나 발견했다. <strong>Claude Code Harness 한국어판</strong>
           (<a href="https://claude-code-harness-ko.vercel.app/" target="_blank" rel="noreferrer">claude-code-harness-ko.vercel.app</a>)
-          이라는 곳인데, 중국 개발자 ZhangHandong이 유출된 Claude Code TypeScript 소스 코드를 리버스 엔지니어링해서
-          <strong> &quot;驾驭工程 (하네스 엔지니어링)&quot;</strong>이라는 책으로 정리한 원문을,
-          유민수 개발자가 한국어로 옮기고 웹 형태로 재구성한 학습용 아카이브다.
+          이라는 곳인데, 유민수 개발자가 한국어로 옮기고 웹 형태로 재구성한 학습용 아카이브다.
+          원문은 중국 개발자 ZhangHandong이 유출된 Claude Code TypeScript 소스 코드를 리버스 엔지니어링해서
+          <strong> &quot;驾驭工程 (하네스 엔지니어링)&quot;</strong>이라는 책으로 정리했다.
         </p>
 
         <p>
-          총 <strong>7개 파트, 30개 장, 45개 문서</strong>로 구성되어 있고,
+          총 <strong>7개 파트, 30개 장, 45개 문서</strong>로 구성되어 있다.
           Claude Code v2.1.88의 복원 소스 코드를 기반으로 에이전트 루프, 프롬프트 엔지니어링, 컨텍스트 관리,
           프롬프트 캐싱, 보안/권한, 고급 하위시스템까지 전부 해부해둔다.
           분량이 방대해서 전부 읽긴 어렵지만, 개인적으로 가장 흥미로웠던 <strong>25장 — 하네스 엔지니어링 6대 원칙</strong>을 중심으로 정리해본다.
@@ -68,7 +68,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
             더 많은 코드를 작성하는 것이 아니라, 더 나은 제약 조건을 설계하는 것이다.&quot;</em>
           </p>
           <p>
-            이 관점에서 Claude Code를 해부해보면, 소스 코드 곳곳에 재사용 가능한 엔지니어링 원칙들이 숨어 있다.
+            이 관점에서 Claude Code를 해부해보면 소스 코드 곳곳에 재사용 가능한 엔지니어링 원칙들이 숨어 있다.
             아래는 저자가 23개 장의 분석에서 뽑아낸 6가지 핵심 원칙이다.
           </p>
         </section>
@@ -77,7 +77,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
         <section>
           <h2>원칙 1 — 프롬프트를 컨트롤 플레인으로 쓴다</h2>
           <p>
-            코드의 if/else 분기로 동작을 통제하지 말고, <strong>시스템 프롬프트로 모델의 행동을 유도하라</strong>는 것이다.
+            코드의 if/else 분기로 동작을 통제하지 말고 <strong>시스템 프롬프트로 모델의 행동을 유도하라</strong>는 것이다.
             Claude Code의 동작 지침 대부분은 코드가 아닌 프롬프트 텍스트에 들어 있다.
           </p>
           <pre><code>{`// restored-src/src/constants/prompts.ts:203
@@ -90,7 +90,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
             대신 자연어로 &quot;그러지 마&quot;라고 직접 말하는 쪽이 훨씬 효율적이다.
           </p>
           <p>
-            더 흥미로운 건 Claude Code가 모든 동작 스위치를 기본 시스템 프롬프트에 인라인하지 않는다는 점이다.
+            흥미롭게도 Claude Code는 모든 동작 스위치를 기본 시스템 프롬프트에 인라인하지 않는다.
             <code>system-reminder</code> 메시지는 일종의 <strong>대역 외(out-of-band) 제어 채널</strong>로 작동한다.
             Plan Mode의 멀티스테이지 워크플로, Todo 리마인더, Read 도구의 빈 파일 경고 등은
             메인 시스템 프롬프트를 수정하지 않고도 조건부로 주입된다.
@@ -101,7 +101,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
           </ul>
           <p>
             안티패턴은 <strong>하드코딩된 동작 탐지기</strong>다. 원하지 않는 행동마다 인터셉터를 붙이다 보면
-            결국 모델의 발전 속도를 절대 따라잡지 못하는 거대한 규칙 엔진이 탄생한다.
+            결국 거대한 규칙 엔진이 탄생한다. 모델의 발전 속도는 절대 따라잡지 못한다.
           </p>
         </section>
 
@@ -115,7 +115,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
           </p>
           <p>
             Claude Code는 <code>SYSTEM_PROMPT_DYNAMIC_BOUNDARY</code>라는 마커로 시스템 프롬프트를 정적/동적 영역으로 분리한다.
-            이 경계 앞은 <code>scope: &apos;global&apos;</code>로 크로스-조직 캐싱이 가능하고,
+            이 경계 앞은 <code>scope: &apos;global&apos;</code>로 크로스-조직 캐싱이 가능하다.
             뒤는 세션별 동적 콘텐츠다.
           </p>
           <p>
@@ -141,7 +141,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
         <section>
           <h2>원칙 3 — Fail Closed, 명시적으로만 열어라</h2>
           <p>
-            시스템의 기본값은 <strong>항상 가장 안전한 선택</strong>이어야 하고,
+            시스템의 기본값은 <strong>항상 가장 안전한 선택</strong>이어야 하고
             위험한 동작은 명시적으로 선언할 때만 허용해야 한다.
           </p>
           <p>
@@ -218,8 +218,8 @@ const TOOL_DEFAULTS = {
             <li><strong>Diff 생성:</strong> <code>createPatch()</code>로 프롬프트 상태의 전/후 차이 출력</li>
           </ol>
           <p>
-            재밌는 건 이게 <strong>데이터 기반 설계</strong>라는 점이다.
-            모든 필드를 아무렇게나 추적하는 게 아니라, 프로덕션 데이터로부터
+            재밌게도 이건 <strong>데이터 기반 설계</strong>다.
+            프로덕션 데이터로 추적할 필드를 골랐다.
             &quot;대부분의 도구 스키마 변경은 특정 도구의 description 변경에서 비롯된다&quot;는 사실을 발견한 뒤
             타겟팅된 도구별 해시를 추가했다.
           </p>
@@ -251,7 +251,7 @@ const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3`}</code></pre>
             세션 내내 한 번 결정된 값은 바뀌지 않는다. 바뀌면 캐시가 깨지고, 캐시가 깨지면 돈이 샌다.
           </p>
           <p>
-            안티패턴은 <strong>상태 스래싱</strong>이다. 매 요청마다 설정을 다시 계산하면 상태가 진동하고,
+            안티패턴은 <strong>상태 스래싱</strong>이다. 매 요청마다 설정을 다시 계산하면 상태가 진동하고
             캐싱 시스템에서는 적중률이 0에 수렴한다.
           </p>
         </section>
@@ -307,11 +307,11 @@ const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3`}</code></pre>
           <h2>읽고 나서</h2>
           <p>
             AI 에이전트를 만든다는 건 결국 <strong>거대한 확률 공간을 길들이는 일</strong>이다.
-            모델을 바꾸거나 프롬프트를 조금 고쳐서 해결될 문제가 아니라,
+            모델을 바꾸거나 프롬프트를 조금 고쳐서 해결될 문제가 아니다.
             캐시 경계선, 권한 기본값, 관측 인프라 같은 &quot;주변부&quot;가 사실상 에이전트의 품질을 결정한다는 게 이 책의 일관된 주장이다.
           </p>
           <p>
-            특히 인상적이었던 건 <strong>모든 설계 결정에 BigQuery 데이터가 붙어 있다는 점</strong>이다.
+            <strong>모든 설계 결정에 BigQuery 데이터가 붙어 있다</strong>는 점이 특히 인상적이었다.
             &quot;왜 3회로 정했나요?&quot; → &quot;1,279개 세션에서 50회 이상 연속 실패가 관측됐고, 하루 250K API 호출이 낭비됐거든요.&quot;
             이런 정량적 근거가 소스 코드 주석에 박혀 있는 제품은 흔하지 않다.
           </p>
@@ -321,7 +321,7 @@ const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3`}</code></pre>
             직접 에이전트를 만들 계획이 없더라도 <strong>&quot;잘 만들어진 LLM 제품&quot;이 내부에서 어떻게 생겼는지</strong> 들여다볼 가치는 충분하다.
           </p>
           <p>
-            30장 전체는 분량이 꽤 많으니, 서문에 정리된 <strong>독자별 추천 경로</strong>를 따라가는 걸 추천한다.
+            30장 전체는 분량이 꽤 많으니 서문에 정리된 <strong>독자별 추천 경로</strong>를 따라가는 걸 추천한다.
           </p>
           <ul>
             <li><strong>Path A (에이전트 빌더):</strong> 1장 → 3장 → 5장 → 9장 → 20장 → 25~27장 → 30장</li>

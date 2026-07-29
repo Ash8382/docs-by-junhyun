@@ -38,7 +38,7 @@ export default function TailwindV4MigrationPage() {
         <section>
           <h2>왜 v4로 올렸나</h2>
           <p>
-            이 블로그를 만들면서 처음부터 Tailwind v4를 사용했지만,
+            이 블로그를 만들면서 처음부터 Tailwind v4를 사용했지만
             회사 프로젝트는 아직 v3이었습니다.
             v4의 새로운 기능들이 매력적이라 마이그레이션을 결심했습니다.
           </p>
@@ -48,7 +48,7 @@ export default function TailwindV4MigrationPage() {
           <h2>주요 변경점</h2>
           <p>
             가장 큰 변화는 설정 방식입니다.
-            <code>tailwind.config.js</code> 대신 CSS 파일 안에서 <code>@theme</code> 블록으로 디자인 토큰을 정의합니다.
+            <code>tailwind.config.js</code> 대신 CSS 파일 안에서 <code>@theme</code> 블록으로 디자인 토큰을 정의하고
             플러그인도 <code>@plugin</code> 지시어로 가져옵니다.
           </p>
           <p>
@@ -69,7 +69,7 @@ export default function TailwindV4MigrationPage() {
         <section>
           <h2>결론</h2>
           <p>
-            v4는 설정이 훨씬 깔끔해졌고, CSS-native한 방향으로 발전하고 있어서 좋았습니다.
+            v4는 설정이 훨씬 깔끔해졌습니다. CSS-native한 방향으로 발전하고 있어서 좋았습니다.
             다만 기존 v3 프로젝트의 마이그레이션은 설정 파일을 꼼꼼히 옮겨야 해서 시간이 좀 걸립니다.
           </p>
         </section>

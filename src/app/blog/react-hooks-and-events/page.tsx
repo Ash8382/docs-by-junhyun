@@ -43,8 +43,8 @@ export default function ReactHooksAndEventsPage() {
         <section>
           <h2>Hooks</h2>
           <p>
-            Hooks는 함수형 컴포넌트에서 상태 관리와 사이드 이펙트를 다룰 수 있게 해주는 함수다.
-            React 16.8에서 도입되었고, 클래스 컴포넌트 없이도 모든 React 기능을 사용할 수 있게 되었다.
+            Hooks는 함수형 컴포넌트에서 상태 관리와 사이드 이펙트를 다루는 함수다.
+            React 16.8에서 도입되었고 클래스 컴포넌트 없이도 모든 React 기능을 사용할 수 있게 되었다.
           </p>
           <ul>
             <li><strong>useState</strong>: 컴포넌트에 상태를 추가. <code>{`const [count, setCount] = useState(0)`}</code></li>
@@ -53,14 +53,14 @@ export default function ReactHooksAndEventsPage() {
             <li><strong>useRef</strong>: DOM 접근이나 리렌더링 없이 값을 유지할 때 사용</li>
           </ul>
           <p>
-            Hook의 규칙: 최상위 레벨에서만 호출해야 하고, React 함수 컴포넌트 또는 커스텀 Hook 안에서만 호출해야 한다.
+            Hook의 규칙: 최상위 레벨에서만 호출해야 하고 React 함수 컴포넌트 또는 커스텀 Hook 안에서만 호출해야 한다.
           </p>
         </section>
 
         <section>
           <h2>Handling Events</h2>
           <p>
-            React의 이벤트 핸들링은 HTML과 비슷하지만 몇 가지 차이가 있다.
+            HTML과 비슷하지만 React의 이벤트 핸들링에는 몇 가지 차이가 있다.
             이벤트 이름을 camelCase로 작성하고 (<code>onclick</code> → <code>onClick</code>),
             문자열 대신 함수를 전달한다.
           </p>
@@ -89,7 +89,7 @@ export default function ReactHooksAndEventsPage() {
             이때 각 항목에 고유한 <code>key</code> prop을 부여해야 한다.
           </p>
           <p>
-            Key는 React가 어떤 항목이 변경/추가/삭제되었는지 식별하는 데 사용한다.
+            React는 Key를 보고 어떤 항목이 변경/추가/삭제되었는지 식별한다.
             배열의 index를 key로 사용하는 것은 순서가 바뀔 수 있는 경우 권장되지 않는다.
             가능하면 데이터의 고유 ID를 key로 사용하자.
           </p>
@@ -98,7 +98,7 @@ export default function ReactHooksAndEventsPage() {
         <section>
           <h2>정리하며</h2>
           <p>
-            오늘 정리한 내용이 React로 실제 UI를 만들 때 가장 빈번하게 사용되는 패턴들이다.
+            오늘 정리한 패턴들은 React로 실제 UI를 만들 때 거의 매번 쓰인다.
             특히 Hooks는 React의 핵심이니 useState와 useEffect만이라도 확실히 이해해두자.
           </p>
         </section>

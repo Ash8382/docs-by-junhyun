@@ -43,13 +43,13 @@ export default function ReactContextPage() {
         <section>
           <h2>Composition vs Inheritance</h2>
           <p>
-            React에서는 상속(Inheritance)보다 <strong>합성(Composition)</strong>을 권장한다.
-            컴포넌트를 확장하고 싶을 때 상속 대신, Props로 컴포넌트를 전달하는 방식을 사용한다.
+            컴포넌트를 확장하고 싶을 때는 상속 대신 Props로 컴포넌트를 전달한다.
+            React가 상속(Inheritance)보다 <strong>합성(Composition)</strong>을 권장하기 때문이다.
           </p>
           <p>
             대표적인 패턴이 <strong>children prop</strong>이다.
-            컴포넌트 태그 사이에 넣은 내용이 <code>children</code>으로 전달되어,
-            레이아웃 컴포넌트나 모달 같은 &quot;컨테이너&quot; 역할의 컴포넌트를 만들 수 있다.
+            컴포넌트 태그 사이에 넣은 내용은 <code>children</code>으로 전달된다.
+            레이아웃 컴포넌트나 모달 같은 &quot;컨테이너&quot; 역할의 컴포넌트를 이렇게 만든다.
           </p>
           <p>
             특정 위치에 여러 컴포넌트를 배치해야 할 때는 <code>children</code> 대신
@@ -79,7 +79,7 @@ export default function ReactContextPage() {
           <p>
             다만 Context를 남용하면 컴포넌트 재사용이 어려워질 수 있으니,
             정말 여러 레벨에 걸쳐 데이터를 전달해야 할 때만 사용하는 것이 좋다.
-            단순한 prop drilling은 오히려 컴포넌트 합성(Composition)으로 해결하는 게 더 깔끔할 수 있다.
+            단순한 prop drilling은 오히려 컴포넌트 합성(Composition)으로 해결하는 게 더 깔끔하다.
           </p>
         </section>
 
@@ -87,7 +87,7 @@ export default function ReactContextPage() {
           <h2>React 기초 학습을 마치며</h2>
           <p>
             9월 19일 ES6 정리부터 시작해서 오늘 Context까지, 5일간 React 공식 문서의 주요 개념을 모두 훑어봤다.
-            이제 이론적인 기초는 갖춰졌으니, 실제 프로젝트를 만들면서 체득해야 할 차례다.
+            이제 이론적인 기초는 갖춰졌으니 실제 프로젝트를 만들면서 체득하면 된다.
             다음은 멀티캠퍼스 과정에서 팀 프로젝트로 직접 React를 사용해볼 예정이다.
           </p>
         </section>

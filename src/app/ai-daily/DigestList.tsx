@@ -115,8 +115,10 @@ export function DigestList({ groups }: { groups: DigestGroup[] }) {
 
   if (total === 0) {
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">
-        아직 수집된 항목이 없습니다. 매일 아침 파이프라인이 돌면 여기에 쌓입니다.
+      <p className="py-16 text-center text-sm leading-relaxed text-muted-foreground">
+        아직 수집된 항목이 없습니다.
+        <br />
+        매일 아침 파이프라인이 실행되면 새로운 AI 브리핑이 업데이트됩니다.
       </p>
     );
   }

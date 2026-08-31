@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "AI Daily - 이준현",
   description:
-    "공식 블로그, GitHub, Hugging Face, Hacker News를 매일 아침 수집해 Claude가 선별한 AI 트렌드 브리핑.",
+    "공식 블로그, GitHub, Hugging Face, Hacker News의 AI 관련 소식을 매일 수집하고, 업무와 제품에 참고할 가치가 있는 토픽을 선별해 요약한 브리핑.",
 };
 
 function groupByDigestDate(articles: Article[]): DigestGroup[] {
@@ -45,10 +45,14 @@ export default async function AiDailyPage() {
     <main className="container py-10 lg:py-16 max-w-3xl mx-auto">
       <div className="space-y-4 mb-8">
         <h1 className="text-3xl font-bold tracking-tight">AI Daily</h1>
-        <p className="text-muted-foreground">
-          공식 블로그와 GitHub, Hugging Face, Hacker News를 매일 아침 모아
-          Claude가 &ldquo;업무와 제품에 참고할 가치가 있는가&rdquo; 하나의 기준으로
-          추린 브리핑입니다. 30일이 지난 항목은 자동으로 정리됩니다.
+        <p className="text-muted-foreground leading-relaxed">
+          공식 블로그, GitHub, Hugging Face, Hacker News의 AI 관련 소식을 매일
+          수집합니다.
+          <br />
+          AI가 업무와 제품에 참고할 가치가 있는지 판단해 주요 토픽을 선별하고
+          요약합니다.
+          <br />
+          수집된 데이터는 30일 후 자동으로 정리됩니다.
         </p>
       </div>
 

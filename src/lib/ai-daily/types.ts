@@ -6,6 +6,13 @@
  * pipeline 코드가 Next 번들에 딸려 들어가지 않는다.
  */
 
+/**
+ * 삭제 API가 요구하는 헤더 이름.
+ * 여기 둔 이유는 클라이언트 컴포넌트도 써야 하는데, auth.ts는 node:crypto를 import하므로
+ * 브라우저 번들에 딸려 들어가면 안 되기 때문이다.
+ */
+export const ADMIN_TOKEN_HEADER = "x-admin-token";
+
 export type Importance = "HIGH" | "MEDIUM" | "LOW";
 
 export const IMPORTANCE_LEVELS: Importance[] = ["HIGH", "MEDIUM", "LOW"];

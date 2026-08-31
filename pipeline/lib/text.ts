@@ -30,3 +30,15 @@ export function isoDateDaysAgo(days: number): string {
   const date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * 콘솔 표 정렬용. 한글은 터미널에서 두 칸을 차지하므로
+ * String.padEnd를 그대로 쓰면 한글이 섞인 열이 어긋난다.
+ */
+export function padDisplay(value: string, width: number): string {
+  const printWidth = [...value].reduce(
+    (sum, char) => sum + (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char) ? 2 : 1),
+    0,
+  );
+  return value + " ".repeat(Math.max(0, width - printWidth));
+}

@@ -2,6 +2,7 @@ import { seoulDate } from "../src/lib/ai-daily/date";
 import { pruneOlderThan, upsertArticles } from "../src/lib/ai-daily/db";
 import type { ArticleInput } from "../src/lib/ai-daily/types";
 import { createJudge, type Scored } from "./judge";
+import { padDisplay } from "./lib/text";
 import { SOURCES } from "./sources";
 import { collectAll } from "./stages/collect";
 import { dedupe } from "./stages/dedupe";
@@ -20,19 +21,36 @@ import type { NormalizedItem } from "./types";
  * 몇 번이든 다시 돌려볼 수 있다.
  */
 
-const DIGEST_SIZE = Number(process.env.DIGEST_SIZE) || 8;
+const DIGEST_SIZE = Number(process.env.DIGEST_SIZE) || 6;
 const RETENTION_DAYS = Number(process.env.RETENTION_DAYS) || 30;
 
 /**
  * 한 소스가 브리핑을 독차지하지 못하게 막는다.
- * 논문이 후보의 상당수라 이 상한이 없으면 여덟 칸이 논문으로 채워지는 날이 나온다.
+ * 논문과 트렌딩 모델이 후보의 상당수라 이 상한이 없으면 여섯 칸이 그걸로 채워진다.
  */
-const MAX_PER_SOURCE = Number(process.env.MAX_PER_SOURCE) || 3;
+const MAX_PER_SOURCE = Number(process.env.MAX_PER_SOURCE) || 2;
+
+/**
+ * 소스 상한만으로는 부족했다. 상한을 2로 내려도 Qwen/Qwen3.8-27B와
+ * Qwen/Qwen3.8-Flash-Next가 나란히 올라왔다 — 상한이 소스 단위라 같은 벤더가
+ * 같은 날 모델 둘을 내면 그대로 두 칸을 먹는다. 소유자 단위로 한 번 더 조인다.
+ */
+const MAX_PER_OWNER = Number(process.env.MAX_PER_OWNER) || 1;
+
+/**
+ * "Qwen/Qwen3.8-27B" 나 "deepseek-ai/deepseek-harness" 에서 앞부분.
+ * 제목이 식별자인 소스에만 의미가 있다 — 기사 소스의 author는 벤더가 아니라 기자다.
+ */
+function ownerOf(item: NormalizedItem, identifierSources: Set<string>): string | undefined {
+  if (!identifierSources.has(item.source)) return undefined;
+  return item.author ?? item.title.split("/")[0] ?? undefined;
+}
 
 function pickTop(
   items: NormalizedItem[],
   scores: Map<string, Scored>,
   size: number,
+  identifierSources: Set<string>,
 ): NormalizedItem[] {
   const ranked = items
     .filter((item) => scores.has(item.id))
@@ -40,6 +58,7 @@ function pickTop(
 
   const picked: NormalizedItem[] = [];
   const perSource = new Map<string, number>();
+  const perOwner = new Map<string, number>();
 
   for (const item of ranked) {
     if (picked.length >= size) break;
@@ -47,8 +66,12 @@ function pickTop(
     const used = perSource.get(item.source) ?? 0;
     if (used >= MAX_PER_SOURCE) continue;
 
+    const owner = ownerOf(item, identifierSources);
+    if (owner && (perOwner.get(owner) ?? 0) >= MAX_PER_OWNER) continue;
+
     picked.push(item);
     perSource.set(item.source, used + 1);
+    if (owner) perOwner.set(owner, (perOwner.get(owner) ?? 0) + 1);
   }
 
   // 상한 때문에 자리가 남으면 점수순으로 채운다
@@ -63,7 +86,7 @@ function pickTop(
 }
 
 function line(label: string, count: number): void {
-  console.log(`${label.padEnd(18)} ${String(count).padStart(4)}건`);
+  console.log(`${padDisplay(label, 20)} ${String(count).padStart(4)}건`);
 }
 
 async function main(): Promise<void> {
@@ -79,7 +102,7 @@ async function main(): Promise<void> {
   console.log("─".repeat(72));
   for (const result of results) {
     console.log(
-      `${result.ok ? "OK  " : "FAIL"}  ${result.label.padEnd(28)} ${String(result.count).padStart(3)}건  ${String(result.ms).padStart(5)}ms` +
+      `${result.ok ? "OK  " : "FAIL"}  ${padDisplay(result.label, 30)} ${String(result.count).padStart(3)}건  ${String(result.ms).padStart(5)}ms` +
         (result.error ? `\n      └ ${result.error}` : ""),
     );
   }
@@ -111,7 +134,19 @@ async function main(): Promise<void> {
   const scoreById = new Map(scored.map((entry) => [entry.id, entry]));
   console.log(`${scored.length}건 채점 (후보 ${fresh.length}건)`);
 
-  const top = pickTop(fresh, scoreById, DIGEST_SIZE);
+  // 전부 실패했다면 seen 기록을 남기면 안 된다. 남기면 이 후보들을 영영 다시 안 본다.
+  if (scored.length === 0) {
+    console.error(
+      "\n채점이 한 건도 돌아오지 않았습니다. seen 기록 없이 종료합니다 — 다음 실행에서 같은 후보를 다시 봅니다.\n",
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const identifierSources = new Set(
+    SOURCES.filter((source) => source.titleIsIdentifier).map((source) => source.id),
+  );
+  const top = pickTop(fresh, scoreById, DIGEST_SIZE, identifierSources);
   const written = await judge.write(top);
   const writtenById = new Map(written.map((entry) => [entry.id, entry]));
   console.log(`${written.length}건 집필 (선정 ${top.length}건)`);

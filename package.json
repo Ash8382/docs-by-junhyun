@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "pipeline:collect": "tsx pipeline/run-collect.ts"
+    "db:setup": "tsx --env-file-if-exists=.env.local db/setup.ts",
+    "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",

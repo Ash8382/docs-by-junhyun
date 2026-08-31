@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:setup": "tsx --env-file-if-exists=.env.local db/setup.ts",
-    "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts"
+    "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts",
+    "pipeline:daily": "tsx --env-file-if-exists=.env.local pipeline/run-daily.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -26,6 +27,7 @@
     "three": "^0.181.2"
   },
   "devDependencies": {
+    "@google/genai": "^2.19.0",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",

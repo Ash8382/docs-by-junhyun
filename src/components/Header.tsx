@@ -28,6 +28,12 @@ export function Header() {
               Playground
             </Link>
             <Link
+              href="/ai-daily"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              AI Daily
+            </Link>
+            <Link
               href="https://github.com/Ash8382"
               target="_blank"
               rel="noreferrer"

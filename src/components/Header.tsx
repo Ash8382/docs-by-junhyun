@@ -28,6 +28,12 @@ export function Header() {
               Playground
             </Link>
             <Link
+              href="/lounge"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              쉼터
+            </Link>
+            <Link
               href="/ai-daily"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >

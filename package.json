@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "server:dev": "tsx watch server/index.ts",
     "db:setup": "tsx --env-file-if-exists=.env.local db/setup.ts",
     "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts",
     "pipeline:daily": "tsx --env-file-if-exists=.env.local pipeline/run-daily.ts"
@@ -30,9 +33,10 @@
     "@google/genai": "^2.19.0",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
-    "@types/node": "^20",
+    "@types/node": "^24.13.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "babel-plugin-react-compiler": "1.0.0",
     "cheerio": "^1.2.0",
     "eslint": "^9",
@@ -40,6 +44,8 @@
     "fast-xml-parser": "^5.11.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11",
+    "ws": "^8.21.3"
   }
 }

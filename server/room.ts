@@ -25,6 +25,9 @@ export interface Connection {
   close(): void;
 }
 
+/** 표준 UUID(8-4-4-4-12 16진수) 형태인지만 본다. 버전·변이 비트는 가리지 않는다 */
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface Player {
   conn: Connection;
   state: PlayerState;
@@ -72,7 +75,13 @@ export class Room {
       return false;
     }
 
-    const token = sessionToken || randomUUID();
+    // 클라이언트가 보낸 sessionToken은 신뢰할 수 없는 입력이다. UUID 형태가 아니면
+    // (서버가 발급한 적 없는 임의의 문자열) 토큰이 없을 때와 똑같이 새로 발급한다.
+    // 그러지 않으면 공격자가 매번 다른 문자열을 보내 재접속마다 신규 방문으로
+    // 둔갑시킬 수 있고, 그 문자열이 그대로 SQLite의 기본키(최대 1KB)로 쌓여
+    // 저장공간을 낭비한다. UUID 형태로 한정하면 저장되는 값은 항상 36바이트로
+    // 고정된다.
+    const token = sessionToken && UUID_SHAPE.test(sessionToken) ? sessionToken : randomUUID();
     const totalVisitors = this.db.countVisit(token, now);
 
     const state: PlayerState = {
@@ -177,12 +186,27 @@ export class Room {
     return { ...state };
   }
 
-  /** 보낸 사람을 뺀 나머지에게 */
+  /**
+   * 전부에게 보낸다. `sendAll`과 본문이 완전히 같다 — 둘 다 `this.players`에
+   * 지금 들어있는 모두에게 보낼 뿐, 보낸 사람을 걸러내는 로직은 없다.
+   *
+   * 이름이 "보낸 사람을 뺀 나머지"처럼 들리지만 그런 뜻이 아니다. `join()`에서
+   * 쓸 때 신규 입장자가 자기 자신의 join 알림을 못 받는 건, 이 함수를 호출하는
+   * 시점에 그 사람이 아직 `this.players`에 없기 때문이다(호출 다음 줄에서야
+   * `this.players.set`이 실행된다). 즉 제외는 **호출 순서가 만든 결과**이고
+   * `broadcast` 자신의 동작이 아니다. `leave()`도 같은 이유로, 나가는 사람을
+   * 먼저 지운 뒤에 호출한다.
+   *
+   * 그래서 앞으로 진짜 "보낸 사람만 빼고" 보내야 하는 호출자가 생기면(예: 4단계
+   * 이모트 — 본인이 이모트를 누른 걸 자기 화면에 다시 받으면 안 되는 경우),
+   * 이 함수에 기대지 말고 그 호출부에서 직접 걸러야 한다. 두 이름이 나뉜 건
+   * 호출부 의도를 읽기 쉽게 하려는 것뿐, 실제 동작은 `sendAll`과 하나다.
+   */
   private broadcast(msg: ServerMessage): void {
     for (const p of this.players.values()) p.conn.send(msg);
   }
 
-  /** 보낸 사람을 포함해 전부에게 */
+  /** 전부에게 보낸다. `broadcast`와 본문이 완전히 같다 — 위 설명 참조 */
   private sendAll(msg: ServerMessage): void {
     for (const p of this.players.values()) p.conn.send(msg);
   }

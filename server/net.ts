@@ -6,6 +6,7 @@
  * 1단계에서는 페이로드 크기 상한만 건다 (ws의 maxPayload).
  */
 import { randomUUID } from "node:crypto";
+import type { IncomingMessage } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { parseClientMessage } from "@shared/protocol";
 import type { Connection, Room } from "./room";
@@ -13,8 +14,40 @@ import type { Connection, Room } from "./room";
 /** 클라이언트가 보낼 수 있는 한 메시지의 최대 바이트 */
 const MAX_PAYLOAD = 1024;
 
+/** 환경변수가 없을 때 허용하는 기본값 — 로컬 개발용 Next 포트 두 개 */
+const DEFAULT_ALLOWED_ORIGINS = "http://localhost:3000,http://localhost:3001";
+
+/**
+ * Origin 헤더로 허용된 곳에서 온 연결만 받는다 (스펙 9절).
+ *
+ * WebSocket은 same-origin policy의 적용을 받지 않아서, 이 검사가 없으면
+ * 아무 웹사이트나 스크립트로 이 소켓을 열어 우리 서버에 붙을 수 있다.
+ * 허용 목록은 `LOUNGE_ALLOWED_ORIGINS` 환경변수(쉼표 구분)로 받고, 없으면
+ * 로컬 개발 기본값을 쓴다.
+ *
+ * Origin 헤더가 아예 없는 연결은 1단계에서 허용한다. 브라우저는 WebSocket을
+ * 열 때 항상 Origin을 보내므로, 헤더가 없다는 건 브라우저가 아닌 클라이언트
+ * (검증 스크립트, 서버 간 호출 등)라는 뜻이다. 그런 도구를 막을 이유가 없고,
+ * 막으면 이 서버를 확인하는 스크립트까지 전부 깨진다.
+ */
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true;
+  const allowed = (process.env.LOUNGE_ALLOWED_ORIGINS ?? DEFAULT_ALLOWED_ORIGINS)
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return allowed.includes(origin);
+}
+
 export function attachWebSocketServer(wss: WebSocketServer, room: Room): void {
-  wss.on("connection", (socket: WebSocket) => {
+  wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
+    const originHeader = req.headers.origin;
+    const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
+    if (!isOriginAllowed(origin)) {
+      socket.close();
+      return;
+    }
+
     const id = randomUUID();
     let joined = false;
 
@@ -79,4 +112,4 @@ export function attachWebSocketServer(wss: WebSocketServer, room: Room): void {
   });
 }
 
-export { MAX_PAYLOAD };
+export { MAX_PAYLOAD, isOriginAllowed };

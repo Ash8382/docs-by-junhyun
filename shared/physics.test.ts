@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SPEED, TILE } from "@shared/constants";
+import { PLAYER_RADIUS, SPEED, TILE } from "@shared/constants";
 import { dirToVector, dirToward, isDir, stepMove } from "@shared/physics";
 
 /** 열린 바닥 한가운데. 타일 (20,16) 중앙 */
@@ -75,5 +75,15 @@ describe("physics", () => {
     expect(isDir("up")).toBe(false);
     expect(isDir(3)).toBe(false);
     expect(isDir(null)).toBe(false);
+  });
+
+  it("PLAYER_RADIUS는 TILE의 절반보다 작아야 한다 — canStand 네 모서리 샘플링의 전제", () => {
+    // canStand는 캐릭터 네 모서리 점만 찍어서 충돌을 본다. 두 모서리 사이의 폭
+    // (2 * PLAYER_RADIUS)이 TILE보다 크거나 같아지면, 네 샘플점이 전부 피해가면서도
+    // 그 사이에 벽 타일 하나가 통째로 들어갈 수 있다 — 캐릭터가 벽을 뚫고 지나가는데
+    // canStand는 계속 true를 돌려준다. 두 상수 모두 튜닝 가능해서, 둘 중 하나만
+    // 바뀌어도 이 전제가 조용히 깨질 수 있다. 3단계의 클라이언트 예측은 서버와
+    // 클라가 같은 canStand 판정을 신뢰하는 데 기대므로, 깨지면 예측과 서버가 갈린다.
+    expect(2 * PLAYER_RADIUS).toBeLessThan(TILE);
   });
 });

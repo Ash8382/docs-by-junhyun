@@ -194,4 +194,26 @@ describe("Room", () => {
     room.join(b, "가가", token, 2000);
     expect(b.find("welcome")?.totalVisitors).toBe(1);
   });
+
+  it("UUID 형태가 아닌 토큰은 버리고 서버가 새 토큰을 발급한다", () => {
+    const junk = "공격자가-보낸-임의의-문자열-이건-UUID가-아니다";
+    const a = new FakeConn("a");
+    room.join(a, "가가", junk, 1000);
+
+    // 보낸 값을 그대로 믹지 않는다 — SQLite에 공격자가 고른 내용이 그대로
+    // 기본키로 들어가는 것을 막는다
+    const issued = a.find("welcome")!.sessionToken;
+    expect(issued).not.toBe(junk);
+    expect(issued).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    // 토큰이 없을 때와 똑같이 신규 방문 1건으로만 집계된다 — junk라고 더 늘지 않는다
+    expect(a.find("welcome")?.totalVisitors).toBe(1);
+
+    // 같은 junk 문자열을 또 보내도, 그 문자열은 세션으로 기록된 적이 없으므로
+    // "돌아온 세션"으로 인식되지 않는다 — 매번 진짜 신규 방문 1회로만 계산된다
+    room.leave("a");
+    const b = new FakeConn("b");
+    room.join(b, "나나", junk, 2000);
+    expect(b.find("welcome")?.totalVisitors).toBe(2);
+    expect(b.find("welcome")?.sessionToken).not.toBe(junk);
+  });
 });

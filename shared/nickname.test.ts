@@ -4,7 +4,7 @@ import { NICKNAME_MESSAGES, validateNickname } from "@shared/nickname";
 describe("validateNickname", () => {
   it("정상 닉네임을 통과시키고 앞뒤 공백을 다듬는다", () => {
     expect(validateNickname("  밤톨 ")).toEqual({ ok: true, nick: "밤톨" });
-    expect(validateNickname("junhyun")).toEqual({ ok: true, nick: "junhyun" });
+    expect(validateNickname("mingyu")).toEqual({ ok: true, nick: "mingyu" });
     expect(validateNickname("ab12")).toEqual({ ok: true, nick: "ab12" });
   });
 
@@ -31,6 +31,12 @@ describe("validateNickname", () => {
     expect(validateNickname("운영자")).toEqual({ ok: false, error: "banned" });
     expect(validateNickname("나는admin")).toEqual({ ok: false, error: "banned" });
     expect(validateNickname("ADMIN")).toEqual({ ok: false, error: "banned" });
+  });
+
+  it("블로그 주인 아이디를 사칭하는 닉네임을 거른다", () => {
+    expect(validateNickname("junhyun")).toEqual({ ok: false, error: "banned" });
+    expect(validateNickname("JUNHYUN")).toEqual({ ok: false, error: "banned" });
+    expect(validateNickname("iamjunhyun")).toEqual({ ok: false, error: "banned" });
   });
 
   it("모든 오류에 사용자용 문구가 있다", () => {

@@ -43,9 +43,16 @@ export function startServer(opts: { port: number; dbPath: string }) {
 }
 
 const isMain = process.argv[1]?.endsWith("index.ts");
+const port = Number(process.env.LOUNGE_PORT ?? 8787);
+const dbPath = process.env.LOUNGE_DB ?? "./server/lounge.db";
+
+// 반환값을 버리면 앞서 만든 close() 경로를 아무도 부를 수 없다. 모듈 최상위
+// const로 받아둬서 나중에(예: 2단계의 SIGINT/SIGTERM 핸들러) 참조할 수 있게
+// 한다. 신호 처리 자체는 2단계 몫이라 여기서는 참조만 살려둔다.
+const server = isMain ? startServer({ port, dbPath }) : undefined;
+
 if (isMain) {
-  const port = Number(process.env.LOUNGE_PORT ?? 8787);
-  const dbPath = process.env.LOUNGE_DB ?? "./server/lounge.db";
-  startServer({ port, dbPath });
   console.log(`쉼터 서버가 ws://localhost:${port} 에서 대기 중`);
 }
+
+export { server };

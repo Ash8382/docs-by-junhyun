@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
     "server:dev": "tsx watch server/index.ts",
     "db:setup": "tsx --env-file-if-exists=.env.local db/setup.ts",
     "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@google/genai": "^2.19.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^24.13.5",

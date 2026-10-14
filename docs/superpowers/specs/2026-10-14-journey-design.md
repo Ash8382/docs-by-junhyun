@@ -47,7 +47,8 @@
 | 1단계 | 블로그 프로젝트 글 7개의 내용을 데이터로 옮기고, 페이지가 데이터를 렌더링하게 바꾼다 | 리팩터링 전후 화면이 픽셀 단위로 같다 |
 | 2단계 | 같은 데이터로 `/journey`를 만든다 | 7절 성능 기준과 8절 테스트 통과 |
 
-구현 계획은 하나로 쓰되 두 단계로 나눈다. 1단계가 끝나야 2단계를 시작한다.
+구현 계획은 단계마다 따로 쓴다. 2단계 계획은 1단계가 끝난 뒤, 실제로 만들어진 데이터 타입을
+바탕으로 쓴다. 1단계가 끝나야 2단계를 시작한다.
 
 ### 관련 정리 (완료)
 
@@ -301,8 +302,10 @@ src/data/projects/
 ```ts
 type Inline = string; // **굵게**, [텍스트](주소) 지원
 
-interface ProjectLink { label: string; href: string }
+interface ProjectLink { kind: "github" | "live"; label: string; href: string }  // kind로 아이콘 선택
 interface Screen { src: string; alt: string; width: number; height: number }
+interface Callout { title: string; text?: Inline; items?: Inline[] }
+interface ItemGroup { title: string; items: Inline[] }
 
 interface ProjectBase {
   slug: string;
@@ -318,10 +321,10 @@ interface ProjectBase {
 interface StandardProject extends ProjectBase {
   kind: "standard";
   overview: Inline[];
-  overviewCallout?: { title: string; text?: Inline; items?: Inline[] };
+  overviewCallout?: Callout;
   roleIntro?: Inline;
-  role?: Inline[] | { title: string; items: Inline[] }[];   // Tix2U는 소제목 묶음
-  extraSections?: { title: string; items: Inline[] }[];     // EUTCHA "기술 스택 및 규칙"
+  role?: Inline[] | ItemGroup[];   // Tix2U는 소제목 묶음
+  extraSections?: ItemGroup[];     // EUTCHA "기술 스택 및 규칙"
   achievements?: Inline[];
   note?: { title: string; text: Inline };
 }

@@ -22,12 +22,6 @@ export function Header() {
             >
               소개
             </Link>
-            <Link
-              href="/playground"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
-            >
-              Playground
-            </Link>
             {LOUNGE_ENABLED && (
               <Link
                 href="/lounge"

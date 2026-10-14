@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LOUNGE_ENABLED } from "@/lib/lounge/enabled";
 
 export function Header() {
   return (
@@ -27,12 +28,14 @@ export function Header() {
             >
               Playground
             </Link>
-            <Link
-              href="/lounge"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
-            >
-              쉼터
-            </Link>
+            {LOUNGE_ENABLED && (
+              <Link
+                href="/lounge"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                쉼터
+              </Link>
+            )}
             <Link
               href="/ai-daily"
               className="transition-colors hover:text-foreground/80 text-foreground/60"

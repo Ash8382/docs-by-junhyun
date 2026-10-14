@@ -368,7 +368,7 @@ WebP로 저장한다. 기존 썸네일(`public/*-thumb.*`)은 블로그가 쓰�
 | PiCKCARE biz (CRM) | https://www.biz.pickcare.co.kr/ |
 | PiCKCARE studio | https://studio.pickcare.co.kr/ |
 | PiCKCARE app | App Store 소개 페이지(id6809377321)의 공식 스크린샷 |
-| PiCKCARE cardnews | 배포 화면 없음. 사용자가 Figma에서 내보낸 이미지를 넣는다: 결과 캔버스 전체 모습 1장(생성 규모를 보여줌), 완성 세트 1~2개(카드 5장, 1080×1350) |
+| PiCKCARE cardnews | 배포 화면 없음. 사용자가 넣은 Figma 캡처 3장: 마스터 4종(1190×391), 완성 세트 2개(카드 5장 + 인스타 캡션, 1543×378 · 1554×362). 구현 때 `masters`, `set-1`, `set-2`로 이름을 바꾸고 WebP로 변환한다 |
 
 ## 7. 성능 기준 (완료 조건)
 
@@ -441,5 +441,5 @@ WebP로 저장한다. 기존 썸네일(`public/*-thumb.*`)은 블로그가 쓰�
 
 ## 11. 사용자가 준비할 것
 
-- PiCKCARE cardnews 이미지: Figma 결과 캔버스 전체 모습 1장, 완성 세트 1~2개
-  (`public/projects/pickcare/cardnews/`에 넣는다)
+- ~~PiCKCARE cardnews 이미지~~: 2026-10-14 `public/projects/pickcare/cardnews/`에 3장 넣음.
+  생성 규모를 보여주는 결과 캔버스 전체 모습은 선택 사항이다.

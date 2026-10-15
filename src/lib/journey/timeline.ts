@@ -77,7 +77,7 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function smoothstep(edge0: number, edge1: number, value: number): number {
+export function smoothstep(edge0: number, edge1: number, value: number): number {
   const t = clamp01((value - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
 }
@@ -101,6 +101,8 @@ const UNITS_PER_SCREEN = 4;
 /** 고정 정류장은 길이의 절반만큼만 나아간다. 걸어 들어와 멈추고, 보고, 걸어 나간다. */
 const PIN_TRAVEL = 0.5;
 const EYE_HEIGHT = 1.6;
+/** 3D 장면의 세로 시야각(도). 엔딩 시점이 회랑 전체를 담는지 테스트가 이 값으로 확인한다. */
+export const CAMERA_FOV = 50;
 const LOOK_AHEAD = 6;
 /** 고정 구간에서 카메라가 오브젝트 주위를 도는 각도(라디안) */
 const ORBIT = 0.35;
@@ -124,6 +126,11 @@ const PATH_SPANS: { from: number; to: number }[] = (() => {
 })();
 
 export const PATH_LENGTH = PATH_SPANS[PATH_SPANS.length - 1].to;
+
+/** 정류장이 회랑을 따라 차지하는 거리 구간(s). 렌더 단계 경계와 회랑 도형이 이 값으로 자리를 잡는다. */
+export function pathSpan(id: string): { from: number; to: number } {
+  return PATH_SPANS[rangeOf(id).index];
+}
 
 /** p(0)=0, p(1)=1, p'(0)=1, p'(1)=0. 걷던 속도 그대로 들어와 멈춘다. */
 function arrive(u: number): number {
@@ -186,9 +193,31 @@ function rotateAround(point: Vec3, center: Vec3, angle: number): Vec3 {
   return [center[0] + dx * cos - dz * sin, point[1], center[2] + dx * sin + dz * cos];
 }
 
-/** 엔딩: 위로 빠지며 회랑 전체를 내려다보는 자리 */
-const OVERVIEW_POSITION: Vec3 = [0, 34, -PATH_LENGTH * 0.5 + 22];
-const OVERVIEW_TARGET: Vec3 = [0, 0, -PATH_LENGTH * 0.5];
+/** PiCKCARE 원형 전시실의 바닥 중심. 전시실 오브젝트(focusPoint)가 이 위에 뜬다. */
+export function hallCenter(): Vec3 {
+  const focus = focusPoint(rangeOf("pickcare").stop);
+  if (!focus) throw new Error("전시실 정류장에 오브젝트 위치가 없습니다");
+  return [focus[0], 0, focus[2]];
+}
+
+/**
+ * 엔딩: 위로 빠지며 회랑 전체를 내려다보는 자리. 회랑 입구부터 전시실 지붕 끝까지가 헤더 아래에 들고,
+ * 넓은 화면에서는 오른쪽 연락처 패널의 왼쪽에 놓인다(timeline.test.ts가 화면 비율 넷으로 확인).
+ */
+const OVERVIEW_POSITION: Vec3 = [12, 78, 6];
+const OVERVIEW_TARGET: Vec3 = [8, 0, -26];
+
+/**
+ * 엔딩 구간의 이만큼에서 내려다보기를 마친다. 연락처 패널은 엔딩 섹션 끝에 있어 구간 후반에 화면으로 올라오므로,
+ * 휴대폰처럼 패널이 전체 폭인 화면에서도 패널이 덮기 전에 회랑 전체를 먼저 보인다.
+ */
+export const OVERVIEW_ARRIVAL = 0.45;
+
+/** 엔딩에서 내려다보는 정도(0~1). 카메라와 분위기가 같은 값을 쓴다 */
+export function overviewWeight(progress: number): number {
+  const { range, t } = stopAt(progress);
+  return range.stop.kind === "ending" ? smoothstep(0, OVERVIEW_ARRIVAL, t) : 0;
+}
 
 export function cameraAt(progress: number): CameraPose {
   const { range, t } = stopAt(progress);
@@ -198,7 +227,7 @@ export function cameraAt(progress: number): CameraPose {
   const stop = range.stop;
 
   if (stop.kind === "ending") {
-    const k = smoothstep(0, 1, t);
+    const k = overviewWeight(progress);
     return { position: lerp3(base, OVERVIEW_POSITION, k), target: lerp3(ahead, OVERVIEW_TARGET, k) };
   }
 

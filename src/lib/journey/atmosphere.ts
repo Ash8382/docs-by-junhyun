@@ -1,9 +1,10 @@
-import { ATMOSPHERE_BLEND, stageAt } from "./stage";
-import { overviewWeight, pathParamAt } from "./timeline";
+import { carSAt } from "./drive";
+import { overviewWeight } from "./timeline";
+import { trailMix } from "./trail";
 
 /**
- * 조명·안개·은하 밝기(스펙 3절). 카메라가 선 자리의 렌더 단계로 세 막의 값을 보간하고,
- * 엔딩에서는 회랑 전체를 내려다보는 값으로 넘어간다. 배경은 어느 막이든 우주(은하 사진)다.
+ * 조명·안개·은하 밝기(스펙 3절 "막별 분위기"). 차가 선 자리의 궤적 색 전환(trail.ts trailMix)으로 세 막의 값을 보간하고,
+ * 엔딩에서는 길 전체를 내려다보는 값으로 넘어간다. 배경은 어느 막이든 우주(은하 사진)다.
  * three를 import하지 않는 순수 함수다.
  */
 
@@ -11,7 +12,7 @@ import { overviewWeight, pathParamAt } from "./timeline";
 export type Rgb = readonly [number, number, number];
 
 export interface Atmosphere {
-  /** 안개 색. 배경이 우주라 어둡다. 먼 회랑은 은하 앞에서 이 색으로 사라진다 */
+  /** 안개 색. 배경이 우주라 어둡다. 먼 길은 은하 앞에서 이 색으로 사라진다 */
   fogColor: Rgb;
   fogNear: number;
   fogFar: number;
@@ -22,6 +23,8 @@ export interface Atmosphere {
   keyIntensity: number;
   /** 은하 배경의 밝기(scene.backgroundIntensity) */
   galaxy: number;
+  /** 환경 반사의 세기(scene.environmentIntensity). 차 도장과 노면에 비친다 */
+  environment: number;
 }
 
 function hex(value: string): Rgb {
@@ -30,53 +33,57 @@ function hex(value: string): Rgb {
 }
 
 export const ATMOSPHERES = {
-  /** 1막: 남색 어둠. 선이 스스로 빛나므로 조명은 약하다 */
-  wire: {
-    fogColor: hex("#070d1c"),
-    fogNear: 4,
-    fogFar: 18,
-    sky: hex("#2a4a7a"),
-    ground: hex("#050b16"),
-    hemisphere: 1.2,
-    key: hex("#9cc9ff"),
-    keyIntensity: 0.6,
-    galaxy: 1,
-  },
-  /** 2막: 우주에 떠 있는 회색 스튜디오. 부드러운 위쪽 빛 */
-  clay: {
-    fogColor: hex("#0b0d12"),
-    fogNear: 8,
-    fogFar: 30,
-    sky: hex("#f0f0ee"),
-    ground: hex("#8a8986"),
-    hemisphere: 2.2,
-    key: hex("#ffffff"),
-    keyIntensity: 2.4,
-    galaxy: 0.9,
-  },
-  /** 3막: 전시실을 비추는 따뜻한 빛 */
-  final: {
-    fogColor: hex("#120e0b"),
-    fogNear: 14,
-    fogFar: 70,
-    sky: hex("#fff1d6"),
-    ground: hex("#b89f80"),
-    hemisphere: 1.8,
-    key: hex("#ffd9a8"),
-    keyIntensity: 3.4,
-    galaxy: 0.8,
-  },
-  /** 엔딩: 위에서 회랑 전체를 본다. 안개를 멀리 밀어 세 막이 모두 보이고, 은하가 가장 밝다 */
-  overview: {
-    fogColor: hex("#05070d"),
-    fogNear: 60,
-    fogFar: 160,
-    sky: hex("#dfe6f0"),
-    ground: hex("#3a3f4a"),
+  /** 1막: 따뜻한 주황빛과 주황 기운의 안개 */
+  act1: {
+    fogColor: hex("#1c0e06"),
+    fogNear: 30,
+    fogFar: 140,
+    sky: hex("#ffb27a"),
+    ground: hex("#2a1206"),
     hemisphere: 0.9,
-    key: hex("#fff4e6"),
-    keyIntensity: 1.4,
-    galaxy: 1.3,
+    key: hex("#ffc694"),
+    keyIntensity: 2.2,
+    galaxy: 0.9,
+    environment: 0.9,
+  },
+  /** 2막: 주황과 파랑이 섞인 보랏빛(궤적 색의 가운데와 같다) */
+  act2: {
+    fogColor: hex("#130a1e"),
+    fogNear: 35,
+    fogFar: 170,
+    sky: hex("#cfa8ff"),
+    ground: hex("#1a0f2a"),
+    hemisphere: 0.9,
+    key: hex("#ead2ff"),
+    keyIntensity: 2,
+    galaxy: 1,
+    environment: 0.9,
+  },
+  /** 3막: 푸른빛과 미래 도시의 분위기 */
+  act3: {
+    fogColor: hex("#06101f"),
+    fogNear: 40,
+    fogFar: 200,
+    sky: hex("#9cc8ff"),
+    ground: hex("#061428"),
+    hemisphere: 1,
+    key: hex("#c4e2ff"),
+    keyIntensity: 2.2,
+    galaxy: 1.1,
+    environment: 1,
+  },
+  /** 엔딩: 주변은 어둡게, 은하와 완성된 빛의 길을 강조한다. 안개를 멀리 밀어 길 전체가 보인다 */
+  overview: {
+    fogColor: hex("#03050a"),
+    fogNear: 300,
+    fogFar: 900,
+    sky: hex("#c8d4e8"),
+    ground: hex("#05070d"),
+    hemisphere: 0.35,
+    key: hex("#dfe8ff"),
+    keyIntensity: 0.6,
+    galaxy: 1.35,
+    environment: 0.5,
   },
 } satisfies Record<string, Atmosphere>;
 
@@ -100,15 +107,16 @@ export function mixAtmosphere(a: Atmosphere, b: Atmosphere, t: number): Atmosphe
     key: mixRgb(a.key, b.key, t),
     keyIntensity: lerp(a.keyIntensity, b.keyIntensity, t),
     galaxy: lerp(a.galaxy, b.galaxy, t),
+    environment: lerp(a.environment, b.environment, t),
   };
 }
 
-/** 스크롤 진행률(0~1)의 분위기. 단계는 카메라가 향하는 경로 위치로 구한다(엔딩에서 위로 빠져도 3막 값에서 출발). */
+/** 스크롤 진행률(0~1)의 분위기. 궤적 색과 같은 전환(앞 절반 1막 → 2막, 뒤 절반 2막 → 3막)을 따른다 */
 export function atmosphereAt(progress: number): Atmosphere {
-  const stage = stageAt(pathParamAt(progress), ATMOSPHERE_BLEND);
+  const m = trailMix(carSAt(progress));
   const base =
-    stage <= 1
-      ? mixAtmosphere(ATMOSPHERES.wire, ATMOSPHERES.clay, stage)
-      : mixAtmosphere(ATMOSPHERES.clay, ATMOSPHERES.final, stage - 1);
+    m <= 0.5
+      ? mixAtmosphere(ATMOSPHERES.act1, ATMOSPHERES.act2, m * 2)
+      : mixAtmosphere(ATMOSPHERES.act2, ATMOSPHERES.act3, m * 2 - 1);
   return mixAtmosphere(base, ATMOSPHERES.overview, overviewWeight(progress));
 }

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // 데이터화 리팩터링의 안전망. 리팩터링 전에 찍은 기준과 화면·DOM·콘솔 에러를 비교한다.
+// 기준(e2e/__screenshots__/)은 기계마다 렌더링이 달라 git에 넣지 않는 로컬 전용이다. 새로 클론한 곳에서
+// 처음 실행하면 그 순간의 화면이 기준이 되므로, 의도한 화면에서 --update-snapshots로 찍는다.
+// 2026-10-14: 헤더에 Journey 링크를 넣으며 높이·DOM·마크업이 같음을 확인하고 기준을 갱신했다.
 const SLUGS = [
   "kokoa-clone",
   "todo-app",

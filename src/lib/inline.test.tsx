@@ -47,6 +47,12 @@ describe("renderInline", () => {
     );
   });
 
+  it("//로 시작하는 주소는 다른 호스트라서 외부 링크다", () => {
+    expect(html("[호스트](//example.com/a)")).toBe(
+      '<a href="//example.com/a" target="_blank" rel="noreferrer">호스트</a>',
+    );
+  });
+
   it("굵게와 링크가 한 문장에 섞여도 된다", () => {
     expect(html("**습관**은 [글](/blog/a)에 있다")).toBe(
       '<strong>습관</strong>은 <a href="/blog/a">글</a>에 있다',

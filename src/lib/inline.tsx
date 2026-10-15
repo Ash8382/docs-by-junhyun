@@ -28,7 +28,8 @@ export function renderInline(text: string, options: InlineOptions = {}): ReactNo
           {bold}
         </strong>,
       );
-    } else if (href.startsWith("/")) {
+    } else if (href.startsWith("/") && !href.startsWith("//")) {
+      // "//host"는 프로토콜 상대 주소라 다른 호스트다. "/"로 시작해도 내부 링크가 아니다.
       nodes.push(
         <Link key={index} href={href}>
           {label}

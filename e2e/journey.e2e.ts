@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { driveAt } from "../src/lib/journey/drive";
+import { rangeOf } from "../src/lib/journey/timeline";
 
 // WebGL을 쓸 수 없는 기기를 흉내 낸다. 3D 없이도 본문과 상세가 동작해야 한다(스펙 5절).
 async function disableWebGL(page: Page) {
@@ -265,15 +267,16 @@ test("패널을 연 채 블로그 원문으로 나갔다 돌아와 닫아도 스
   await expectWheelScrolls(page);
 });
 
-// 여정 장면 코드에만 있는 표지 글자(렌더 단계 재질의 프로그램 키)로 번들 경계를 확인한다(스펙 7절).
+// 여정 장면 코드에만 있는 표지 글자(도로 재질의 프로그램 키)로 번들 경계를 확인한다(스펙 7절).
 test("다른 페이지는 여정 3D 장면 코드를 내려받지 않는다", async ({ page }) => {
   const scripts = new Set<string>();
   page.on("response", (response) => {
-    if (response.request().resourceType() === "script") scripts.add(response.url());
+    // 차 모델 디코더가 만드는 작업자(blob: 주소)는 내려받은 파일이 아니라 넣지 않는다.
+    if (response.request().resourceType() === "script" && response.url().startsWith("http")) scripts.add(response.url());
   });
   const sceneLoaded = async () => {
     const bodies = await Promise.all([...scripts].map(async (url) => (await page.request.get(url)).text()));
-    return bodies.some((body) => body.includes("journey-stage"));
+    return bodies.some((body) => body.includes("journey-road"));
   };
   for (const path of ["/", "/about", "/blog/pfplay"]) {
     await page.goto(path);
@@ -292,6 +295,7 @@ test("3D 장면이 셰이더를 미리 컴파일하고 드러나면 로딩 막�
   await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
   await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "ready");
   await expect(page.locator("[data-journey-loading] span")).toHaveCount(0);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "model");
   await page.keyboard.press("End");
   await expect(page.getByText(EMAIL)).toBeInViewport();
   expect(errors).toEqual([]);
@@ -316,7 +320,7 @@ test("진행 막대와 푸터는 밝은 장면 위에서도 바탕이 있다", a
   expect(await footer.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(9, 9, 11)");
 });
 
-// 엔딩에서 회랑 전체를 내려다보는 장면을 연락처 패널이 가리지 않게 한다(넓은 화면은 오른쪽에 좁게, 휴대폰은 전체 폭).
+// 엔딩에서 길 전체를 내려다보는 장면을 연락처 패널이 가리지 않게 한다(넓은 화면은 오른쪽에 좁게, 휴대폰은 전체 폭).
 test("연락처 패널은 넓은 화면에서 오른쪽에 있어 엔딩 내려다보기를 가리지 않는다", async ({ page }) => {
   await page.goto("/journey");
   await page.keyboard.press("End");
@@ -365,4 +369,140 @@ test("엔딩에 배경 은하의 출처가 있다", async ({ page }) => {
   const credit = page.locator("#stop-ending a[href='https://svs.gsfc.nasa.gov/4851']");
   await expect(credit).toBeInViewport();
   await expect(page.locator("#stop-ending")).toContainText("Gaia DR2: ESA/Gaia/DPAC");
+});
+
+test("엔딩에 차 모델의 출처와 라이선스가 있다", async ({ page }) => {
+  await page.goto("/journey");
+  await page.keyboard.press("End");
+  await expect(
+    page.locator("#stop-ending a[href='https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept']"),
+  ).toBeInViewport();
+  await expect(page.locator("#stop-ending a[href='https://creativecommons.org/licenses/by/4.0/']")).toHaveText("CC BY 4.0");
+});
+
+// ── 장면 감시와 차(2-2b, 스펙 1절 완료 조건과 5절 "실패 대응") ───────────────────
+
+async function waitReady(page: Page) {
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+}
+
+test("셰이더 컴파일 실패를 감지해 장면 상태와 콘솔에 남긴다", async ({ page }) => {
+  const errors = collectErrors(page);
+  // 모든 프로그램의 링크가 실패하는 드라이버를 흉내 낸다.
+  await page.addInitScript(() => {
+    const original = WebGL2RenderingContext.prototype.getProgramParameter;
+    WebGL2RenderingContext.prototype.getProgramParameter = function (this: WebGL2RenderingContext, program, name) {
+      if (name === this.LINK_STATUS) return false;
+      return original.call(this, program, name);
+    };
+  });
+  await page.goto("/journey");
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed", { timeout: 30_000 });
+  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed");
+  expect(errors.some((message) => message.includes("셰이더 컴파일 실패"))).toBe(true);
+  await page.getByRole("button", { name: "연락처로 이동" }).click();
+  await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+test("WebGL 컨텍스트를 잃으면 장면 상태와 콘솔에 남긴다", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/journey");
+  await waitReady(page);
+  await page.evaluate(() => {
+    const canvas = document.querySelector("[data-journey-scene] canvas");
+    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
+    canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+  });
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed");
+  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed");
+  expect(errors.some((message) => message.includes("WebGL 컨텍스트 손실"))).toBe(true);
+  await page.getByRole("button", { name: "연락처로 이동" }).click();
+  await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+test("차 모델을 받지 못하면 빛 실루엣으로 대신하고 장면은 이어진다", async ({ page }) => {
+  await page.route("**/journey/car/**", (route) => route.abort());
+  await page.goto("/journey");
+  await waitReady(page);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "silhouette");
+  await page.keyboard.press("End");
+  await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+test("디코더를 받지 못해도 빛 실루엣으로 대신한다", async ({ page }) => {
+  await page.route("**/journey/decoders/**", (route) => route.abort());
+  await page.goto("/journey");
+  await waitReady(page);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "silhouette");
+});
+
+type JourneyStats = {
+  frames: number;
+  maxCalls: number;
+  programs: number;
+  programsAtReady: number;
+  textureBytes: number;
+  progress: number;
+  carPosition: [number, number, number] | null;
+};
+
+async function readStats(page: Page): Promise<JourneyStats> {
+  const stats = await page.evaluate(() => (window as Window & { __journeyStats?: unknown }).__journeyStats);
+  if (!stats) throw new Error("?debug=stats 통계가 없습니다");
+  return stats as JourneyStats;
+}
+
+/** 진행률 p 자리로 바로 스크롤한다. ScrollTrigger의 진행률은 본문 위끝이 화면 위에 닿을 때 0, 아래끝이 화면 아래에 닿을 때 1이다 */
+async function scrollToProgress(page: Page, progress: number) {
+  await page.evaluate((target) => {
+    const main = document.querySelector("[data-journey-page]");
+    if (!(main instanceof HTMLElement)) throw new Error("여정 본문이 없습니다");
+    const top = main.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: top + target * (main.offsetHeight - window.innerHeight), behavior: "instant" });
+  }, progress);
+}
+
+function middleOf(id: string): number {
+  const range = rangeOf(id);
+  return (range.start + range.end) / 2;
+}
+
+test("차 모델이 늦게 와도 나타나는 순간 지금 진행률의 자세다", async ({ page }) => {
+  await page.route("**/journey/car/CarConcept.gltf", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await route.continue();
+  });
+  await page.goto("/journey?debug=stats");
+  // 모델을 기다리는 동안 먼저 스크롤한다(스크롤은 3D 준비를 기다리지 않는다).
+  await scrollToProgress(page, middleOf("stock2u"));
+  await waitReady(page);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "model");
+  const stats = await readStats(page);
+  expect(stats.progress).toBeGreaterThan(rangeOf("stock2u").start);
+  const expected = driveAt(stats.progress).car.position;
+  expect(stats.carPosition).not.toBeNull();
+  stats.carPosition?.forEach((value, axis) => expect(value).toBeCloseTo(expected[axis], 2));
+});
+
+// 스펙 7절: 준비 뒤 스크롤 중에 셰이더 프로그램이 새로 생기지 않고, 가장 무거운 프레임의 드로콜이 60개 이하다.
+// 드로콜과 프로그램 수는 GPU와 상관없어 헤드리스(소프트웨어 렌더링)에서도 실제와 같다.
+test("준비 뒤 모든 정류장을 지나도 셰이더 프로그램이 새로 생기지 않고 드로콜은 60개 이하다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  for (const id of STOP_IDS) {
+    const range = rangeOf(id);
+    for (const t of [0.1, 0.5, 0.9]) {
+      await scrollToProgress(page, range.start + (range.end - range.start) * t);
+      await page.waitForTimeout(150);
+    }
+  }
+  await scrollToProgress(page, 1);
+  await page.waitForTimeout(500);
+  const stats = await readStats(page);
+  expect(stats.programs).toBe(stats.programsAtReady);
+  expect(stats.maxCalls).toBeGreaterThan(0);
+  expect(stats.maxCalls).toBeLessThanOrEqual(60);
+  // 은하 사진(4096×2048, 밉맵 없이 약 33.5MB)과 차 텍스처가 들어 있어야 하고, 스펙 7절 예산(100MB) 아래여야 한다.
+  expect(stats.textureBytes).toBeGreaterThan(20 * 1024 * 1024);
+  expect(stats.textureBytes).toBeLessThan(100 * 1024 * 1024);
 });

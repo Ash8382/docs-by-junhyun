@@ -190,8 +190,19 @@ body:has([data-journey-page]) [data-site-header] {
   background-color: rgb(9 9 11 / 0.92);
 }
 
-/* 여정 페이지: 화면에 고정된 3D 캔버스(z-0)가 위치 지정 없는 푸터를 덮지 않게 올린다. */
+/* 여정 페이지: 화면에 고정된 3D 캔버스(z-0)가 위치 지정 없는 푸터를 덮지 않게 올리고, 장면이 비치지 않게 칠한다. */
 body:has([data-journey-page]) [data-site-footer] {
   position: relative;
   z-index: 10;
+  background-color: rgb(9 9 11);
+}
+
+/* 여정 페이지: 3D 장면을 준비하는 동안 흐르는 로딩 막대(SceneLoading) */
+@keyframes journey-loading {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
 }

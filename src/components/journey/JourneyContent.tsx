@@ -9,6 +9,8 @@ import { STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
 import { EmailCopy } from "./EmailCopy";
 
 const EMAIL = "one31798883@gmail.com";
+/** 배경 은하 사진의 원본(NASA SVS Deep Star Maps 2020). 라이선스가 출처 표기를 요구한다 */
+const GALAXY_CREDIT_URL = "https://svs.gsfc.nasa.gov/4851";
 const GITHUB_URL = "https://github.com/Ash8382";
 
 // 막 제목과 기간은 스펙 2절 "세 막" 표를 따른다. 설명 문장은 넣지 않는다(사용자 결정).
@@ -167,11 +169,12 @@ function HallStop({ stop }: { stop: Stop }) {
   );
 }
 
+/** 엔딩. 넓은 화면에서는 패널을 오른쪽에 좁게 두어 왼쪽의 회랑 내려다보기(timeline.ts OVERVIEW_*)를 가리지 않는다 */
 function EndingStop() {
   const recent = sortedPosts.filter((post) => post.category === "post").slice(0, 3);
   return (
     <div className="container flex h-full items-end pb-[10svh]">
-      <div className={`${PANEL} w-full max-w-2xl`}>
+      <div className={`${PANEL} w-full sm:ml-auto sm:max-w-md`}>
         <h2 className="text-3xl font-bold tracking-tight">연락처</h2>
         <div className="mt-6">
           <EmailCopy email={EMAIL} />
@@ -195,6 +198,13 @@ function EndingStop() {
             </li>
           ))}
         </ul>
+        <p className="mt-8 text-xs leading-relaxed text-zinc-400">
+          배경 은하:{" "}
+          <a href={GALAXY_CREDIT_URL} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            NASA/Goddard Space Flight Center Scientific Visualization Studio
+          </a>
+          , Gaia DR2: ESA/Gaia/DPAC
+        </p>
       </div>
     </div>
   );

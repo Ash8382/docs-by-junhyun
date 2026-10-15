@@ -4,6 +4,7 @@ import { sortedPosts } from "@/data/posts";
 import { projects } from "@/data/projects";
 import type { Project, RepoId } from "@/data/projects/types";
 import { renderInline } from "@/lib/inline";
+import { CAR_CREDIT } from "@/lib/journey/carAsset";
 import { DETAIL_SLUGS, journeyHash } from "@/lib/journey/hash";
 import { STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
 import { EmailCopy } from "./EmailCopy";
@@ -169,7 +170,7 @@ function HallStop({ stop }: { stop: Stop }) {
   );
 }
 
-/** 엔딩. 넓은 화면에서는 패널을 오른쪽에 좁게 두어 왼쪽의 회랑 내려다보기(timeline.ts OVERVIEW_*)를 가리지 않는다 */
+/** 엔딩. 넓은 화면에서는 패널을 오른쪽에 좁게 두어 왼쪽의 길 전체 내려다보기(drive.ts OVERVIEW)를 가리지 않는다 */
 function EndingStop() {
   const recent = sortedPosts.filter((post) => post.category === "post").slice(0, 3);
   return (
@@ -204,6 +205,16 @@ function EndingStop() {
             NASA/Goddard Space Flight Center Scientific Visualization Studio
           </a>
           , Gaia DR2: ESA/Gaia/DPAC
+          <br />
+          차 모델:{" "}
+          <a href={CAR_CREDIT.url} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            {CAR_CREDIT.title}
+          </a>{" "}
+          © 2024 {CAR_CREDIT.author},{" "}
+          <a href={CAR_CREDIT.licenseUrl} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            {CAR_CREDIT.license}
+          </a>
+          , 로고 제거·재질 수정
         </p>
       </div>
     </div>

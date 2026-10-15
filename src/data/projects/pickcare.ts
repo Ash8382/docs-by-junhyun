@@ -13,6 +13,7 @@ export const pickcare = {
   screens: [],
   repos: [
     {
+      id: "frontend",
       name: "pickcare-frontend",
       tagline:
         "반려동물 케어 플랫폼의 메인 서비스. 커뮤니티·매거진·마켓·픽스팟(장소 찾기)을 담은 Next.js App Router 앱입니다.",
@@ -29,7 +30,14 @@ export const pickcare = {
         "Vitest",
         "Playwright",
       ],
-      screens: [],
+      screens: [
+        {
+          src: "/projects/pickcare/frontend/home.webp",
+          alt: "PiCKCARE 메인 서비스 첫 화면",
+          width: 2880,
+          height: 1800,
+        },
+      ],
       cases: [
         {
           title: "인증 토큰을 브라우저 JS에서 걷어낸 HttpOnly 쿠키 전환 + single-flight 리프레시",
@@ -139,6 +147,7 @@ export const pickcare = {
       ],
     },
     {
+      id: "biz",
       name: "pickcare-biz",
       tagline:
         "반려동물 매장 사장님용 멀티테넌트 CRM. 예약 캘린더, 고객·반려동물 차트, 매출 분석을 담은 어드민입니다.",
@@ -154,7 +163,14 @@ export const pickcare = {
         "Zustand",
         "Vitest",
       ],
-      screens: [],
+      screens: [
+        {
+          src: "/projects/pickcare/biz/home.webp",
+          alt: "PiCKCARE CRM 소개 페이지 첫 화면",
+          width: 2880,
+          height: 1800,
+        },
+      ],
       cases: [
         {
           title: "백엔드 없이 먼저 개발하기 — 목 백엔드와 계약 테스트 분리",
@@ -218,11 +234,19 @@ export const pickcare = {
       ],
     },
     {
+      id: "studio",
       name: "pickcare-studio",
       tagline:
         "반려동물 업종 특화 웹사이트 제작 스튜디오. 섹션 카탈로그와 업종별 데모 템플릿을 담았습니다.",
       stack: ["Next.js 16", "Tailwind", "TypeScript", "Embla", "Lenis"],
-      screens: [],
+      screens: [
+        {
+          src: "/projects/pickcare/studio/home.webp",
+          alt: "PiCKCARE 스튜디오 첫 화면",
+          width: 2880,
+          height: 1800,
+        },
+      ],
       cases: [
         {
           title: "섹션 코드를 한 줄도 안 고치고 업종 테마를 갈아끼우는 토큰 시스템",
@@ -265,6 +289,7 @@ export const pickcare = {
       ],
     },
     {
+      id: "app",
       name: "pickcare-app",
       tagline: "웹앱을 웹뷰로 감싸는 대신 네이티브 화면으로 다시 만드는 이식 프로젝트.",
       stack: [
@@ -341,11 +366,31 @@ export const pickcare = {
       ],
     },
     {
+      id: "cardnews",
       name: "pickcare-cardnews-factory",
       tagline:
         "인스타그램 카드뉴스를 AI로 양산하는 사내 도구. 카피 생성부터 사람 승인, 배경 이미지, 카드 조립, 결과물 출력까지 한 줄로 잇습니다.",
       stack: ["Node.js", "Figma Plugin API", "OpenAI", "Google Sheets API", "zod"],
-      screens: [],
+      screens: [
+        {
+          src: "/projects/pickcare/cardnews/masters.webp",
+          alt: "카드뉴스 마스터 프레임 4종(썸네일, 본문 2종, CTA)",
+          width: 1190,
+          height: 391,
+        },
+        {
+          src: "/projects/pickcare/cardnews/set-1.webp",
+          alt: "완성된 카드뉴스 세트 1: 카드 5장과 인스타그램 캡션",
+          width: 1543,
+          height: 378,
+        },
+        {
+          src: "/projects/pickcare/cardnews/set-2.webp",
+          alt: "완성된 카드뉴스 세트 2: 카드 5장과 인스타그램 캡션",
+          width: 1554,
+          height: 362,
+        },
+      ],
       cases: [
         {
           title: "Figma Plugin API로 카드 5장 세트를 코드가 조립하게 만든 렌더링 엔진",

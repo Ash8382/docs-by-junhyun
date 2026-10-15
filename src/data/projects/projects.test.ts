@@ -2,14 +2,30 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { projects } from "./index";
-import type { Inline, ItemGroup, Project, Screen } from "./types";
+import { isItemGroups, type Inline, type ItemGroup, type Project, type Screen } from "./types";
 
-// PNG 헤더에서 크기를 읽는다. 데이터에 적은 width/height가 실제 파일과 맞는지 확인한다.
-function pngSize(file: string): { width: number; height: number } {
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// 파일 헤더에서 크기를 읽는다. 데이터에 적은 width/height가 실제 파일과 맞는지 확인한다.
+function imageSize(file: string): { width: number; height: number } {
   const buffer = readFileSync(file);
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  if (!buffer.subarray(0, 8).equals(signature)) throw new Error(`PNG가 아닙니다: ${file}`);
-  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  if (buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  }
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") {
+    const chunk = buffer.toString("ascii", 12, 16);
+    if (chunk === "VP8X") {
+      return { width: 1 + buffer.readUIntLE(24, 3), height: 1 + buffer.readUIntLE(27, 3) };
+    }
+    if (chunk === "VP8L") {
+      const bits = buffer.readUInt32LE(21);
+      return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+    }
+    if (chunk === "VP8 ") {
+      return { width: buffer.readUInt16LE(26) & 0x3fff, height: buffer.readUInt16LE(28) & 0x3fff };
+    }
+  }
+  throw new Error(`PNG나 WebP가 아닙니다: ${file}`);
 }
 
 // 프로젝트 안의 모든 Inline 문자열
@@ -38,6 +54,37 @@ function inlineStrings(project: Project): Inline[] {
   ];
 }
 
+// 화면에 목록으로 렌더링되는 문자열 묶음. React key가 문자열 자체라 한 목록 안에서 겹치면 안 된다.
+// (React의 중복 key 경고는 개발 빌드에서만 나와 e2e(next start)로는 못 잡는다.)
+function renderedLists(project: Project): string[][] {
+  if (project.kind === "repos") {
+    return [
+      project.stack,
+      project.closing,
+      project.repos.map((repo) => repo.name),
+      ...project.repos.flatMap((repo) => [
+        repo.stack,
+        repo.cases.map((item) => item.title),
+        repo.screens.map((screen) => screen.src),
+        ...repo.cases.flatMap((item) => [item.problem, item.solution, item.result]),
+      ]),
+    ];
+  }
+  const role: (Inline | ItemGroup)[] = project.role ?? [];
+  return [
+    project.stack,
+    project.overview,
+    project.screens.map((screen) => screen.src),
+    project.links.map((link) => link.href),
+    project.overviewCallout?.items ?? [],
+    project.achievements ?? [],
+    role.map((entry) => (typeof entry === "string" ? entry : entry.title)),
+    ...role.flatMap((entry) => (typeof entry === "string" ? [] : [entry.items])),
+    (project.extraSections ?? []).map((section) => section.title),
+    ...(project.extraSections ?? []).map((section) => section.items),
+  ];
+}
+
 function allScreens(project: Project): Screen[] {
   if (project.kind === "repos") {
     return [...project.screens, ...project.repos.flatMap((repo) => repo.screens)];
@@ -62,6 +109,18 @@ describe("프로젝트 데이터", () => {
       "pfplay",
       "pickcare",
     ]);
+  });
+
+  it("PiCKCARE 저장소의 짧은 id가 탭 순서대로 있다", () => {
+    const pickcare = projects.find((project) => project.slug === "pickcare");
+    if (pickcare?.kind !== "repos") throw new Error("PiCKCARE는 저장소 구조 글이어야 합니다");
+    expect(pickcare.repos.map((repo) => repo.id)).toEqual(["frontend", "biz", "studio", "app", "cardnews"]);
+  });
+
+  it("isItemGroups는 소제목 묶음만 골라낸다", () => {
+    expect(isItemGroups([{ title: "메인 페이지", items: ["캐러셀"] }])).toBe(true);
+    expect(isItemGroups(["**마이페이지 구현**: 설명"])).toBe(false);
+    expect(isItemGroups([])).toBe(false);
   });
 
   for (const project of projects) {
@@ -106,8 +165,19 @@ describe("프로젝트 데이터", () => {
         for (const screen of allScreens(project)) {
           const file = join(process.cwd(), "public", screen.src);
           expect(existsSync(file), screen.src).toBe(true);
-          expect(pngSize(file), screen.src).toEqual({ width: screen.width, height: screen.height });
+          expect(imageSize(file), screen.src).toEqual({ width: screen.width, height: screen.height });
         }
+      });
+
+      it("한 목록 안에 같은 문자열이 두 번 나오지 않는다", () => {
+        for (const list of renderedLists(project)) {
+          expect(new Set(list).size, list.join(" | ")).toBe(list.length);
+        }
+      });
+
+      it("블로그 글 경로가 있다", () => {
+        // 여정 상세의 "블로그 원문 보기"가 /blog/<slug>로 간다.
+        expect(existsSync(join(process.cwd(), "src/app/blog", project.slug, "page.tsx"))).toBe(true);
       });
     });
   }

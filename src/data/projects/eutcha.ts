@@ -27,6 +27,12 @@ export const eutcha = {
       width: 1024,
       height: 818,
     },
+    {
+      src: "/projects/eutcha/home.webp",
+      alt: "EUTCHA 첫 화면",
+      width: 2880,
+      height: 1800,
+    },
   ],
   overview: [
     "TMDB Open API를 활용하여 영화 정보를 제공하는 웹 애플리케이션 EUTCHA를 구축했습니다. 리액트와 협업에 익숙해지려고 진행한 프론트엔드 입문 프로젝트입니다.",

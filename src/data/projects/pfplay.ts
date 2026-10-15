@@ -22,6 +22,12 @@ export const pfplay = {
       width: 1024,
       height: 601,
     },
+    {
+      src: "/projects/pfplay/home.webp",
+      alt: "PFPlay 첫 화면",
+      width: 2880,
+      height: 1800,
+    },
   ],
   overview: [
     "PFPlay는 PFP(Profile Picture) NFT와 디제잉 문화를 결합한 Web3 기반 소셜 플랫폼입니다. 사용자는 자신의 NFT를 활용해 아이덴티티를 표현하고 음악을 통해 다른 사용자들과 소통할 수 있습니다.",

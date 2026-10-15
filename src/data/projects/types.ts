@@ -61,7 +61,11 @@ export interface Case {
   result: Inline[];
 }
 
+/** PiCKCARE 저장소의 짧은 이름. 여정 상세 패널의 탭 이름과 public/projects/pickcare/<id>/ 이미지 폴더에 쓴다. */
+export type RepoId = "frontend" | "biz" | "studio" | "app" | "cardnews";
+
 export interface Repo {
+  id: RepoId;
   name: string;
   tagline: Inline;
   stack: string[];
@@ -77,3 +81,8 @@ export interface ReposProject extends ProjectBase {
 }
 
 export type Project = StandardProject | ReposProject;
+
+/** 담당 역할이 소제목 묶음(ItemGroup[])인지 가린다. Tix2U가 그렇다. */
+export function isItemGroups(role: Inline[] | ItemGroup[]): role is ItemGroup[] {
+  return role.length > 0 && typeof role[0] !== "string";
+}

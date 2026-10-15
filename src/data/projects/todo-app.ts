@@ -27,6 +27,12 @@ export const todoApp = {
       width: 1024,
       height: 603,
     },
+    {
+      src: "/projects/todo-app/home.webp",
+      alt: "Todo App 첫 화면",
+      width: 2880,
+      height: 1800,
+    },
   ],
   overview: [
     "HTML과 CSS, 순수 JavaScript만으로 구현한 Todo List 애플리케이션입니다. 프론트엔드 개발의 기초를 다지기 위한 과제 프로젝트로 진행되었습니다.",

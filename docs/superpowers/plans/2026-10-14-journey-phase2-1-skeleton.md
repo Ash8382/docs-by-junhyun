@@ -23,7 +23,7 @@
 - **`/journey`에서 `backdrop-filter`(흐림) 금지:** 본문 패널, 대화상자, 배경막 모두 반투명 단색만 쓴다. 움직이는 캔버스 위의 흐림은 매 프레임 GPU 재합성을 일으킨다
 - **React Compiler 계열 린트 규칙이 에러로 켜져 있다**(`react-hooks/set-state-in-effect`, `refs`, `purity`, `immutability` 등): effect 안에서 동기 `setState` 금지, 렌더 중 `ref.current` 접근 금지, 렌더 중 `Math.random`·`Date.now` 금지. 브라우저 값(해시, WebGL 지원)은 `useSyncExternalStore`로 읽는다
 - 화면 높이 단위는 `svh`다(모바일 주소창이 접혀도 섹션 높이가 흔들리지 않게)
-- **한국어 문구(카피)는 이 계획에 적힌 그대로 쓴다.** 사용자가 나중에 검토한다. 임의로 다듬지 않는다
+- **설명 문장(카피)을 넣지 않는다(사용자 결정, 2026-10-14).** 페이지에 쓰는 글은 프로젝트 데이터와, 스펙이 정한 구조적 표기(입구 제목 "A Journey Through Code", 막 제목·기간, "연락처"·"최근 글" 소제목)와, 기능 라벨("자세히 보기", "이메일 복사", "닫기", "블로그 원문 보기")뿐이다. 이 계획의 코드에 없는 문장을 덧붙이지 않는다
 - **명령 실행:** Bash 검증 명령에는 `rtk proxy`를 붙이고 exit code를 믿는다. 파일은 Read 도구로 읽는다(`cat`은 rtk 필터가 자른다). `npx tsx`는 rtk가 망가뜨리므로 `rtk proxy npm run <스크립트>`나 `rtk proxy npx tsx`로 실행한다. zsh에서 `$var:path`는 수정자로 해석되므로 `${var}:path`로 쓴다
 - **커밋하지 않는다.** 에이전트는 `git add`/`commit`/`stash`/`reset`/`checkout`/`restore`를 실행하지 않는다. 각 태스크 마지막 단계는 파일별 변경 표와 커밋 메시지 초안 제출이다(`type: 한국어 요약` + 이유를 적는 `- ` 불릿, 트레일러 없음). **사용자는 이 계획의 모든 태스크가 끝날 때까지 커밋을 보류한다.** 여러 태스크가 같은 파일(`journey.e2e.ts`, `JourneyStage.tsx`, 데이터)을 고치기 때문이다
 - 기존 스타일을 따른다: 한국어 주석, `function` 선언형 컴포넌트, Tailwind 유틸리티. 단위 테스트는 소스 옆 `*.test.ts(x)`, e2e는 `e2e/*.e2e.ts`
@@ -1656,10 +1656,11 @@ import { EmailCopy } from "./EmailCopy";
 const EMAIL = "one31798883@gmail.com";
 const GITHUB_URL = "https://github.com/Ash8382";
 
+// 막 제목과 기간은 스펙 2절 "세 막" 표를 따른다. 설명 문장은 넣지 않는다(사용자 결정).
 const ACTS = {
-  1: { title: "1막 · 시작", period: "2023.04 ~ 2023.10", caption: "클론 코딩과 첫 팀 프로젝트로 기초를 다진 시기" },
-  2: { title: "2막 · 협업", period: "2023.09 ~ 2025.02", caption: "기획·디자인·백엔드와 함께 서비스를 만든 시기" },
-  3: { title: "3막 · 현재", period: "2025.09 ~", caption: "스타트업의 프론트엔드를 혼자 맡고 있는 지금" },
+  1: { title: "1막 · 시작", period: "2023.04 ~ 2023.10" },
+  2: { title: "2막 · 협업", period: "2023.09 ~ 2025.02" },
+  3: { title: "3막 · 현재", period: "2025.09 ~" },
 } as const;
 
 // 움직이는 캔버스 위에서 backdrop-filter(흐림)는 매 프레임 GPU 재합성을 일으켜 스크롤을 끊는다. 반투명 단색만 쓴다.
@@ -1709,12 +1710,10 @@ function IntroStop() {
   return (
     <div className="container flex h-full items-center">
       <div className={`${PANEL} max-w-xl`}>
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400">A Journey Through Code</p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">코드로 걸어온 길</h1>
-        <p className="mt-4 text-lg text-zinc-300">
-          2023년 첫 클론 코딩부터 지금의 PiCKCARE까지, 프로젝트 일곱 개를 차례로 지나갑니다.
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A Journey Through Code</h1>
+        <p aria-hidden className="mt-6 text-2xl text-zinc-400">
+          ↓
         </p>
-        <p className="mt-6 text-sm text-zinc-400">아래로 스크롤하면 걷기 시작합니다 ↓</p>
       </div>
     </div>
   );
@@ -1727,7 +1726,6 @@ function ActStop({ act }: { act: 1 | 2 | 3 }) {
       <div className={`${PANEL} text-center`}>
         <p className="font-mono text-xs tracking-[0.2em] text-zinc-400">{info.period}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h2>
-        <p className="mt-3 text-zinc-300">{info.caption}</p>
       </div>
     </div>
   );
@@ -1815,8 +1813,7 @@ function EndingStop() {
   return (
     <div className="container flex h-full items-end pb-[10svh]">
       <div className={`${PANEL} w-full max-w-2xl`}>
-        <h2 className="text-3xl font-bold tracking-tight">다음 이야기는 함께</h2>
-        <p className="mt-3 text-zinc-300">함께 만들 프로젝트나 궁금한 점이 있다면 편하게 연락 주세요.</p>
+        <h2 className="text-3xl font-bold tracking-tight">연락처</h2>
         <div className="mt-6">
           <EmailCopy email={EMAIL} />
         </div>
@@ -1890,7 +1887,7 @@ import { JourneyContent } from "@/components/journey/JourneyContent";
 
 export const metadata: Metadata = {
   title: "Journey - 이준현",
-  description: "2023년 첫 클론 코딩부터 지금의 PiCKCARE까지, 프로젝트 일곱 개를 회랑을 따라 걸으며 보는 포트폴리오.",
+  description: "A Journey Through Code",
 };
 
 export default function JourneyPage() {
@@ -2113,7 +2110,7 @@ import { JourneyStage } from "@/components/journey/JourneyStage";
 
 export const metadata: Metadata = {
   title: "Journey - 이준현",
-  description: "2023년 첫 클론 코딩부터 지금의 PiCKCARE까지, 프로젝트 일곱 개를 회랑을 따라 걸으며 보는 포트폴리오.",
+  description: "A Journey Through Code",
 };
 
 export default function JourneyPage() {
@@ -3189,7 +3186,7 @@ Expected: 출력 없음
 
 - [ ] **Step 5: 완료 보고**
 
-보고서에 적는다: 단위·e2e 수와 결과, Task 2에서 쓰지 않은 화면(있다면), Task 10 성능 기준선 숫자, 계획과 다르게 처리한 곳과 이유, 사용자가 검토할 한국어 문구 목록(입구·막 소개·엔딩 문구).
+보고서에 적는다: 단위·e2e 수와 결과, Task 2에서 쓰지 않은 화면(있다면), Task 10 성능 기준선 숫자, 계획과 다르게 처리한 곳과 이유.
 
 | 파일 | 내용 |
 |---|---|

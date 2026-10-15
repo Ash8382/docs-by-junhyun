@@ -13,6 +13,8 @@
     "e2e": "playwright test",
     "capture:screens": "tsx scripts/capture-screens.ts",
     "perf:journey": "tsx scripts/perf-journey.ts",
+    "capture:journey": "tsx scripts/capture-journey.ts",
+    "build:galaxy": "tsx scripts/build-galaxy.ts",
     "server:dev": "tsx watch server/index.ts",
     "db:setup": "tsx --env-file-if-exists=.env.local db/setup.ts",
     "pipeline:collect": "tsx --env-file-if-exists=.env.local pipeline/run-collect.ts",

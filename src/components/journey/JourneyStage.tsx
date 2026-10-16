@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useSyncExternalStore } from "react";
 import { setCarStatus, setSceneStatus } from "@/lib/journey/sceneStatus";
 import { hasWebGL2 } from "@/lib/journey/webgl";
+import { useHologramFocus } from "./hologramLinks";
 import { ProgressRail } from "./ProgressRail";
 import { ProjectDialog } from "./ProjectDialog";
 import { SceneBoundary } from "./SceneBoundary";
@@ -20,6 +21,7 @@ function subscribeNothing() {
 /** 여정 페이지의 클라이언트 진입점. 스크롤 엔진을 켜고 화면 위 요소를 얹는다. */
 export function JourneyStage() {
   useJourneyScroll();
+  useHologramFocus();
   const webgl = useSyncExternalStore(subscribeNothing, hasWebGL2, () => false);
   // 다른 페이지로 갔다가 돌아오면 장면을 처음부터 다시 준비한다(실패했던 상태와 차 상태도 지운다).
   useEffect(

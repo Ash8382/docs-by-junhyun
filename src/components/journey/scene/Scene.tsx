@@ -18,6 +18,7 @@ import { CameraRig } from "./CameraRig";
 import { Car } from "./Car";
 import { Dust } from "./Dust";
 import { Effects } from "./Effects";
+import { Holograms } from "./Holograms";
 import { Road } from "./Road";
 import { Sky } from "./Sky";
 import { Streaks } from "./Streaks";
@@ -81,6 +82,7 @@ export default function Scene() {
         <Car />
         <Streaks />
         <Dust />
+        <Holograms />
         <Effects />
         <Warmup />
       </Canvas>

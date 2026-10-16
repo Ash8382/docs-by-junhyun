@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { driveAt } from "../src/lib/journey/drive";
 import { projects } from "../src/data/projects";
-import { HOLOGRAMS } from "../src/lib/journey/holograms";
-import { rangeOf } from "../src/lib/journey/timeline";
+import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT } from "../src/lib/journey/holograms";
+import { HALL_REPO_END, HALL_REPO_START, rangeOf } from "../src/lib/journey/timeline";
 
 // WebGL을 쓸 수 없는 기기를 흉내 낸다. 3D 없이도 본문과 상세가 동작해야 한다(스펙 5절).
 async function disableWebGL(page: Page) {
@@ -593,16 +593,26 @@ function at(id: string, within: number): number {
   return range.start + (range.end - range.start) * within;
 }
 
+/**
+ * 저장소 i의 읽기 자리(PiCKCARE 안의 위치): 앞줄 전환 사이의 가운데. 저장소 진행률 u = (i + 0.5 − FRONT_LEAD)/5(첫 저장소는 0)를
+ * 본문 저장소 패널 구간(앞에서 HALL_REPO_START 뒤 ~ 뒤에서 HALL_REPO_END 앞, 화면)으로 되돌린다
+ */
+function hallReading(index: number): number {
+  const length = rangeOf("pickcare").stop.length;
+  const u = Math.max(0, (index + 0.5 - FRONT_LEAD) / REPO_COUNT);
+  return (HALL_REPO_START + u * (length - HALL_REPO_START - HALL_REPO_END)) / length;
+}
+
 test("PiCKCARE 앞줄은 화면에 혼자 보이는 저장소 패널을 따르고, 상세가 열리면 탭을 따른다", async ({ page }) => {
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   const repos = ["frontend", "biz", "studio", "app", "cardnews"];
   for (const [index, repo] of repos.entries()) {
-    await scrollToProgress(page, at("pickcare", (index + 0.3) / 5));
+    await scrollToProgress(page, at("pickcare", hallReading(index)));
     await expect.poll(async () => (await readStats(page)).holograms?.front, repo).toBe(`pickcare/${repo}`);
     await expect(page.locator(`a[data-journey-detail][href="#pickcare/${repo}"]`), repo).toBeInViewport();
   }
-  await scrollToProgress(page, at("pickcare", 1.3 / 5));
+  await scrollToProgress(page, at("pickcare", hallReading(1)));
   await page.locator('a[data-journey-detail][href="#pickcare/biz"]').click();
   await expect(page.getByRole("dialog", { name: "PiCKCARE" })).toBeVisible();
   await page.getByRole("tab", { name: "app" }).click();
@@ -613,6 +623,51 @@ test("PiCKCARE 앞줄은 화면에 혼자 보이는 저장소 패널을 따르�
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page).toHaveURL(/\/journey\?debug=stats$/);
   await expect.poll(async () => (await readStats(page)).holograms?.front).toBe("pickcare/biz");
+});
+
+// 스펙 3절 "PiCKCARE 앞줄": 본문 저장소 패널은 HALL_REPO_START·HALL_REPO_END 구간에 블록 다섯으로 놓이고, 패널은 블록 아래끝에서
+// 12svh 위다. 단위 테스트(holograms.place.test.ts)가 이 배치 모형으로 가림과 앞줄 전환을 보고, 여기서 모형을 실제 DOM과 대조한다.
+const HALL_VIEWPORTS = [
+  { width: 1280, height: 720 },
+  { width: 1920, height: 1080 },
+  { width: 1280, height: 800 },
+  { width: 1440, height: 900 },
+];
+
+test("PiCKCARE 저장소 패널이 배치 모형의 자리에 있고, 네 화면 크기에서 저장소마다 읽기 자리에 그 패널만 화면 안에 다 들어온다", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "세로 화면의 PiCKCARE 배치는 2-4에서 맞춘다");
+  const length = rangeOf("pickcare").stop.length;
+  const block = (length - HALL_REPO_START - HALL_REPO_END) / REPO_COUNT;
+  for (const viewport of HALL_VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await page.goto("/journey");
+    for (let index = 0; index < REPO_COUNT; index++) {
+      const within = hallReading(index);
+      await scrollToProgress(page, at("pickcare", within));
+      const layout = await page.evaluate(() => {
+        const header = document.querySelector("[data-site-header]");
+        const intro = document.querySelector("#stop-pickcare > .sticky > div");
+        const repos = [...document.querySelectorAll("#stop-pickcare > .absolute > div > div")];
+        if (!header || !intro || repos.length !== 5) throw new Error("PiCKCARE 패널을 찾지 못했습니다");
+        const rect = (element: Element) => {
+          const box = element.getBoundingClientRect();
+          return [box.left / innerWidth, box.top / innerHeight, box.right / innerWidth, box.bottom / innerHeight];
+        };
+        return { header: header.getBoundingClientRect().bottom / innerHeight, intro: rect(intro), repos: repos.map(rect) };
+      });
+      const label = `${viewport.width}x${viewport.height} 저장소 ${index}`;
+      // 모형: 패널 i의 아래끝 = HALL_REPO_START + (i+1)·블록 − 0.12 − L·t (화면, 구역 위끝이 화면 위에서 −L·t)
+      layout.repos.forEach((rect, panel) => {
+        const bottom = HALL_REPO_START + (panel + 1) * block - 0.12 - length * within;
+        expect(rect[3], `${label} 패널 ${panel} 아래끝`).toBeCloseTo(bottom, 2);
+      });
+      const full = layout.repos.flatMap((rect, panel) => (rect[1] >= layout.header && rect[3] <= 1 ? [panel] : []));
+      expect(full, label).toEqual([index]);
+      const panel = layout.repos[index];
+      const intro = layout.intro;
+      expect(panel[0] < intro[2] && intro[0] < panel[2] && panel[1] < intro[3] && intro[1] < panel[3], `${label} 소개 패널과 겹침`).toBe(false);
+    }
+  }
 });
 
 // 스펙 3절 "홀로그램 상호작용". 홀로그램 자리를 쓰는 테스트는 넓은 화면에서만 본다(세로 화면의 자리는 2-4에서 맞춘다).

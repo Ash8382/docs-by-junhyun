@@ -6,7 +6,7 @@ import type { Project, RepoId } from "@/data/projects/types";
 import { renderInline } from "@/lib/inline";
 import { CAR_CREDIT } from "@/lib/journey/carAsset";
 import { DETAIL_SLUGS, journeyHash } from "@/lib/journey/hash";
-import { STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
+import { HALL_REPO_END, HALL_REPO_START, STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
 import { EmailCopy } from "./EmailCopy";
 import { HologramThumbnail } from "./HologramThumbnail";
 
@@ -139,7 +139,10 @@ function ExhibitStop({ stop }: { stop: Stop }) {
   );
 }
 
-/** 3막: PiCKCARE 전시실. 위에 머무는 소개와, 화면 하나마다 하나씩 지나가는 저장소 5개 */
+/**
+ * 3막: PiCKCARE 전시실. 위에 머무는 소개와, 하나씩 지나가는 저장소 5개. 저장소 블록은 구역 위에서 HALL_REPO_START화면 뒤부터
+ * 아래에서 HALL_REPO_END화면 앞까지 고르게 나눈다(차가 들어오고 떠나는 동안은 홀로그램 줄이 밀려나므로). 앞줄 판정과 같은 구간이다.
+ */
 function HallStop({ stop }: { stop: Stop }) {
   const project = projectOf(stop);
   if (project.kind !== "repos") throw new Error("전시실은 저장소 구조 글이어야 합니다");
@@ -154,12 +157,12 @@ function HallStop({ stop }: { stop: Stop }) {
           <p className="mt-2 text-sm text-zinc-300">{renderInline(project.summary)}</p>
         </div>
       </div>
-      <div className="absolute inset-x-0 top-0">
+      <div className="absolute inset-x-0" style={{ top: `${HALL_REPO_START * 100}svh` }}>
         {project.repos.map((repo) => (
           <div
             key={repo.id}
             className="container flex items-end pb-[12svh]"
-            style={{ height: `${(stop.length / project.repos.length) * 100}svh` }}
+            style={{ height: `${((stop.length - HALL_REPO_START - HALL_REPO_END) / project.repos.length) * 100}svh` }}
           >
             <div className={`${PANEL} ml-auto max-w-sm`}>
               <p className="font-mono text-sm text-amber-300">{repo.id}</p>

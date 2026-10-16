@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { CAR_END } from "./drive";
 import {
   FRAME_LIGHT,
+  FRONT_LEAD,
   HOLOGRAMS,
   LAYER,
   drawOrder,
@@ -16,7 +17,7 @@ import {
   sourceSize,
   type HologramPlacement,
 } from "./holograms";
-import { STOPS, rangeOf, type Vec3 } from "./timeline";
+import { HALL_REPO_END, HALL_REPO_START, STOPS, rangeOf, type Vec3 } from "./timeline";
 import { trailColor } from "./trail";
 
 describe("홀로그램 목록", () => {
@@ -131,20 +132,27 @@ describe("테두리 빛", () => {
 describe("PiCKCARE 앞줄", () => {
   const range = rangeOf("pickcare");
   const at = (t: number) => range.start + (range.end - range.start) * t;
+  /** 저장소 진행률 u(저장소 패널 구간 안의 위치, hallRepoProgress)의 자리 */
+  const atRepo = (u: number) =>
+    at((HALL_REPO_START + u * (range.stop.length - HALL_REPO_START - HALL_REPO_END)) / range.stop.length);
 
-  it("스크롤 기준: 저장소 패널 i가 혼자 보이는 자리((i + 0.3)/5)에서 앞줄은 i다", () => {
-    for (let i = 0; i < 5; i++) expect(pickcareFront(at((i + 0.3) / 5), ""), `i=${i}`).toBe(i);
+  it("스크롤 기준: 저장소 진행률 u에서 앞줄은 min(4, floor(5u + 0.76))라, 전환 사이의 가운데((i + 0.5 − 0.76)/5)에서 i다", () => {
+    expect(FRONT_LEAD).toBe(0.76);
+    for (let i = 0; i < 5; i++) expect(pickcareFront(atRepo(Math.max(0, (i + 0.5 - FRONT_LEAD) / 5)), ""), `i=${i}`).toBe(i);
   });
 
-  it("다음 패널이 올라와 두 패널이 함께 보이는 구간의 가운데((i + 0.75)/5)에서 바뀐다", () => {
+  it("저장소 i에서 i+1로 5u = i + 1 − 0.76에서 바뀐다(저장소 i의 읽기 구간이 끝난 뒤, i+1의 읽기 구간이 시작하기 전)", () => {
     for (let i = 0; i < 4; i++) {
-      expect(pickcareFront(at((i + 0.749) / 5), ""), `i=${i}`).toBe(i);
-      expect(pickcareFront(at((i + 0.751) / 5), ""), `i=${i}`).toBe(i + 1);
+      const u = (i + 1 - FRONT_LEAD) / 5;
+      expect(pickcareFront(atRepo(u - 1e-4), ""), `i=${i}`).toBe(i);
+      expect(pickcareFront(atRepo(u + 1e-4), ""), `i=${i}`).toBe(i + 1);
     }
   });
 
-  it("PiCKCARE 앞에서는 첫 저장소, 지나서는 마지막 저장소다", () => {
+  it("저장소 패널 구간 앞(PiCKCARE 들어설 때 포함)은 첫 저장소, 구간 뒤와 지나서는 마지막 저장소다", () => {
     expect(pickcareFront(0, "")).toBe(0);
+    expect(pickcareFront(at(0.15), "")).toBe(0);
+    expect(pickcareFront(at(0.9), "")).toBe(4);
     expect(pickcareFront(1, "")).toBe(4);
   });
 

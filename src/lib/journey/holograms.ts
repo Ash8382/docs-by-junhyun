@@ -2,7 +2,7 @@ import { projects } from "@/data/projects";
 import type { Project, RepoId, Screen } from "@/data/projects/types";
 import { carSAt, driveAt, roadFrame, roadPoint, stopScreenSide } from "./drive";
 import { DETAIL_SLUGS, activeRepo, journeyHash, parseJourneyHash } from "./hash";
-import { STOPS, rangeOf, smoothstep, stopAt, viewWeight, type StopRange, type Vec3 } from "./timeline";
+import { STOPS, hallRepoProgress, rangeOf, smoothstep, stopAt, viewWeight, type StopRange, type Vec3 } from "./timeline";
 import type { LinearRgb } from "./trail";
 
 /**
@@ -353,12 +353,11 @@ export function imageCorners(hologram: Hologram, placement: HologramPlacement, c
 
 // ── PiCKCARE 앞줄, 그리는 순서, 누를 수 있는 홀로그램 ───────────────
 
-/** 스크롤 기준 앞줄을 패널 하나의 3/4 지점에서 바꾸는 앞당김(스펙 3절 "PiCKCARE 앞줄") */
-export const FRONT_LEAD = 0.25;
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
+/**
+ * 스크롤 기준 앞줄의 앞당김(스펙 3절 "PiCKCARE 앞줄"). 앞줄은 저장소 i의 읽기 구간(그 패널만 화면 안에 다 들어온 구간)이 끝난 뒤,
+ * i+1의 읽기 구간이 시작하기 전에 바뀌어야 한다. 네 화면 크기에서 잰 패널로 이 조건을 만족하는 값은 0.71~0.81이고, 그 가운데다.
+ */
+export const FRONT_LEAD = 0.76;
 
 const PICKCARE = (() => {
   const project = projects.find((item) => item.slug === "pickcare");
@@ -369,16 +368,14 @@ const PICKCARE = (() => {
 /**
  * PiCKCARE 앞줄의 목표 저장소 번호(0~4, 스펙 3절 "PiCKCARE 앞줄").
  * 1. 해시가 #pickcare…면(상세가 열려 있거나 닫히는 중) 상세가 보여 주는 저장소(activeRepo: 해시의 저장소, 없으면 첫 저장소).
- * 2. 아니면 스크롤 기준. t는 PiCKCARE 구간 안의 진행률이고 앞줄은 min(4, floor(5t + 0.25)). 본문 저장소 패널은 화면마다 아래쪽에 있어,
- *    다음 패널이 올라와 두 패널이 함께 보이는 구간의 가운데에서 바뀐다.
+ * 2. 아니면 스크롤 기준. u는 저장소 진행률(hallRepoProgress: 본문 저장소 패널 구간 안의 위치)이고 앞줄은 min(4, floor(5u + 0.76)).
+ *    저장소 i의 읽기 구간이 끝난 뒤, 다음 패널의 읽기 구간이 시작하기 전에 바뀐다. 구간 앞은 첫 저장소, 뒤는 마지막 저장소다.
  * 장면은 이 목표로 앞줄을 감쇠해 hologramsAt에 넘긴다.
  */
 export function pickcareFront(progress: number, hash: string): number {
   const target = parseJourneyHash(hash);
   if (target?.slug === PICKCARE.slug) return PICKCARE.repos.indexOf(activeRepo(PICKCARE, target.repo));
-  const range = rangeOf("pickcare");
-  const t = clamp01((progress - range.start) / (range.end - range.start));
-  return Math.min(REPO_COUNT - 1, Math.floor(REPO_COUNT * t + FRONT_LEAD));
+  return Math.min(REPO_COUNT - 1, Math.floor(REPO_COUNT * hallRepoProgress(progress) + FRONT_LEAD));
 }
 
 /** 그리는 순서(먼 것부터, 같은 거리면 목록 순서). 반투명 화면이 겹쳐도 가까운 것이 위에 그려진다 */

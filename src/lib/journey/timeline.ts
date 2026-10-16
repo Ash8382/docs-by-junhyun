@@ -149,6 +149,23 @@ export function dwellWeight(progress: number): number {
  */
 export const HALL_VIEW_EDGE = 0.12;
 
+/**
+ * PiCKCARE 저장소 패널이 지나가는 구간(화면): 구역 위에서 HALL_REPO_START만큼 늦게 시작하고 아래에서 HALL_REPO_END만큼 일찍 끝난다
+ * (스펙 3절 "PiCKCARE 앞줄", 2026-10-16). 홀로그램 줄은 정류장에 고정돼 있고 카메라는 지금 차를 돌아보므로, 차가 들어오는 동안은 줄이
+ * 오른쪽 패널 쪽으로, 떠나는 동안은 왼쪽 소개 패널 쪽으로 밀린다. 첫 저장소와 마지막 저장소를 읽는 동안 그 홀로그램이 제자리에 서도록
+ * 패널을 차가 거의 다 들어온 뒤부터 떠나기 시작할 때까지 둔다. 네 화면 크기에서 실제 빌드를 재 정했다.
+ * 본문 배치(JourneyContent)와 앞줄 판정(pickcareFront)이 같이 쓴다.
+ */
+export const HALL_REPO_START = 1.2;
+export const HALL_REPO_END = 0.7;
+
+/** PiCKCARE 저장소 진행률(0~1): 저장소 패널 구간 안의 위치. 구간 앞은 0, 뒤는 1이다 */
+export function hallRepoProgress(progress: number): number {
+  const range = rangeOf("pickcare");
+  const screens = ((progress - range.start) / (range.end - range.start)) * range.stop.length;
+  return clamp01((screens - HALL_REPO_START) / (range.stop.length - HALL_REPO_START - HALL_REPO_END));
+}
+
 /** 카메라가 정류장 시점으로 도는 정도(0~1). 프로젝트 정류장은 머무는 정도(dwellWeight)와 같고, PiCKCARE는 구간 앞뒤 12%에서 돈다 */
 export function viewWeight(progress: number): number {
   const { range, t } = stopAt(progress);

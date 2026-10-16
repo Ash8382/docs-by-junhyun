@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { projects } from "@/data/projects";
 import {
+  HALL_REPO_END,
+  HALL_REPO_START,
   OVERVIEW_ARRIVAL,
   PATH_LENGTH,
   SCROLL_LENGTH,
@@ -9,6 +11,7 @@ import {
   TOTAL_LENGTH,
   UNITS_PER_SCREEN,
   dwellWeight,
+  hallRepoProgress,
   objectSide,
   overviewWeight,
   pathParamAt,
@@ -162,5 +165,24 @@ describe("진행 거리", () => {
     expect(pathSpan("intro")).toEqual({ from: 0, to: 4 });
     expect(pathSpan("act-2")).toEqual({ from: 18, to: 20 });
     expect(pathSpan("pickcare")).toEqual({ from: 34, to: PATH_LENGTH });
+  });
+});
+
+describe("PiCKCARE 저장소 진행률", () => {
+  const range = rangeOf("pickcare");
+  /** PiCKCARE 구역 위에서 잰 화면 수의 진행률 */
+  const atScreens = (screens: number) => range.start + ((range.end - range.start) * screens) / range.stop.length;
+
+  it("저장소 패널 구간(앞에서 1.2화면 뒤 ~ 뒤에서 0.7화면 앞)의 시작에서 0, 끝에서 1이고 그 사이는 고르게 는다", () => {
+    expect(hallRepoProgress(atScreens(HALL_REPO_START))).toBeCloseTo(0, 9);
+    expect(hallRepoProgress(atScreens(range.stop.length - HALL_REPO_END))).toBeCloseTo(1, 9);
+    expect(hallRepoProgress(atScreens((HALL_REPO_START + range.stop.length - HALL_REPO_END) / 2))).toBeCloseTo(0.5, 9);
+  });
+
+  it("구간 밖은 0과 1로 자른다", () => {
+    expect(hallRepoProgress(0)).toBe(0);
+    expect(hallRepoProgress(range.start)).toBe(0);
+    expect(hallRepoProgress(range.end)).toBe(1);
+    expect(hallRepoProgress(1)).toBe(1);
   });
 });

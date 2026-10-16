@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // three에서 복사한 차 모델 디코더(scripts/build-car.ts). 서드파티 파일이다.
+    "public/journey/decoders/**",
   ]),
 ]);
 

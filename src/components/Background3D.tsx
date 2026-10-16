@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -74,6 +75,9 @@ function Stars(props: any) {
 }
 
 export function Background3D() {
+  const pathname = usePathname();
+  // 여정 페이지는 자기 캔버스와 시계를 쓴다. 별 배경이 함께 돌면 WebGL 화면과 애니메이션 루프가 둘이 된다.
+  if (pathname?.startsWith("/journey")) return null;
   return (
     <div className="fixed inset-0 -z-10 h-full w-full opacity-50 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 1] }}>

@@ -184,3 +184,25 @@ h1, h2, h3, h4, h5, h6 {
   color: #fafafa !important;
 }
 
+/* 여정 페이지: 움직이는 3D 캔버스 위의 배경 흐림(backdrop-filter)은 매 프레임 GPU 재합성을 일으켜 스크롤을 끊는다. */
+body:has([data-journey-page]) [data-site-header] {
+  backdrop-filter: none;
+  background-color: rgb(9 9 11 / 0.92);
+}
+
+/* 여정 페이지: 화면에 고정된 3D 캔버스(z-0)가 위치 지정 없는 푸터를 덮지 않게 올리고, 장면이 비치지 않게 칠한다. */
+body:has([data-journey-page]) [data-site-footer] {
+  position: relative;
+  z-index: 10;
+  background-color: rgb(9 9 11);
+}
+
+/* 여정 페이지: 3D 장면을 준비하는 동안 흐르는 로딩 막대(SceneLoading) */
+@keyframes journey-loading {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}

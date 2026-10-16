@@ -35,6 +35,13 @@ export default function Home() {
             >
               About
             </Link>
+            <span className="text-border">|</span>
+            <Link
+              href="/journey"
+              className="hover:text-foreground transition-colors underline underline-offset-4"
+            >
+              Journey
+            </Link>
           </div>
         </section>
       </FadeIn>

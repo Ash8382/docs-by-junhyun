@@ -462,6 +462,7 @@ type JourneyStats = {
   textureBytes: number;
   progress: number;
   carPosition: [number, number, number] | null;
+  wheelTravel: number | null;
   holograms: HologramStats | null;
 };
 
@@ -501,6 +502,26 @@ test("차 모델이 늦게 와도 나타나는 순간 지금 진행률의 자세
   const expected = driveAt(stats.progress).car.position;
   expect(stats.carPosition).not.toBeNull();
   stats.carPosition?.forEach((value, axis) => expect(value).toBeCloseTo(expected[axis], 2));
+});
+
+// 스펙 3절 "차": 바퀴는 차가 달린 도로 거리만큼 구른다. 거리는 스크롤 위치로 정해져 위로 스크롤하면 거꾸로 돈다.
+test("바퀴가 구른 거리는 지금 차가 달린 도로 거리이고, 위로 스크롤하면 준다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "model");
+  const travels: number[] = [];
+  for (const progress of [middleOf("kokoa-clone"), middleOf("stock2u"), middleOf("todo-app")]) {
+    await scrollToProgress(page, progress);
+    await expect
+      .poll(async () => {
+        const stats = await readStats(page);
+        return stats.wheelTravel !== null && Math.abs(stats.progress - progress) < 1e-4 && Math.abs(stats.wheelTravel - driveAt(stats.progress).carS) < 0.01;
+      })
+      .toBe(true);
+    travels.push((await readStats(page)).wheelTravel ?? NaN);
+  }
+  expect(travels[1]).toBeGreaterThan(travels[0]);
+  expect(travels[2]).toBeLessThan(travels[1]);
 });
 
 // 스펙 7절: 준비 뒤 스크롤 중에 셰이더 프로그램이 새로 생기지 않고, 가장 무거운 프레임의 드로콜이 60개 이하다.

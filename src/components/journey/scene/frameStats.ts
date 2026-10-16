@@ -38,6 +38,8 @@ export interface JourneyStats {
   progress: number;
   /** 지난 프레임에 그린 차(모델·실루엣)의 자리 */
   carPosition: [number, number, number] | null;
+  /** 차 모델의 바퀴가 구른 거리(m). 실루엣이거나 모델이 없으면 null */
+  wheelTravel: number | null;
   car: CarStatus;
   /** 홀로그램(2-3a). 배열을 만들지 못하면 켜진 것이 없다 */
   holograms: HologramStats | null;
@@ -185,6 +187,7 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
     textureBytes: 0,
     progress: 0,
     carPosition: null,
+    wheelTravel: null,
     car: getCarStatus(),
     holograms: latestHolograms,
   };
@@ -202,6 +205,8 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
       stats.car = getCarStatus();
       const car = scene.getObjectByName("journey-car");
       stats.carPosition = car ? (car.getWorldPosition(carWorld).toArray() as [number, number, number]) : null;
+      const travel = scene.getObjectByName("journey-car-model")?.userData.wheelTravel as { value: number } | undefined;
+      stats.wheelTravel = travel ? travel.value : null;
       if (ready && stats.calls > stats.maxCalls) {
         stats.maxCalls = stats.calls;
         stats.maxCallsProgress = stats.progress;

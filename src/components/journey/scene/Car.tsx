@@ -8,7 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { BASIS_PATH, CAR_URL, DRACO_PATH } from "@/lib/journey/carAsset";
 import { setCarStatus } from "@/lib/journey/sceneStatus";
-import { applyCarLights, placeCar, prepareCar } from "./carModel";
+import { applyCarLights, applyWheelTravel, placeCar, prepareCar } from "./carModel";
 import { CarSilhouette } from "./CarSilhouette";
 import { currentDrive } from "./driveFrame";
 
@@ -43,7 +43,11 @@ function CarModel() {
     setCarStatus("model");
     return () => car.dispose();
   }, [car]);
-  useFrame(() => applyCarLights(car.headlights, car.taillights, currentDrive()));
+  useFrame(() => {
+    const drive = currentDrive();
+    applyCarLights(car.headlights, car.taillights, drive);
+    applyWheelTravel(car, drive);
+  });
   return <primitive object={car.object} />;
 }
 

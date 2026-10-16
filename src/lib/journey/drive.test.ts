@@ -307,6 +307,14 @@ describe("카메라", () => {
     }
   });
 
+  it("PiCKCARE는 차가 아직 들어오는 동안(구간 12%)에 이미 정류장 시점이다", () => {
+    const range = rangeOf("pickcare");
+    const state = driveAt(range.start + (range.end - range.start) * 0.12);
+    expect(state.speed).toBeGreaterThan(0);
+    // 정류장 시점은 차의 비스듬한 앞옆에서 차를 돌아본다: 카메라가 차보다 앞에 있다
+    expect(dot(sub(state.camera.position, state.car.position), state.car.tangent)).toBeGreaterThan(0);
+  });
+
   // 정류장 패널: 넓은 화면에서 왼쪽(mr-auto) 또는 오른쪽(ml-auto)에 화면 폭의 약 1/3을 차지한다(JourneyContent).
   it("정류장에 머무는 동안 차는 본문 패널 반대편 화면 절반에 선다", () => {
     for (const range of STOP_RANGES.filter((item) => item.stop.pin)) {

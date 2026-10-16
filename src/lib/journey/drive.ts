@@ -4,7 +4,6 @@ import {
   SCROLL_LENGTH,
   STOP_RANGES,
   UNITS_PER_SCREEN,
-  dwellWeight,
   objectSide,
   overviewWeight,
   pathParamAt,
@@ -13,6 +12,7 @@ import {
   stopAt,
   type Stop,
   type Vec3,
+  viewWeight,
 } from "./timeline";
 
 /**
@@ -309,7 +309,7 @@ function orbitSide(screenSide: -1 | 1): number {
 
 function cameraFor(carS: number, car: RoadFrame, progress: number): CameraPose {
   const { range } = stopAt(progress);
-  const weight = dwellWeight(progress);
+  const weight = viewWeight(progress);
   const side = range.stop.pin ? orbitSide(stopScreenSide(range.stop)) : 1;
   const angle = STOP_VIEW.angle * weight;
   const radius = lerp(Math.hypot(CHASE.back, 0), STOP_VIEW.radius, weight);

@@ -15,6 +15,7 @@ import {
   pathSpan,
   rangeOf,
   stopAt,
+  viewWeight,
 } from "./timeline";
 
 describe("정류장", () => {
@@ -111,6 +112,31 @@ describe("진행 거리", () => {
       expect(dwellWeight(at(0.5)), range.stop.id).toBe(1);
       expect(dwellWeight(at(0)), range.stop.id).toBe(0);
       expect(dwellWeight(at(0.999999)), range.stop.id).toBeLessThan(1e-6);
+    }
+  });
+
+  it("카메라가 정류장 시점으로 도는 정도는 프로젝트 정류장에서 머무는 정도와 같다", () => {
+    for (const range of STOP_RANGES.filter((item) => item.stop.kind === "project")) {
+      for (const t of [0, 0.1, 0.2, 0.5, 0.8, 0.9, 0.999]) {
+        const p = range.start + (range.end - range.start) * t;
+        expect(viewWeight(p), `${range.stop.id} ${t}`).toBe(dwellWeight(p));
+      }
+    }
+  });
+
+  it("PiCKCARE에서는 구간 앞뒤 12%에서 정류장 시점으로 돌고, 그 사이 내내 정류장 시점이다", () => {
+    const range = rangeOf("pickcare");
+    const at = (t: number) => range.start + (range.end - range.start) * t;
+    expect(viewWeight(at(0))).toBe(0);
+    expect(viewWeight(at(0.06))).toBeGreaterThan(0.4);
+    expect(viewWeight(at(0.06))).toBeLessThan(0.6);
+    for (const t of [0.12, 0.2, 0.5, 0.8, 0.88]) expect(viewWeight(at(t)), `t=${t}`).toBe(1);
+    expect(viewWeight(at(0.999999))).toBeLessThan(1e-6);
+  });
+
+  it("정류장 시점은 정류장이 아닌 곳에서 0이다", () => {
+    for (const range of STOP_RANGES.filter((item) => !item.stop.pin)) {
+      expect(viewWeight((range.start + range.end) / 2), range.stop.id).toBe(0);
     }
   });
 

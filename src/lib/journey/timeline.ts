@@ -143,6 +143,19 @@ export function dwellWeight(progress: number): number {
   return smoothstep(0, 0.25, t) * (1 - smoothstep(0.75, 1, t));
 }
 
+/**
+ * PiCKCARE 전시실에서 카메라가 정류장 시점으로 도는 구간(앞뒤, 구간 비율). 다섯 화면에 걸친 저장소 패널이 각자 보이는 동안
+ * 홀로그램 줄이 화면에 있도록 다른 고정 정류장(1/4)보다 일찍 돌고 늦게 돌아온다(스펙 3절 "카메라", 2-3a). 차의 움직임은 그대로다.
+ */
+export const HALL_VIEW_EDGE = 0.12;
+
+/** 카메라가 정류장 시점으로 도는 정도(0~1). 프로젝트 정류장은 머무는 정도(dwellWeight)와 같고, PiCKCARE는 구간 앞뒤 12%에서 돈다 */
+export function viewWeight(progress: number): number {
+  const { range, t } = stopAt(progress);
+  if (range.stop.kind === "hall") return smoothstep(0, HALL_VIEW_EDGE, t) * (1 - smoothstep(1 - HALL_VIEW_EDGE, 1, t));
+  return dwellWeight(progress);
+}
+
 /** 진행률의 경로 거리. 입구에서는 출발선에 서 있다가 출발하고(스펙 2절 "차가 출발선에 서 있다"), 고정 구간에서는 멈춘다. */
 export function pathParamAt(progress: number): number {
   const { range, t } = stopAt(progress);

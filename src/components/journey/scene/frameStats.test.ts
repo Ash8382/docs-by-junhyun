@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   CompressedTexture,
   CubeTexture,
+  DataArrayTexture,
   DataTexture,
   EquirectangularReflectionMapping,
   HalfFloatType,
   LinearFilter,
+  LinearMipmapLinearFilter,
   Mesh,
   MeshStandardMaterial,
   RGBAFormat,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   Texture,
   WebGLCubeRenderTarget,
 } from "three";
@@ -76,6 +79,35 @@ describe("텍스처 메모리 추정", () => {
     sky.minFilter = LinearFilter;
     scene.add(new Mesh(undefined, new ShaderMaterial({ uniforms: { uGalaxy: { value: sky }, uIntensity: { value: 1 } } })));
     expect(sceneTextureBytes(scene)).toBe(128 * 64 * 4);
+  });
+
+  it("배열 텍스처는 층 수를 곱한다(밉맵이면 4/3배)", () => {
+    const flat = new DataArrayTexture(new Uint8Array(8 * 4 * 4 * 3), 8, 4, 3);
+    expect(textureBytes(flat)).toBe(8 * 4 * 4 * 3);
+    const mipmapped = new DataArrayTexture(new Uint8Array(8 * 4 * 4 * 3), 8, 4, 3);
+    mipmapped.generateMipmaps = true;
+    mipmapped.minFilter = LinearMipmapLinearFilter;
+    expect(textureBytes(mipmapped)).toBe(Math.round(8 * 4 * 4 * 3 * (4 / 3)));
+  });
+
+  it("원본과 업로드 설정이 같은 복제 텍스처는 한 번만 센다(차 Occlusion을 재질마다 복제한다)", () => {
+    const scene = new Scene();
+    const original = imageTexture(64, 64);
+    original.generateMipmaps = false;
+    original.minFilter = LinearFilter;
+    for (let i = 0; i < 3; i++) scene.add(new Mesh(undefined, new MeshStandardMaterial({ aoMap: original.clone() })));
+    expect(sceneTextureBytes(scene)).toBe(64 * 64 * 4);
+  });
+
+  it("원본이 같아도 업로드 설정(색 공간 등)이 다르면 따로 센다", () => {
+    const scene = new Scene();
+    const linear = imageTexture(64, 64);
+    linear.generateMipmaps = false;
+    linear.minFilter = LinearFilter;
+    const srgb = linear.clone();
+    srgb.colorSpace = SRGBColorSpace;
+    scene.add(new Mesh(undefined, new MeshStandardMaterial({ map: srgb, aoMap: linear })));
+    expect(sceneTextureBytes(scene)).toBe(2 * 64 * 64 * 4);
   });
 
   it("장면의 배경·재질 텍스처를 한 번씩만 센다", () => {

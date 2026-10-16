@@ -11,6 +11,10 @@ import { rangeOf } from "@/lib/journey/timeline";
  * 정류장에서 길이 열리는 동안 넷(먼 경계), 휠로 천천히·빠르게 굴리는 도중 넷씩(이동 속도) — 4×4 한 장.
  * CAPTURE_SET=holograms는 막별 홀로그램 장면(스펙 3절 "제품 화면 홀로그램")을 본다: 1막 다가갈 때, 2막 머묾,
  * PiCKCARE 들어설 때·머묾·떠날 때, 엔딩(빛 원반만 남는다) — 3×3 한 장.
+ * CAPTURE_SET=hall은 PiCKCARE 저장소 패널과 앞줄 홀로그램을 본다(스펙 3절 "PiCKCARE 앞줄"). 본문에서 패널 자리를 재
+ * 저장소마다 읽기 구간(그 패널만 화면 안에 다 들어온 구간)과 단독 노출 구간(그 패널만 조금이라도 보이는 구간)을 찾고,
+ * frontend 단독 노출 시작·읽기 시작·읽기 끝, biz·studio·app 읽기 가운데, cardnews 읽기 시작·읽기 끝·단독 노출 끝을 찍는다 — 3×3 한 장.
+ * CAPTURE_VIEWPORT=1280x720처럼 화면 크기를 바꾼다(기본 1440x900).
  * 기본은 GPU를 쓰는 실제 Chrome 창이다.
  *
  * 사용법:
@@ -18,16 +22,21 @@ import { rangeOf } from "@/lib/journey/timeline";
  *   CAPTURE_NAME=2-2b npm run capture:journey       # → test-results/journey-captures/2-2b/ (git에 넣지 않는다)
  *   CAPTURE_SET=edge CAPTURE_NAME=2-2b-edge npm run capture:journey
  *   CAPTURE_SET=holograms CAPTURE_NAME=2-3a npm run capture:journey
+ *   CAPTURE_SET=hall CAPTURE_VIEWPORT=1280x720 CAPTURE_NAME=hall-1280x720 npm run capture:journey
  *   CAPTURE_HEADLESS=1을 더하면 창 없이 찍는다(소프트웨어 렌더링이라 색과 속도는 실제와 다르다).
  */
 const TARGET_URL = process.env.CAPTURE_URL ?? "http://localhost:3200/journey";
 const NAME = process.env.CAPTURE_NAME ?? "latest";
 const SET = process.env.CAPTURE_SET ?? "stops";
 const HEADLESS = process.env.CAPTURE_HEADLESS === "1";
-const VIEWPORT = { width: 1440, height: 900 };
+const VIEWPORT = (() => {
+  const [width, height] = (process.env.CAPTURE_VIEWPORT ?? "1440x900").split("x").map(Number);
+  return { width, height };
+})();
 const READY_TIMEOUT = 30_000;
 const SETTLE_MS = 2500; // 카메라 감쇠가 목표 자리에 닿을 때까지
-const TILE = { width: 480, height: 300 };
+// 화면 비율 그대로 줄인다(16:9 화면을 16:10 칸에 맞추면 양옆의 패널이 잘린다)
+const TILE = { width: 480, height: Math.round((480 * VIEWPORT.height) / VIEWPORT.width) };
 
 /** [파일 이름, 정류장, 정류장 안의 위치(0~1)] */
 const SHOTS: [string, string, number][] = [
@@ -86,6 +95,55 @@ async function captureStops(page: Page, outDir: string, shots: [string, string, 
   return files;
 }
 
+/** PiCKCARE 저장소 패널 다섯(본문 HallStop: 위에 머무는 소개 아래, 저장소마다 블록 하나)의 세로 자리(화면 비율)와 헤더 아래끝 */
+async function readHallPanels(page: Page): Promise<{ header: number; repos: [number, number][] }> {
+  return page.evaluate(() => {
+    const header = document.querySelector("[data-site-header]");
+    const repos = [...document.querySelectorAll("#stop-pickcare > .absolute > div > div")];
+    if (!header || repos.length !== 5) throw new Error("헤더나 PiCKCARE 저장소 패널을 찾지 못했습니다");
+    return {
+      header: header.getBoundingClientRect().bottom / window.innerHeight,
+      repos: repos.map((panel) => {
+        const box = panel.getBoundingClientRect();
+        return [box.top / window.innerHeight, box.bottom / window.innerHeight] as [number, number];
+      }),
+    };
+  });
+}
+
+/** 저장소마다 읽기 구간과 단독 노출 구간을 재서(PiCKCARE 안의 위치 t) 찍을 자리를 정한다 */
+async function hallShots(page: Page): Promise<[string, string, number][]> {
+  const step = 0.0025;
+  const reading: number[][] = [[], [], [], [], []];
+  const alone: number[][] = [[], [], [], [], []];
+  for (let t = -0.1; t <= 1 + 1e-9; t += step) {
+    await scrollToProgress(page, progressOf("pickcare", t));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const { header, repos } = await readHallPanels(page);
+    const shown = repos.flatMap(([top, bottom], index) => (bottom > header && top < 1 ? [index] : []));
+    const full = repos.flatMap(([top, bottom], index) => (top >= header && bottom <= 1 ? [index] : []));
+    if (shown.length === 1) alone[shown[0]].push(t);
+    if (full.length === 1) reading[full[0]].push(t);
+  }
+  const first = (list: number[]) => list[0];
+  const last = (list: number[]) => list[list.length - 1];
+  const middle = (list: number[]) => (first(list) + last(list)) / 2;
+  if (reading.some((list) => list.length === 0)) throw new Error("읽기 구간이 없는 저장소가 있습니다");
+  const shots: [string, number][] = [
+    ["01-frontend-alone-start", first(alone[0])],
+    ["02-frontend-reading-start", first(reading[0])],
+    ["03-frontend-reading-end", last(reading[0])],
+    ["04-biz-reading", middle(reading[1])],
+    ["05-studio-reading", middle(reading[2])],
+    ["06-app-reading", middle(reading[3])],
+    ["07-cardnews-reading-start", first(reading[4])],
+    ["08-cardnews-reading-end", last(reading[4])],
+    ["09-cardnews-alone-end", last(alone[4])],
+  ];
+  for (const [name, t] of shots) console.log(`${name}: PiCKCARE t ${t.toFixed(4)}`);
+  return shots.map(([name, t]) => [name, "pickcare", t]);
+}
+
 async function captureEdge(page: Page, outDir: string): Promise<string[]> {
   const files: string[] = [];
   for (const [label, id, within] of [
@@ -130,7 +188,11 @@ async function main() {
     const files =
       SET === "edge"
         ? await captureEdge(page, outDir)
-        : await captureStops(page, outDir, SET === "holograms" ? HOLOGRAM_SHOTS : SHOTS);
+        : await captureStops(
+            page,
+            outDir,
+            SET === "hall" ? await hallShots(page) : SET === "holograms" ? HOLOGRAM_SHOTS : SHOTS,
+          );
     const columns = SET === "edge" ? 4 : 3;
     const rows = Math.ceil(files.length / columns);
     const tiles = await Promise.all(files.map((file) => sharp(file).resize(TILE.width, TILE.height).toBuffer()));

@@ -301,7 +301,26 @@ export const pickcare = {
         "TanStack Query",
         "Redux Toolkit",
       ],
-      screens: [],
+      screens: [
+        {
+          src: "/projects/pickcare/app/home.webp",
+          alt: "PiCKCARE 앱 홈 화면(App Store 스크린샷)",
+          width: 645,
+          height: 1395,
+        },
+        {
+          src: "/projects/pickcare/app/lounge.webp",
+          alt: "PiCKCARE 앱 픽라운지 화면(App Store 스크린샷)",
+          width: 645,
+          height: 1395,
+        },
+        {
+          src: "/projects/pickcare/app/pickylab.webp",
+          alt: "PiCKCARE 앱 픽키랩 화면(App Store 스크린샷)",
+          width: 645,
+          height: 1395,
+        },
+      ],
       cases: [
         {
           title: "'전부 옮긴다' 대신 도달 가능성을 실측해 범위를 절반으로 줄인 이식 설계",

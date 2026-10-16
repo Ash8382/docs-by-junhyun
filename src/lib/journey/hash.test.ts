@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DETAIL_SLUGS, journeyHash, parseJourneyHash } from "./hash";
+import { pickcare } from "@/data/projects/pickcare";
+import { DETAIL_SLUGS, activeRepo, journeyHash, parseJourneyHash } from "./hash";
 
 describe("해시", () => {
   it("상세가 있는 프로젝트는 코코아톡을 뺀 6개다", () => {
@@ -30,6 +31,11 @@ describe("해시", () => {
   it("해시를 만든다", () => {
     expect(journeyHash({ slug: "pfplay" })).toBe("#pfplay");
     expect(journeyHash({ slug: "pickcare", repo: "app" })).toBe("#pickcare/app");
+  });
+
+  it("상세가 보여 주는 저장소는 해시의 저장소, 없으면 첫 저장소다", () => {
+    expect(activeRepo(pickcare, "biz").id).toBe("biz");
+    expect(activeRepo(pickcare, undefined).id).toBe("frontend");
   });
 
   it("만든 해시를 다시 읽으면 같다", () => {

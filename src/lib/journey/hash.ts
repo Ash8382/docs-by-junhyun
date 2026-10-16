@@ -1,5 +1,5 @@
 import { projects } from "@/data/projects";
-import type { RepoId } from "@/data/projects/types";
+import type { Repo, RepoId, ReposProject } from "@/data/projects/types";
 
 /** 상세 패널이 있는 프로젝트. 코코아톡은 캡션만 둔다(스펙 2절 "세 막"). */
 export const DETAIL_SLUGS = projects.map((project) => project.slug).filter((slug) => slug !== "kokoa-clone");
@@ -26,4 +26,9 @@ export function parseJourneyHash(hash: string): JourneyTarget | null {
 
 export function journeyHash(target: JourneyTarget): string {
   return target.repo ? `#${target.slug}/${target.repo}` : `#${target.slug}`;
+}
+
+/** 상세 패널이 보여 주는 저장소: 해시의 저장소, 없으면 첫 저장소. 3D의 PiCKCARE 앞줄(holograms.ts)도 같은 판정을 쓴다 */
+export function activeRepo(project: ReposProject, repoId?: RepoId): Repo {
+  return project.repos.find((repo) => repo.id === repoId) ?? project.repos[0];
 }

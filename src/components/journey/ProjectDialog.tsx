@@ -17,7 +17,7 @@ import {
 } from "@/data/projects/types";
 import { renderInline } from "@/lib/inline";
 import { lockScroll, unlockScroll } from "@/lib/journey/engine";
-import { journeyHash, parseJourneyHash } from "@/lib/journey/hash";
+import { activeRepo, journeyHash, parseJourneyHash } from "@/lib/journey/hash";
 import { getHash, getServerHash, pushHash, replaceHash, subscribeHash } from "@/lib/journey/hashStore";
 import { STOPS } from "@/lib/journey/timeline";
 
@@ -186,11 +186,15 @@ function DetailHeader({ project }: { project: Project }) {
   );
 }
 
-/** 원본 폭의 절반까지만 키워 레티나에서도 선명하게 보인다(썸네일이 작은 Stock2U·Tix2U 포함). */
+/**
+ * 원본 폭의 절반까지만 키워 레티나에서도 선명하게 보인다(썸네일이 작은 Stock2U·Tix2U 포함).
+ * 세로로 긴 휴대폰 화면(PiCKCARE app)은 한 줄에 나란히 둔다. 위아래로 쌓으면 패널 몇 화면을 차지한다.
+ */
 function Screens({ screens }: { screens: Screen[] }) {
   if (screens.length === 0) return null;
+  const phone = screens.every((screen) => screen.height > screen.width);
   return (
-    <section className="mt-6 space-y-3" aria-label="제품 화면">
+    <section className={phone ? "mt-6 grid grid-cols-3 gap-3" : "mt-6 space-y-3"} aria-label="제품 화면">
       {screens.map((screen) => (
         <Image
           key={screen.src}
@@ -198,9 +202,9 @@ function Screens({ screens }: { screens: Screen[] }) {
           alt={screen.alt}
           width={screen.width}
           height={screen.height}
-          sizes="(min-width: 640px) 512px, 100vw"
+          sizes={phone ? "(min-width: 640px) 170px, 33vw" : "(min-width: 640px) 512px, 100vw"}
           className="h-auto w-full rounded-lg border border-white/10"
-          style={{ maxWidth: screen.width / 2 }}
+          style={phone ? undefined : { maxWidth: screen.width / 2 }}
         />
       ))}
     </section>
@@ -270,7 +274,7 @@ function StandardDetail({ project, light }: { project: StandardProject; light: b
 }
 
 function ReposDetail({ project, repoId }: { project: ReposProject; repoId?: RepoId }) {
-  const active = project.repos.find((repo) => repo.id === repoId) ?? project.repos[0];
+  const active = activeRepo(project, repoId);
   return (
     <>
       <div role="tablist" aria-label="저장소" className="mt-6 flex flex-wrap gap-1 border-b border-white/10">

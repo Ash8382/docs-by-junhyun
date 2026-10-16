@@ -8,6 +8,7 @@ import { CAR_CREDIT } from "@/lib/journey/carAsset";
 import { DETAIL_SLUGS, journeyHash } from "@/lib/journey/hash";
 import { STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
 import { EmailCopy } from "./EmailCopy";
+import { HologramThumbnail } from "./HologramThumbnail";
 
 const EMAIL = "one31798883@gmail.com";
 /** 배경 은하 사진의 원본(NASA SVS Deep Star Maps 2020). 라이선스가 출처 표기를 요구한다 */
@@ -119,15 +120,18 @@ function ExhibitStop({ stop }: { stop: Stop }) {
         <StackChips stack={project.stack} />
         {thumbnail && (
           // 썸네일이 작은 글(Stock2U·Tix2U는 폭 약 720px)도 레티나에서 선명하도록 원본 폭의 절반까지만 키운다.
-          <Image
-            src={thumbnail.src}
-            alt={thumbnail.alt}
-            width={thumbnail.width}
-            height={thumbnail.height}
-            sizes="360px"
-            className="mt-4 h-auto w-full rounded-lg border border-white/10"
-            style={{ maxWidth: Math.min(360, thumbnail.width / 2) }}
-          />
+          // 같은 프로젝트의 홀로그램이 3D에 켜져 있으면 화면에서만 감춘다.
+          <HologramThumbnail id={project.slug}>
+            <Image
+              src={thumbnail.src}
+              alt={thumbnail.alt}
+              width={thumbnail.width}
+              height={thumbnail.height}
+              sizes="360px"
+              className="mt-4 h-auto w-full rounded-lg border border-white/10"
+              style={{ maxWidth: Math.min(360, thumbnail.width / 2) }}
+            />
+          </HologramThumbnail>
         )}
         <DetailLink slug={project.slug} label={project.title} />
       </div>

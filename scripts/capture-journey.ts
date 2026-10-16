@@ -9,12 +9,15 @@ import { rangeOf } from "@/lib/journey/timeline";
  * 본문 패널·진행 막대가 함께 찍혀 어느 막의 빛 위에서도 글이 읽히는지 본다.
  * CAPTURE_SET=edge는 열린 끝 경계선의 안정성(스펙 8절 4항)을 본다: 멈춘 채 0.1초 간격 넷(노이즈 흐름과 깜빡임),
  * 정류장에서 길이 열리는 동안 넷(먼 경계), 휠로 천천히·빠르게 굴리는 도중 넷씩(이동 속도) — 4×4 한 장.
+ * CAPTURE_SET=holograms는 막별 홀로그램 장면(스펙 3절 "제품 화면 홀로그램")을 본다: 1막 다가갈 때, 2막 머묾,
+ * PiCKCARE 들어설 때·머묾·떠날 때, 엔딩(빛 원반만 남는다) — 3×3 한 장.
  * 기본은 GPU를 쓰는 실제 Chrome 창이다.
  *
  * 사용법:
  *   npx next build && npx next start --port 3200   # 다른 터미널
  *   CAPTURE_NAME=2-2b npm run capture:journey       # → test-results/journey-captures/2-2b/ (git에 넣지 않는다)
  *   CAPTURE_SET=edge CAPTURE_NAME=2-2b-edge npm run capture:journey
+ *   CAPTURE_SET=holograms CAPTURE_NAME=2-3a npm run capture:journey
  *   CAPTURE_HEADLESS=1을 더하면 창 없이 찍는다(소프트웨어 렌더링이라 색과 속도는 실제와 다르다).
  */
 const TARGET_URL = process.env.CAPTURE_URL ?? "http://localhost:3200/journey";
@@ -39,6 +42,19 @@ const SHOTS: [string, string, number][] = [
   ["09-ending", "ending", 1],
 ];
 
+/** 막별 홀로그램 장면 */
+const HOLOGRAM_SHOTS: [string, string, number][] = [
+  ["01-todo-app", "todo-app", 0.1],
+  ["02-eutcha", "eutcha", 0.1],
+  ["03-stock2u", "stock2u", 0.5],
+  ["04-tix2u", "tix2u", 0.5],
+  ["05-pfplay", "pfplay", 0.5],
+  ["06-pickcare-enter", "pickcare", 0.1],
+  ["07-pickcare", "pickcare", 0.5],
+  ["08-pickcare-leave", "pickcare", 0.86],
+  ["09-ending", "ending", 1],
+];
+
 function progressOf(id: string, within: number): number {
   const range = rangeOf(id);
   return range.start + (range.end - range.start) * within;
@@ -60,9 +76,9 @@ async function shoot(page: Page, outDir: string, name: string, files: string[]):
   files.push(file);
 }
 
-async function captureStops(page: Page, outDir: string): Promise<string[]> {
+async function captureStops(page: Page, outDir: string, shots: [string, string, number][]): Promise<string[]> {
   const files: string[] = [];
-  for (const [name, id, within] of SHOTS) {
+  for (const [name, id, within] of shots) {
     await scrollToProgress(page, progressOf(id, within));
     await page.waitForTimeout(SETTLE_MS);
     await shoot(page, outDir, name, files);
@@ -111,7 +127,10 @@ async function main() {
     await page.addInitScript("window.__name = (target) => target;");
     await page.goto(TARGET_URL, { waitUntil: "load" });
     await page.locator('[data-journey-scene][data-state="ready"]').waitFor({ timeout: READY_TIMEOUT });
-    const files = SET === "edge" ? await captureEdge(page, outDir) : await captureStops(page, outDir);
+    const files =
+      SET === "edge"
+        ? await captureEdge(page, outDir)
+        : await captureStops(page, outDir, SET === "holograms" ? HOLOGRAM_SHOTS : SHOTS);
     const columns = SET === "edge" ? 4 : 3;
     const rows = Math.ceil(files.length / columns);
     const tiles = await Promise.all(files.map((file) => sharp(file).resize(TILE.width, TILE.height).toBuffer()));

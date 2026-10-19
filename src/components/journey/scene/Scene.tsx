@@ -19,6 +19,7 @@ import { Car } from "./Car";
 import { Dust } from "./Dust";
 import { Effects } from "./Effects";
 import { Holograms } from "./Holograms";
+import { Landscape } from "./Landscape";
 import { Road } from "./Road";
 import { Sky } from "./Sky";
 import { Streaks } from "./Streaks";
@@ -67,7 +68,7 @@ function SceneFrame({ children }: { children: ReactNode }) {
 }
 
 /**
- * 여정 3D 장면: 우주를 달리는 차와 빛의 길(스펙 3절). R3F 자체 루프를 끄고(frameloop="never") 시계 하나가 그 캔버스의 advance로 그린다.
+ * 여정 3D 장면: 우주를 달리는 차와 빛의 길, 막별 풍경(스펙 3절). R3F 자체 루프를 끄고(frameloop="never") 시계 하나가 그 캔버스의 advance로 그린다.
  * 차·카메라·열린 길·발광은 모두 진행률의 순수 함수(driveAt)에서 나온다. 렌더 단계는 Warmup이 셰이더를 미리 컴파일한 뒤에 건다.
  * 이 파일과 scene/ 아래만 three·R3F를 import한다. JourneyStage가 동적으로 불러온다.
  */
@@ -82,6 +83,7 @@ export default function Scene() {
         <Car />
         <Streaks />
         <Dust />
+        <Landscape />
         <Holograms />
         <Effects />
         <Warmup />

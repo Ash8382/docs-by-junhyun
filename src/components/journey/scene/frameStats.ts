@@ -43,6 +43,8 @@ export interface JourneyStats {
   car: CarStatus;
   /** 홀로그램(2-3a). 배열을 만들지 못하면 켜진 것이 없다 */
   holograms: HologramStats | null;
+  /** 막별 풍경(2-3b) */
+  landscape: LandscapeStats | null;
 }
 
 /** 홀로그램의 한 프레임(e2e가 클릭 좌표·호버·밝아짐·앞줄을 확인한다) */
@@ -57,6 +59,20 @@ export interface HologramStats {
   front: string;
   /** 보이는 홀로그램의 그림 영역: 화면 비율 좌표(왼쪽·위·오른쪽·아래, 0~1), 카메라 거리, 누를 수 있는가 */
   screens: { id: string; rect: [number, number, number, number]; distance: number; target: boolean }[];
+}
+
+/** 막별 풍경의 한 프레임(e2e가 막 단위 등장·지오메트리 고정·가림·첨탑 자리를 확인한다) */
+export interface LandscapeStats {
+  /** 메시마다: 보이는가, 지난 프레임에 그린 횟수, 지오메트리 표지(uuid:정점 버전, 바뀌면 다시 만든 것) */
+  meshes: { name: string; visible: boolean; calls: number; geometry: string }[];
+  /** 재질에 넣은 uniform */
+  revealS: number;
+  carS: number;
+  ending: number;
+  /** 장면의 실제 카메라 자리 */
+  camera: [number, number, number];
+  /** 첨탑의 도로 위 부분이 화면에서 차지하는 사각형(왼쪽·위·오른쪽·아래, 0~1). 카메라 뒤에 있거나 감췄으면 null */
+  spire: [number, number, number, number] | null;
 }
 
 type StatsWindow = Window & { __journeyStats?: JourneyStats };
@@ -160,6 +176,7 @@ export function sceneTextureBytes(scene: Scene): number {
 }
 
 let latestHolograms: HologramStats | null = null;
+let latestLandscape: LandscapeStats | null = null;
 
 /**
  * 홀로그램 통계를 쓴다(?debug=stats일 때만 통계가 있다). 통계 기록기(Warmup)보다 먼저 올 수 있어(배열을 만들지 못한 경우)
@@ -169,6 +186,13 @@ export function recordHolograms(holograms: HologramStats | null): void {
   latestHolograms = holograms;
   const stats = (window as StatsWindow).__journeyStats;
   if (stats) stats.holograms = holograms;
+}
+
+/** 풍경 통계를 쓴다(?debug=stats일 때만 통계가 있다). 홀로그램처럼 마지막 값을 들고 있다가 기록기가 생길 때 넣는다 */
+export function recordLandscape(landscape: LandscapeStats | null): void {
+  latestLandscape = landscape;
+  const stats = (window as StatsWindow).__journeyStats;
+  if (stats) stats.landscape = landscape;
 }
 
 const carWorld = new Vector3();
@@ -190,6 +214,7 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
     wheelTravel: null,
     car: getCarStatus(),
     holograms: latestHolograms,
+    landscape: latestLandscape,
   };
   let ready = false;
   (window as StatsWindow).__journeyStats = stats;

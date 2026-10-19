@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { driveAt } from "../src/lib/journey/drive";
 import { projects } from "../src/data/projects";
 import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT } from "../src/lib/journey/holograms";
+import { occlusionTargets } from "../src/lib/journey/landscapeOcclusion";
 import { HALL_REPO_END, HALL_REPO_START, rangeOf } from "../src/lib/journey/timeline";
 
 // WebGL을 쓸 수 없는 기기를 흉내 낸다. 3D 없이도 본문과 상세가 동작해야 한다(스펙 5절).
@@ -454,6 +455,15 @@ type HologramStats = {
   screens: { id: string; rect: [number, number, number, number]; distance: number; target: boolean }[];
 };
 
+type LandscapeStats = {
+  meshes: { name: string; visible: boolean; calls: number; geometry: string }[];
+  revealS: number;
+  carS: number;
+  ending: number;
+  camera: [number, number, number];
+  spire: [number, number, number, number] | null;
+};
+
 type JourneyStats = {
   frames: number;
   maxCalls: number;
@@ -464,6 +474,7 @@ type JourneyStats = {
   carPosition: [number, number, number] | null;
   wheelTravel: number | null;
   holograms: HologramStats | null;
+  landscape: LandscapeStats | null;
 };
 
 async function readStats(page: Page): Promise<JourneyStats> {
@@ -960,4 +971,133 @@ test("실행 중 장면이 실패하면(컨텍스트 손실) 2막 썸네일이 �
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
   await page.keyboard.press("End");
   await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+// ── 막별 풍경(2-3b, 스펙 1절 완료 조건과 3절 "막별 풍경") ───────────────────
+
+const LANDSCAPE_MESHES = ["journey-landscape-act1", "journey-landscape-act2", "journey-landscape-act3", "journey-landscape-spire"];
+
+/** 진행률 p로 스크롤하고 그 자리의 풍경 통계를 낸다. 그린 횟수는 지난 프레임 값이라 그 자리에서 한 프레임 넘게 기다린다 */
+async function landscapeAt(page: Page, progress: number): Promise<LandscapeStats> {
+  await scrollToProgress(page, progress);
+  const carS = driveAt(progress).carS;
+  await expect
+    .poll(async () => {
+      const landscape = (await readStats(page)).landscape;
+      return landscape !== null && Math.abs(landscape.carS - carS) < 1e-6;
+    })
+    .toBe(true);
+  await page.waitForTimeout(200);
+  const landscape = (await readStats(page)).landscape;
+  if (!landscape) throw new Error("풍경 통계가 없습니다");
+  return landscape;
+}
+
+test("풍경 메시 넷: 1막에서는 3막 메시를 그리지 않고, 끝까지 갔다 돌아와도 지오메트리와 그 자리의 값이 같다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  const act1 = await landscapeAt(page, middleOf("kokoa-clone"));
+  expect(act1.meshes.map((mesh) => mesh.name)).toEqual(LANDSCAPE_MESHES);
+  expect(act1.meshes.map((mesh) => mesh.visible)).toEqual([true, true, false, false]);
+  expect(act1.meshes[2].calls + act1.meshes[3].calls).toBe(0);
+  const act3 = await landscapeAt(page, at("act-3", 0.5));
+  expect(act3.meshes.map((mesh) => mesh.visible)).toEqual([true, true, true, true]);
+  expect(act3.meshes[3].calls).toBeGreaterThan(0);
+  await landscapeAt(page, 1);
+  const back = await landscapeAt(page, middleOf("kokoa-clone"));
+  expect(back.meshes.map((mesh) => mesh.geometry)).toEqual(act1.meshes.map((mesh) => mesh.geometry));
+  expect(back.meshes.map((mesh) => mesh.visible)).toEqual([true, true, false, false]);
+  expect([back.revealS, back.carS, back.ending]).toEqual([act1.revealS, act1.carS, act1.ending]);
+});
+
+test("다른 페이지에 다녀와도 풍경 메시 넷을 새로 만들어 그린다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  const before = await landscapeAt(page, at("act-3", 0.5));
+  await page.locator("[data-site-header]").getByRole("link", { name: "블로그", exact: true }).click();
+  await expect(page).not.toHaveURL(/\/journey/);
+  // 뒤로 가기로 돌아와 ?debug=stats를 지킨다(헤더 링크는 주소만 /journey다)
+  await page.goBack();
+  await waitReady(page);
+  const after = await landscapeAt(page, at("act-3", 0.5));
+  expect(after.meshes.map((mesh) => mesh.visible)).toEqual([true, true, true, true]);
+  expect(after.meshes.map((mesh) => mesh.geometry)).not.toEqual(before.meshes.map((mesh) => mesh.geometry));
+  expect(after.meshes[3].calls).toBeGreaterThan(0);
+});
+
+test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀로그램 모서리와 열린 도로가 풍경에 막히지 않는다", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("화면 크기가 없습니다");
+  const views: [string, number][] = [
+    ["stock2u", 0.5],
+    ["tix2u", 0.85],
+    ["pickcare", 0.06],
+    ["pickcare", 0.5],
+    ["ending", 1],
+  ];
+  for (const [id, within] of views) {
+    const progress = at(id, within);
+    await settleAt(page, progress);
+    const landscape = (await readStats(page)).landscape;
+    if (!landscape) throw new Error("풍경 통계가 없습니다");
+    const targets = occlusionTargets(progress, viewport.width / viewport.height, landscape.camera);
+    expect(targets.length, `${id} ${within}`).toBeGreaterThan(0);
+    const blocked = await page.evaluate(
+      ([from, points]) => {
+        const check = (window as Window & { __journeyLandscapeBlocked?: (from: unknown, targets: unknown) => (string | null)[] })
+          .__journeyLandscapeBlocked;
+        if (!check) throw new Error("풍경 가림 확인이 없습니다");
+        return check(from, points);
+      },
+      [landscape.camera, targets.map((target) => target.point)] as const,
+    );
+    const hits = targets.flatMap((target, index) => (blocked[index] ? [`${target.label} ← ${blocked[index]}`] : []));
+    expect(hits, `${id} ${within}`).toEqual([]);
+  }
+});
+
+test("3막 제목·진입·도착·떠날 때 첨탑이 헤더 아래 화면 안에 서고 본문 패널과 겹치지 않는다", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  // 두 화면 크기 × 네 자리마다 카메라가 자리를 잡을 때까지 기다린다
+  test.slow();
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    for (const [id, within] of [
+      ["act-3", 0.5],
+      ["act-3", 1],
+      ["pickcare", 0.03],
+      ["pickcare", 0.97],
+    ] as const) {
+      await settleAt(page, at(id, within));
+      const label = `${viewport.width}x${viewport.height} ${id} ${within}`;
+      const spire = (await readStats(page)).landscape?.spire;
+      if (!spire) throw new Error(`${label}: 첨탑이 화면에 없습니다`);
+      const layout = await page.evaluate(() => {
+        const header = document.querySelector("[data-site-header]");
+        if (!header) throw new Error("헤더가 없습니다");
+        const panels = [...document.querySelectorAll("[data-journey-page] .shadow-2xl")]
+          .map((panel) => {
+            const box = panel.getBoundingClientRect();
+            return [box.left / innerWidth, box.top / innerHeight, box.right / innerWidth, box.bottom / innerHeight];
+          })
+          .filter(([left, top, right, bottom]) => right > 0 && left < 1 && bottom > 0 && top < 1);
+        return { header: header.getBoundingClientRect().bottom / innerHeight, panels };
+      });
+      expect(spire[0], label).toBeGreaterThan(0.02);
+      expect(spire[2], label).toBeLessThan(0.98);
+      expect(spire[1], label).toBeGreaterThan(layout.header);
+      for (const panel of layout.panels) {
+        const overlap = spire[0] < panel[2] && panel[0] < spire[2] && spire[1] < panel[3] && panel[1] < spire[3];
+        expect(overlap, `${label} 패널 ${panel.map((value) => value.toFixed(2)).join(",")}`).toBe(false);
+      }
+    }
+  }
 });

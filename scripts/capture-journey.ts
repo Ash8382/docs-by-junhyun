@@ -14,6 +14,10 @@ import { rangeOf } from "@/lib/journey/timeline";
  * CAPTURE_SET=hall은 PiCKCARE 저장소 패널과 앞줄 홀로그램을 본다(스펙 3절 "PiCKCARE 앞줄"). 본문에서 패널 자리를 재
  * 저장소마다 읽기 구간(그 패널만 화면 안에 다 들어온 구간)과 단독 노출 구간(그 패널만 조금이라도 보이는 구간)을 찾고,
  * frontend 단독 노출 시작·읽기 시작·읽기 끝, biz·studio·app 읽기 가운데, cardnews 읽기 시작·읽기 끝·단독 노출 끝을 찍는다 — 3×3 한 장.
+ * CAPTURE_SET=landscape는 막별 풍경(스펙 3절 "막별 풍경 (2-3b)")을 세 막에 걸쳐 본다: 1막 진입·코코아톡·Todo·EUTCHA 끝,
+ * 2막 제목·Stock2U·Tix2U·PFPlay 끝, 3막 제목·PiCKCARE 머묾·떠날 때, 엔딩 — 열두 장, 3×4 한 장.
+ * CAPTURE_ORDER=reverse면 같은 자리를 거꾸로 찍는다(파일 이름은 같다). 정방향과 compare-captures로 비교한다(스펙 8절 4항).
+ * CAPTURE_SETTLE=3700처럼 자리마다 기다리는 시간(ms, 기본 2500)을 바꾼다.
  * CAPTURE_VIEWPORT=1280x720처럼 화면 크기를 바꾼다(기본 1440x900).
  * 기본은 GPU를 쓰는 실제 Chrome 창이다.
  *
@@ -23,18 +27,23 @@ import { rangeOf } from "@/lib/journey/timeline";
  *   CAPTURE_SET=edge CAPTURE_NAME=2-2b-edge npm run capture:journey
  *   CAPTURE_SET=holograms CAPTURE_NAME=2-3a npm run capture:journey
  *   CAPTURE_SET=hall CAPTURE_VIEWPORT=1280x720 CAPTURE_NAME=hall-1280x720 npm run capture:journey
- *   CAPTURE_HEADLESS=1을 더하면 창 없이 찍는다(소프트웨어 렌더링이라 색과 속도는 실제와 다르다).
+ *   CAPTURE_SET=landscape CAPTURE_NAME=2-3b npm run capture:journey
+ *   CAPTURE_SET=landscape CAPTURE_ORDER=reverse CAPTURE_NAME=2-3b-reverse npm run capture:journey
+ *   CAPTURE_HEADLESS=1을 더하면 창 없이 찍는다. 새 헤드리스(channel chromium)라 GPU로 그린다(Apple M4에서 Metal).
+ *   예전 헤드리스 셸은 소프트웨어 렌더링(SwiftShader)이라 색과 속도가 실제와 달랐다.
  */
 const TARGET_URL = process.env.CAPTURE_URL ?? "http://localhost:3200/journey";
 const NAME = process.env.CAPTURE_NAME ?? "latest";
 const SET = process.env.CAPTURE_SET ?? "stops";
+const REVERSE = process.env.CAPTURE_ORDER === "reverse";
 const HEADLESS = process.env.CAPTURE_HEADLESS === "1";
 const VIEWPORT = (() => {
   const [width, height] = (process.env.CAPTURE_VIEWPORT ?? "1440x900").split("x").map(Number);
   return { width, height };
 })();
 const READY_TIMEOUT = 30_000;
-const SETTLE_MS = 2500; // 카메라 감쇠가 목표 자리에 닿을 때까지
+// 카메라 감쇠가 목표 자리에 닿을 때까지. CAPTURE_SETTLE로 바꾼다(역방향 비교에서 시간 흐름이 다른 정방향을 한 번 더 찍을 때)
+const SETTLE_MS = Number(process.env.CAPTURE_SETTLE ?? 2500);
 // 화면 비율 그대로 줄인다(16:9 화면을 16:10 칸에 맞추면 양옆의 패널이 잘린다)
 const TILE = { width: 480, height: Math.round((480 * VIEWPORT.height) / VIEWPORT.width) };
 
@@ -64,6 +73,22 @@ const HOLOGRAM_SHOTS: [string, string, number][] = [
   ["09-ending", "ending", 1],
 ];
 
+/** 세 막의 풍경: 막 경계(EUTCHA 끝 → 2막 제목, PFPlay 끝 → 3막 제목)를 넣는다 */
+const LANDSCAPE_SHOTS: [string, string, number][] = [
+  ["01-act-1", "act-1", 0.5],
+  ["02-kokoa-clone", "kokoa-clone", 0.5],
+  ["03-todo-app", "todo-app", 0.5],
+  ["04-eutcha-end", "eutcha", 0.95],
+  ["05-act-2", "act-2", 0.5],
+  ["06-stock2u", "stock2u", 0.5],
+  ["07-tix2u", "tix2u", 0.5],
+  ["08-pfplay-end", "pfplay", 0.9],
+  ["09-act-3", "act-3", 0.5],
+  ["10-pickcare", "pickcare", 0.5],
+  ["11-pickcare-leave", "pickcare", 0.97],
+  ["12-ending", "ending", 1],
+];
+
 function progressOf(id: string, within: number): number {
   const range = rangeOf(id);
   return range.start + (range.end - range.start) * within;
@@ -87,7 +112,7 @@ async function shoot(page: Page, outDir: string, name: string, files: string[]):
 
 async function captureStops(page: Page, outDir: string, shots: [string, string, number][]): Promise<string[]> {
   const files: string[] = [];
-  for (const [name, id, within] of shots) {
+  for (const [name, id, within] of REVERSE ? [...shots].reverse() : shots) {
     await scrollToProgress(page, progressOf(id, within));
     await page.waitForTimeout(SETTLE_MS);
     await shoot(page, outDir, name, files);
@@ -178,7 +203,7 @@ async function captureEdge(page: Page, outDir: string): Promise<string[]> {
 async function main() {
   const outDir = path.join("test-results", "journey-captures", NAME);
   await mkdir(outDir, { recursive: true });
-  const browser = await chromium.launch({ headless: HEADLESS, args: ["--ignore-gpu-blocklist"] });
+  const browser = await chromium.launch({ headless: HEADLESS, channel: HEADLESS ? "chromium" : undefined, args: ["--ignore-gpu-blocklist"] });
   try {
     const page = await browser.newPage({ viewport: VIEWPORT });
     // tsx(esbuild keepNames)가 evaluate에 넘기는 함수에 __name 호출을 끼워 넣을 수 있다. 브라우저에는 없어 빈 껍데기를 심는다.
@@ -191,8 +216,16 @@ async function main() {
         : await captureStops(
             page,
             outDir,
-            SET === "hall" ? await hallShots(page) : SET === "holograms" ? HOLOGRAM_SHOTS : SHOTS,
+            SET === "hall"
+              ? await hallShots(page)
+              : SET === "holograms"
+                ? HOLOGRAM_SHOTS
+                : SET === "landscape"
+                  ? LANDSCAPE_SHOTS
+                  : SHOTS,
           );
+    // 거꾸로 찍어도 한 장으로 붙일 때는 이름 순서(정방향)로 둔다
+    if (REVERSE) files.sort();
     const columns = SET === "edge" ? 4 : 3;
     const rows = Math.ceil(files.length / columns);
     const tiles = await Promise.all(files.map((file) => sharp(file).resize(TILE.width, TILE.height).toBuffer()));

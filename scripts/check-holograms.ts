@@ -7,7 +7,7 @@ import { HOLOGRAMS, layerRect, sourceSize } from "@/lib/journey/holograms";
 import { rangeOf } from "@/lib/journey/timeline";
 
 /**
- * 홀로그램 원래 색 검증(스펙 1절 2-3a 완료 조건 ①·③, 8절 4항). GPU를 쓰는 실제 Chrome 창에서 잰다.
+ * 홀로그램 원래 색 검증(스펙 1절 2-3a 완료 조건 ①·③, 2-3b 완료 조건 "빛", 8절 4항). GPU를 쓰는 실제 Chrome 창에서 잰다.
  * ① 화면 발광 없음: 실제 재질을 톤 매핑 없이 1:1 화소로 그려(scripts/check-holograms-page.ts) 층 이미지와 비교한다. 평균 ΔE 0.5 미만.
  * ③ 블룸 기여: 실제 페이지의 막별 대표 시점을 블룸을 켜고(?debug=stats) 끈(&bloom=off) 두 장으로 찍어,
  *    화면에 보이는 홀로그램의 그림 영역 안 차이를 잰다(주변 발광 포함). 평균 ΔE 2 이하. 본문·헤더·진행 막대는 숨기고 찍는다.
@@ -16,16 +16,22 @@ import { rangeOf } from "@/lib/journey/timeline";
  * 사용법:
  *   npx next build && npx next start --port 3200   # 다른 터미널
  *   npm run check:holograms                        # 결과를 출력하고, 기준을 넘으면 실패로 끝난다
+ *   CHECK_HEADLESS=1이면 창 없이 잰다. 새 헤드리스(channel chromium)라 GPU로 그린다(Apple M4에서 Metal)
  */
 const TARGET_URL = process.env.CHECK_URL ?? "http://localhost:3200/journey";
+const HEADLESS = process.env.CHECK_HEADLESS === "1";
 const ORIGIN = new URL(TARGET_URL).origin;
 const VIEWPORT = { width: 1440, height: 900 };
 const READY_TIMEOUT = 30_000;
 const SETTLE_MS = 2500;
 const MATERIAL_LIMIT = 0.5;
 const BLOOM_LIMIT = 2;
-/** [정류장, 정류장 안의 위치]: 1막 주황(밝은 Todo, 어두운 EUTCHA), 2막 머묾, PiCKCARE 머묾 */
+/**
+ * [정류장, 정류장 안의 위치]: 1막 주황(밝은 Todo, 어두운 EUTCHA), 2막 머묾, PiCKCARE 머묾.
+ * 2-3b: 1막 절벽 빛 옆의 코코아톡을 더한다(2막 머묾은 이미 뒤에 암석이 있다)
+ */
 const SPOTS: [string, number][] = [
+  ["kokoa-clone", 0.5],
   ["todo-app", 0.1],
   ["eutcha", 0.1],
   ["stock2u", 0.5],
@@ -223,7 +229,7 @@ async function checkBloom(browser: Browser): Promise<boolean> {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: false, args: ["--ignore-gpu-blocklist"] });
+  const browser = await chromium.launch({ headless: HEADLESS, channel: HEADLESS ? "chromium" : undefined, args: ["--ignore-gpu-blocklist"] });
   try {
     const material = await checkMaterial(browser);
     const bloom = await checkBloom(browser);

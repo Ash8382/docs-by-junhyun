@@ -14,6 +14,7 @@
     "capture:screens": "tsx scripts/capture-screens.ts",
     "perf:journey": "tsx scripts/perf-journey.ts",
     "capture:journey": "tsx scripts/capture-journey.ts",
+    "compare:captures": "tsx scripts/compare-captures.ts",
     "check:holograms": "tsx scripts/check-holograms.ts",
     "build:galaxy": "tsx scripts/build-galaxy.ts",
     "build:car": "tsx scripts/build-car.ts",

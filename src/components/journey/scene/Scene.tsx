@@ -1,9 +1,10 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { WebGLRenderer, type WebGLRendererParameters } from "three";
-import { sceneQuality } from "@/lib/journey/capability";
+import { LEVEL_QUALITY } from "@/lib/journey/capability";
+import { getJourneyMode, subscribeJourneyMode, type QualityLevel } from "@/lib/journey/journeyMode";
 import { driveAt } from "@/lib/journey/drive";
 import {
   getCarStatus,
@@ -48,8 +49,9 @@ function createRenderer(defaults: WebGLRendererParameters): WebGLRenderer {
 /**
  * 장면 상태를 구독하는 바깥 틀. 준비되기 전에는 캔버스를 숨기고, 준비되면 서서히 드러낸다.
  * 차가 모델인지 빛 실루엣인지는 data-car에 적는다(e2e 표지).
- * 틀은 화면 위에 붙은 큰 뷰포트 높이(100lvh)다. 아래끝을 화면 아래에 묶으면(inset-0) 휴대폰 주소창이 접히고 펴질 때마다
+ * 틀은 화면 위에 붙은 큰 뷰포트 높이(100vh)다. 아래끝을 화면 아래에 묶으면(inset-0) 휴대폰 주소창이 접히고 펴질 때마다
  * 캔버스와 렌더 타깃을 다시 만들고 카메라 비율이 바뀌어 구도가 튄다. 주소창이 펴져 있으면 아래 몇십 px이 그 뒤에 가린다.
+ * 지금의 iOS Safari·Chrome에서 100vh는 큰 뷰포트(100lvh)와 같고, lvh를 모르는 iOS 15.0~15.3에서도 높이가 무효가 되지 않는다(2-4b).
  * Canvas는 children으로 받는다. 상태가 바뀌어 이 틀만 다시 렌더링되면 같은 children이라 Canvas는 다시 렌더링되지 않는다.
  * (Canvas는 렌더링될 때마다 렌더러 설정을 다시 하므로, 렌더러를 만들지 못한 경우 실패를 한 번 더 일으킨다.)
  */
@@ -61,7 +63,7 @@ function SceneFrame({ children }: { children: ReactNode }) {
       data-journey-scene
       data-state={status}
       data-car={car}
-      className="fixed inset-x-0 top-0 z-0 h-lvh transition-opacity duration-700"
+      className="fixed inset-x-0 top-0 z-0 h-screen transition-opacity duration-700"
       style={{ opacity: status === "ready" ? 1 : 0 }}
       aria-hidden
     >
@@ -76,11 +78,13 @@ function SceneFrame({ children }: { children: ReactNode }) {
  * 이 파일과 scene/ 아래만 three·R3F를 import한다. JourneyStage가 동적으로 불러온다.
  */
 export default function Scene() {
-  // 해상도 배율 상한은 기기 단계를 따른다(3D 전체 2, 경량 1.5, 스펙 5절)
-  const [dpr] = useState(() => sceneQuality().dpr);
+  // 해상도 배율 상한은 지금 품질 단계를 따른다(전체 2, 경량 1.5, 최소 1, 스펙 5절). 실행 중 강등으로 단계가 바뀌면 Canvas의 dpr로 내린다.
+  // R3F는 캔버스 크기가 바뀔 때마다 Canvas의 dpr을 다시 걸므로, 지금 단계를 prop으로 넘겨야 화면 회전·스크롤 막대 변화 뒤에도 내린 배율이 남는다
+  // (렌더러가 이미 있으면 configure는 렌더러를 다시 만들지 않는다, 2-4b 최종 리뷰)
+  const level = useSyncExternalStore(subscribeJourneyMode, () => getJourneyMode().quality, (): QualityLevel => "full");
   return (
     <SceneFrame>
-      <Canvas frameloop="never" dpr={dpr} camera={CAMERA} gl={createRenderer}>
+      <Canvas frameloop="never" dpr={LEVEL_QUALITY[level].dpr} camera={CAMERA} gl={createRenderer}>
         <Atmosphere />
         <Sky />
         <CameraRig />

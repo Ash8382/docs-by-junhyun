@@ -18,7 +18,7 @@ import {
   type Texture,
   type Vector3,
 } from "three";
-import { sceneQuality } from "@/lib/journey/capability";
+import { detectTier, galaxyFor } from "@/lib/journey/capability";
 import { SKY_ROTATION } from "@/lib/journey/space";
 
 /** 하늘 구의 반지름. 카메라를 따라다니므로 카메라 먼 끝(600)보다만 작으면 된다 */
@@ -96,7 +96,7 @@ function follow(mesh: Mesh, material: ShaderMaterial, camera: { position: Vector
  * 받지 못하면 던져진 오류를 SceneBoundary가 잡아 3D만 빠진다. 3D 경량은 2048×1024 은하를 받는다(스펙 5절).
  */
 export function Sky() {
-  const [url] = useState(() => sceneQuality().galaxy);
+  const [url] = useState(() => galaxyFor(detectTier()));
   const texture = useTexture(url, asEquirect);
   const sky = useMemo(() => createSky(texture), [texture]);
   const mesh = useRef<Mesh>(null);

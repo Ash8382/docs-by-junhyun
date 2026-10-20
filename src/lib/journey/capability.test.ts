@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { QUALITY, resolveTier, tierOf, tierOverride, type DeviceSignals } from "./capability";
+import { LEVEL_QUALITY, galaxyFor, resolveTier, tierOf, tierOverride, type DeviceSignals } from "./capability";
 
 const DESKTOP: DeviceSignals = { webgl2: true, coarsePointer: false, deviceMemory: 8, saveData: false };
 const PHONE: DeviceSignals = { webgl2: true, coarsePointer: true, deviceMemory: 4, saveData: false };
@@ -44,16 +44,18 @@ describe("확인용 덮어쓰기(?debug=stats|perf&tier=)", () => {
   });
 });
 
-describe("단계별 품질(스펙 5절, 2-4a)", () => {
-  it("3D 전체는 해상도 배율 최대 2, 원본 은하(4096), 블룸 그대로(휘도 전체 해상도, 8단계)다", () => {
-    expect(QUALITY.full).toEqual({ dpr: [1, 2], galaxy: "/journey/galaxy.webp", bloom: { luminanceScale: 1, levels: 8 } });
+describe("품질 단계(스펙 5절, 2-4a·2-4b)", () => {
+  it("전체는 해상도 배율 최대 2·블룸 그대로(휘도 전체 해상도, 8단계), 경량은 배율 1.5·블룸 축소(휘도 절반, 6단계), 최소는 배율 1·블룸 끔이다", () => {
+    expect(LEVEL_QUALITY).toEqual({
+      full: { dpr: [1, 2], bloom: { luminanceScale: 1, levels: 8 } },
+      lite: { dpr: [1, 1.5], bloom: { luminanceScale: 0.5, levels: 6 } },
+      min: { dpr: [1, 1], bloom: null },
+    });
   });
 
-  it("3D 경량은 해상도 배율 최대 1.5, 은하 2048, 블룸을 줄인다(휘도 절반 해상도, 단계 축소). 끄지는 않는다", () => {
-    expect(QUALITY.lite.dpr).toEqual([1, 1.5]);
-    expect(QUALITY.lite.galaxy).toBe("/journey/galaxy-2048.webp");
-    expect(QUALITY.lite.bloom.luminanceScale).toBe(0.5);
-    expect(QUALITY.lite.bloom.levels).toBeLessThan(QUALITY.full.bloom.levels);
-    expect(QUALITY.lite.bloom.levels).toBeGreaterThan(0);
+  it("은하는 기기 단계로 정한다: 전체는 원본(4096), 경량과 2D(수동으로 고른 3D)는 2048. 실행 중 강등은 은하를 바꾸지 않는다", () => {
+    expect(galaxyFor("full")).toBe("/journey/galaxy.webp");
+    expect(galaxyFor("lite")).toBe("/journey/galaxy-2048.webp");
+    expect(galaxyFor("2d")).toBe("/journey/galaxy-2048.webp");
   });
 });

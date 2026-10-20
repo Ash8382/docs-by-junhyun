@@ -1,8 +1,10 @@
 "use client";
 
+import { useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, SMAA, ToneMapping, Vignette } from "@react-three/postprocessing";
-import { useEffect, useRef, useState, type ComponentRef } from "react";
-import { sceneQuality } from "@/lib/journey/capability";
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentRef } from "react";
+import { LEVEL_QUALITY } from "@/lib/journey/capability";
+import { getJourneyMode, subscribeJourneyMode, type QualityLevel } from "@/lib/journey/journeyMode";
 import { recordPostprocessing, statsEnabled, type BloomProbe } from "./frameStats";
 
 /**
@@ -30,23 +32,36 @@ function findBloom(composer: { passes: object[] } | null): BloomProbe | null {
  * EffectComposer는 렌더러의 톤 매핑을 끄고 HDR 버퍼에 그리므로 톤 매핑을 효과로 직접 건다.
  * 블룸은 밝기 1을 넘는 빛(스스로 빛나는 선)에만 걸린다. 안티에일리어싱은 SMAA가 맡아 MSAA는 끈다.
  * ?debug=stats&bloom=off면 블룸 세기만 0으로 둔다(나머지 패스는 그대로). check:holograms가 두 장으로 홀로그램 화면에 블룸이 더한 몫을 잰다.
- * 3D 경량은 블룸의 휘도 패스를 절반 해상도로, mip 단계를 줄여 그린다(스펙 5절). ?debug=stats면 후처리를 통계에 넘겨 렌더 타깃 메모리를 잰다.
+ * 품질 단계(스펙 5절, 2-4b)를 따른다: 경량은 블룸의 휘도 패스를 절반 해상도로, mip 단계를 줄여 그리고, 최소는 블룸을 뺀다. 실행 중 강등으로
+ * 단계가 바뀌면 해상도 배율은 Scene이 Canvas의 dpr로 함께 내린다. 배율만 바뀐 때는 래퍼가 버퍼 크기를 다시 잡지 않으므로 컴포저 크기를 직접
+ * 다시 잡는다(그러지 않으면 후처리 버퍼가 예전 해상도로 남아 GPU 비용이 줄지 않는다). ?debug=stats면 후처리를 통계에 넘겨 렌더 타깃 메모리를 잰다.
  */
 export function Effects() {
-  const [bloom] = useState(() => !(statsEnabled() && new URLSearchParams(window.location.search).get("bloom") === "off"));
-  const [quality] = useState(() => sceneQuality().bloom);
+  const [bloomOn] = useState(() => !(statsEnabled() && new URLSearchParams(window.location.search).get("bloom") === "off"));
+  const level = useSyncExternalStore(subscribeJourneyMode, () => getJourneyMode().quality, (): QualityLevel => "full");
+  const { bloom } = LEVEL_QUALITY[level];
   const composer = useRef<ComponentRef<typeof EffectComposer>>(null);
+  const pixelRatio = useThree((state) => state.viewport.dpr);
+  const size = useThree((state) => state.size);
+
+  useEffect(() => {
+    composer.current?.setSize(size.width, size.height);
+  }, [pixelRatio, size]);
 
   useEffect(() => {
     const bloomEffect = findBloom(composer.current);
-    if (bloomEffect) bloomEffect.luminancePass.resolution.scale = quality.luminanceScale;
+    if (bloomEffect && bloom) bloomEffect.luminancePass.resolution.scale = bloom.luminanceScale;
     recordPostprocessing({ composer: composer.current, bloom: bloomEffect });
     return () => recordPostprocessing(null);
-  }, [quality]);
+  }, [bloom]);
 
   return (
     <EffectComposer ref={composer} multisampling={0}>
-      <Bloom mipmapBlur levels={quality.levels} luminanceThreshold={1} luminanceSmoothing={0.2} intensity={bloom ? 0.9 : 0} />
+      {bloom ? (
+        <Bloom mipmapBlur levels={bloom.levels} luminanceThreshold={1} luminanceSmoothing={0.2} intensity={bloomOn ? 0.9 : 0} />
+      ) : (
+        <></>
+      )}
       <ToneMapping mode={NEUTRAL_TONE_MAPPING} />
       <Vignette offset={0.25} darkness={0.55} />
       <SMAA />

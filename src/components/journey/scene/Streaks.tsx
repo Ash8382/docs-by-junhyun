@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Mesh, MeshBasicMaterial } from "three";
+import { prefersReducedMotion } from "@/lib/journey/motion";
 import { STREAK_VERTICES, streakIndices, writeStreaks } from "@/lib/journey/streaks";
 import { currentDrive } from "./driveFrame";
 
@@ -23,6 +24,7 @@ function createStreaks() {
     fog: false,
   });
   const mesh = new Mesh(geometry, material);
+  mesh.name = "journey-streaks";
   // 정점이 매 프레임 바뀌어 경계 구가 맞지 않는다. 차 바로 뒤라 늘 화면 안이다.
   mesh.frustumCulled = false;
   return {
@@ -38,16 +40,19 @@ function createStreaks() {
 
 type StreakMesh = ReturnType<typeof createStreaks>;
 
-function update(streaks: StreakMesh, camera: { x: number; y: number; z: number }): void {
+/** 매 프레임 다시 그린다. 움직임 줄이기면 감추고 그리지 않는다 */
+function update(streaks: StreakMesh, camera: { x: number; y: number; z: number }, visible: boolean): void {
+  streaks.mesh.visible = visible;
+  if (!visible) return;
   writeStreaks(currentDrive(), [camera.x, camera.y, camera.z], streaks.positions.array as Float32Array, streaks.colors.array as Float32Array);
   streaks.positions.needsUpdate = true;
   streaks.colors.needsUpdate = true;
 }
 
-/** 테일라이트 빛줄기(스펙 3절 "차"). 매 프레임 도로 곡률을 따라 다시 그린다. 드로콜 하나다 */
+/** 테일라이트 빛줄기(스펙 3절 "차"). 매 프레임 도로 곡률을 따라 다시 그린다. 드로콜 하나다. 움직임 줄이기면 감춘다(2-4b) */
 export function Streaks() {
   const streaks = useMemo(() => createStreaks(), []);
   useEffect(() => () => streaks.dispose(), [streaks]);
-  useFrame((state) => update(streaks, state.camera.position));
+  useFrame((state) => update(streaks, state.camera.position, !prefersReducedMotion()));
   return <primitive object={streaks.mesh} />;
 }

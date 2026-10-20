@@ -17,6 +17,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { detectTier, type Tier } from "@/lib/journey/capability";
+import { getJourneyMode, type QualityLevel } from "@/lib/journey/journeyMode";
 import { getCarStatus, type CarStatus } from "@/lib/journey/sceneStatus";
 import { scrollState } from "@/lib/journey/scrollState";
 
@@ -49,17 +50,22 @@ export interface JourneyStats {
   holograms: HologramStats | null;
   /** 막별 풍경(2-3b) */
   landscape: LandscapeStats | null;
-  /** 기기 단계와 그 품질(2-4a). 준비된 순간에 쓴다 */
+  /** 기기 단계와 지금 품질 단계(2-4a·2-4b). 준비된 순간부터 프레임마다 쓴다(실행 중 강등으로 바뀐다) */
   quality: QualityStats | null;
   /** 후처리 렌더 타깃 메모리 추정(바이트, 2-4a). 텍스처 예산과 따로 기록한다. 준비된 순간의 화면 크기 기준 */
   renderTargetBytes: number;
   /** 지난 프레임의 렌즈(2-4a): 세로 시야각(°)과 투영 중심의 화면 위에서의 비율 */
   lens: { fov: number; center: number };
+  /** 지난 프레임의 카메라 뒤처짐(m, 2-4b): 감쇠한 자세와 목표 자세의 거리. 움직임 줄이기면 0이다 */
+  cameraLag: number;
+  /** 빛줄기를 그리는가(2-4b). 움직임 줄이기면 감춘다 */
+  streaks: boolean;
 }
 
-/** 기기 단계와 그 품질(스펙 5절): 단계, 실제 해상도 배율, 은하 폭, 블룸 mip 단계, 블룸 휘도 패스의 해상도 비율 */
+/** 기기 단계와 품질(스펙 5절): 기기 단계, 지금 품질 단계, 실제 해상도 배율, 은하 폭, 블룸 mip 단계(블룸을 끄면 0), 블룸 휘도 패스의 해상도 비율 */
 export interface QualityStats {
   tier: Tier;
+  level: QualityLevel;
   dpr: number;
   galaxyWidth: number;
   bloomLevels: number;
@@ -99,6 +105,13 @@ type StatsWindow = Window & { __journeyStats?: JourneyStats };
 export function statsEnabled(): boolean {
   const debug = new URLSearchParams(window.location.search).get("debug");
   return debug === "stats" || debug === "perf";
+}
+
+/** 확인용 ?debug=stats(또는 perf)&busy=<ms>: 렌더 단계마다 그 시간만큼 일부러 끌어 실행 중 강등을 재현한다(2-4b). 없으면 0 */
+export function busyMs(): number {
+  if (!statsEnabled()) return 0;
+  const busy = Number(new URLSearchParams(window.location.search).get("busy"));
+  return Number.isFinite(busy) && busy > 0 ? busy : 0;
 }
 
 const MIPMAP_FILTERS = new Set<number>([
@@ -263,6 +276,13 @@ export function recordLandscape(landscape: LandscapeStats | null): void {
   if (stats) stats.landscape = landscape;
 }
 
+let latestCameraLag = 0;
+
+/** 카메라 뒤처짐을 넘긴다(CameraRig, ?debug=stats일 때만 잰다) */
+export function recordCameraLag(lag: number): void {
+  latestCameraLag = lag;
+}
+
 /** 후처리(EffectComposer와 블룸)를 넘긴다. 준비된 순간에 렌더 타깃 메모리와 블룸 값을 읽는다. 장면을 내리면 null */
 export function recordPostprocessing(postprocessing: { composer: object | null; bloom: BloomProbe | null } | null): void {
   latestPostprocessing = postprocessing;
@@ -291,6 +311,8 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene, camera: Per
     quality: null,
     renderTargetBytes: 0,
     lens: { fov: camera.fov, center: 0.5 },
+    cameraLag: 0,
+    streaks: false,
   };
   let ready = false;
   (window as StatsWindow).__journeyStats = stats;
@@ -310,9 +332,18 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene, camera: Per
       stats.wheelTravel = travel ? travel.value : null;
       const view = camera.view?.enabled ? camera.view : null;
       stats.lens = { fov: camera.fov, center: view ? Number((0.5 - view.offsetY / view.fullHeight).toFixed(4)) : 0.5 };
+      stats.cameraLag = latestCameraLag;
+      stats.streaks = scene.getObjectByName("journey-streaks")?.visible ?? false;
       if (ready && stats.calls > stats.maxCalls) {
         stats.maxCalls = stats.calls;
         stats.maxCallsProgress = stats.progress;
+      }
+      if (stats.quality) {
+        const bloom = latestPostprocessing?.bloom ?? null;
+        stats.quality.level = getJourneyMode().quality;
+        stats.quality.dpr = gl.getPixelRatio();
+        stats.quality.bloomLevels = bloom?.mipmapBlurPass.levels ?? 0;
+        stats.quality.luminanceScale = bloom?.luminancePass.resolution.scale ?? 0;
       }
     },
     ready() {
@@ -324,6 +355,7 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene, camera: Per
       const bloom = latestPostprocessing?.bloom ?? null;
       stats.quality = {
         tier: detectTier(),
+        level: getJourneyMode().quality,
         dpr: gl.getPixelRatio(),
         galaxyWidth: (galaxy?.image as { width?: number } | undefined)?.width ?? 0,
         bloomLevels: bloom?.mipmapBlurPass.levels ?? 0,

@@ -2,7 +2,7 @@
 
 import { useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BackSide,
   Euler,
@@ -18,7 +18,8 @@ import {
   type Texture,
   type Vector3,
 } from "three";
-import { GALAXY_URL, SKY_ROTATION } from "@/lib/journey/space";
+import { sceneQuality } from "@/lib/journey/capability";
+import { SKY_ROTATION } from "@/lib/journey/space";
 
 /** 하늘 구의 반지름. 카메라를 따라다니므로 카메라 먼 끝(600)보다만 작으면 된다 */
 const SKY_RADIUS = 100;
@@ -92,15 +93,16 @@ function follow(mesh: Mesh, material: ShaderMaterial, camera: { position: Vector
  * three에 등장방형을 scene.background로 넘기면 원본 높이(2048) 큐브로 바꾸며 밉맵과 면마다 깊이 버퍼를 붙여 약 220MiB를 더 쓴다
  * (스펙 7절 텍스처 예산 초과). 작은 큐브로 바꾸면 원본보다 해상도가 낮아져 별이 거칠게 늘어난다. 직접 그리면 원본(약 33.5MB)만 쓴다.
  * 이미지를 받는 동안 Canvas 안의 Suspense가 장면 전체를 기다리게 하므로, Warmup은 하늘이 걸린 뒤에 컴파일한다.
- * 받지 못하면 던져진 오류를 SceneBoundary가 잡아 3D만 빠진다.
+ * 받지 못하면 던져진 오류를 SceneBoundary가 잡아 3D만 빠진다. 3D 경량은 2048×1024 은하를 받는다(스펙 5절).
  */
 export function Sky() {
-  const texture = useTexture(GALAXY_URL, asEquirect);
+  const [url] = useState(() => sceneQuality().galaxy);
+  const texture = useTexture(url, asEquirect);
   const sky = useMemo(() => createSky(texture), [texture]);
   const mesh = useRef<Mesh>(null);
   useEffect(() => () => sky.dispose(), [sky]);
   useFrame((state) => {
     if (mesh.current) follow(mesh.current, sky.material, state.camera, state.scene);
   });
-  return <mesh ref={mesh} geometry={sky.geometry} material={sky.material} renderOrder={-1} frustumCulled={false} />;
+  return <mesh ref={mesh} name="journey-sky" geometry={sky.geometry} material={sky.material} renderOrder={-1} frustumCulled={false} />;
 }

@@ -7,6 +7,8 @@ import type { Vec3 } from "./timeline";
  */
 
 export const GALAXY_URL = "/journey/galaxy.webp";
+/** 3D 경량의 은하(2048×1024, scripts/build-galaxy.ts가 원본에서 줄여 만든다). GPU 추정 32.0 → 8.0MiB */
+export const GALAXY_LITE_URL = "/journey/galaxy-2048.webp";
 
 /** 하늘의 방향(라디안, x·y·z). 은하수 띠가 도로가 뻗는 앞쪽(−z)에 걸리도록 x축으로 기울인다 */
 export const SKY_ROTATION: Vec3 = [1.2, 0, 0];

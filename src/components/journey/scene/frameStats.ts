@@ -9,18 +9,22 @@ import {
   NearestMipmapNearestFilter,
   Vector3,
   type Material,
+  type Mesh,
+  type PerspectiveCamera,
   type Scene,
+  type ShaderMaterial,
   type Texture,
   type WebGLRenderer,
 } from "three";
+import { detectTier, type Tier } from "@/lib/journey/capability";
 import { getCarStatus, type CarStatus } from "@/lib/journey/sceneStatus";
 import { scrollState } from "@/lib/journey/scrollState";
 
 /**
- * 성능 측정용 장면 통계(스펙 7절 측정 조건). 주소에 ?debug=stats가 있을 때만 window.__journeyStats에 쓴다.
+ * 성능 측정용 장면 통계(스펙 7절 측정 조건). 주소에 ?debug=stats(또는 휴대폰 측정 오버레이의 ?debug=perf)가 있을 때만 window.__journeyStats에 쓴다.
  * 렌더러 통계(info)는 autoReset을 끄고 프레임마다 한 번 비우므로, 후처리 패스까지 합친 프레임 하나의 드로콜이다.
  * 텍스처 메모리는 장면이 쓰는 텍스처의 크기·형식으로 계산한 GPU 업로드 추정치다(스펙 7절). 등장방형 배경을 three가 큐브로 바꾸며 만드는
- * 텍스처와 깊이 버퍼도 넣는다. 후처리 렌더 타깃과 환경 반사의 PMREM 변환(약 3MB)은 넣지 않는다.
+ * 텍스처와 깊이 버퍼도 넣는다. 후처리 렌더 타깃과 환경 반사의 PMREM 변환(약 3MB)은 넣지 않는다. 후처리 렌더 타깃은 따로 잰다(renderTargetBytes, 2-4a).
  * three는 원본(source)과 업로드 설정이 같은 텍스처를 GPU에 한 번만 올리므로 그런 복제는 한 번만 센다.
  */
 
@@ -45,6 +49,21 @@ export interface JourneyStats {
   holograms: HologramStats | null;
   /** 막별 풍경(2-3b) */
   landscape: LandscapeStats | null;
+  /** 기기 단계와 그 품질(2-4a). 준비된 순간에 쓴다 */
+  quality: QualityStats | null;
+  /** 후처리 렌더 타깃 메모리 추정(바이트, 2-4a). 텍스처 예산과 따로 기록한다. 준비된 순간의 화면 크기 기준 */
+  renderTargetBytes: number;
+  /** 지난 프레임의 렌즈(2-4a): 세로 시야각(°)과 투영 중심의 화면 위에서의 비율 */
+  lens: { fov: number; center: number };
+}
+
+/** 기기 단계와 그 품질(스펙 5절): 단계, 실제 해상도 배율, 은하 폭, 블룸 mip 단계, 블룸 휘도 패스의 해상도 비율 */
+export interface QualityStats {
+  tier: Tier;
+  dpr: number;
+  galaxyWidth: number;
+  bloomLevels: number;
+  luminanceScale: number;
 }
 
 /** 홀로그램의 한 프레임(e2e가 클릭 좌표·호버·밝아짐·앞줄을 확인한다) */
@@ -78,7 +97,8 @@ export interface LandscapeStats {
 type StatsWindow = Window & { __journeyStats?: JourneyStats };
 
 export function statsEnabled(): boolean {
-  return new URLSearchParams(window.location.search).get("debug") === "stats";
+  const debug = new URLSearchParams(window.location.search).get("debug");
+  return debug === "stats" || debug === "perf";
 }
 
 const MIPMAP_FILTERS = new Set<number>([
@@ -88,7 +108,7 @@ const MIPMAP_FILTERS = new Set<number>([
   NearestMipmapNearestFilter,
 ]);
 
-function pixelBytes(texture: Texture): number {
+function pixelBytes(texture: { type?: number }): number {
   return texture.type === FloatType ? 16 : texture.type === HalfFloatType ? 8 : 4;
 }
 
@@ -175,8 +195,56 @@ export function sceneTextureBytes(scene: Scene): number {
   return [...textures.values()].reduce((sum, texture) => sum + textureBytes(texture), derived);
 }
 
+/** 렌더 타깃을 찾아 들어가지 않는 쪽: 렌더러·장면·카메라(후처리 밖의 것), 그리고 부모·자식 고리 */
+const SKIP_KEYS = new Set(["renderer", "scene", "camera", "mainScene", "mainCamera", "parent", "children"]);
+
+/**
+ * 후처리(EffectComposer)에서 닿는 렌더 타깃의 메모리 추정(바이트). 렌더 타깃마다 한 번씩, 크기 × 화소 크기에 깊이 버퍼가 있으면
+ * 화소당 4바이트를 더한다. 패스·효과의 필드(입출력 버퍼, 블룸 휘도·mip 사슬, SMAA 등)를 따라가되 텍스처·재질·지오메트리·형식 배열 안으로는
+ * 들어가지 않는다. 화면 크기와 해상도 배율에 따라 바뀌므로 준비된 순간의 값이다.
+ */
+export function renderTargetBytes(root: object): number {
+  const seen = new Set<object>();
+  let total = 0;
+  const visit = (value: unknown, depth: number) => {
+    if (!value || typeof value !== "object" || seen.has(value) || depth > 8 || ArrayBuffer.isView(value)) return;
+    seen.add(value);
+    const item = value as {
+      isWebGLRenderTarget?: boolean;
+      isTexture?: boolean;
+      isMaterial?: boolean;
+      isBufferGeometry?: boolean;
+      isObject3D?: boolean;
+      width?: number;
+      height?: number;
+      depthBuffer?: boolean;
+      texture?: { type?: number };
+    };
+    if (item.isWebGLRenderTarget) {
+      const pixels = (item.width ?? 0) * (item.height ?? 0);
+      total += pixels * pixelBytes(item.texture ?? {}) + (item.depthBuffer ? pixels * 4 : 0);
+      return;
+    }
+    if (item.isTexture || item.isMaterial || item.isBufferGeometry || item.isObject3D) return;
+    if (Array.isArray(value)) {
+      for (const entry of value) visit(entry, depth + 1);
+      return;
+    }
+    for (const [key, entry] of Object.entries(value)) if (!SKIP_KEYS.has(key)) visit(entry, depth + 1);
+  };
+  visit(root, 0);
+  return total;
+}
+
+/** 후처리 효과 중 통계가 읽고 경량이 바꾸는 블룸 값(postprocessing BloomEffect의 필드) */
+export interface BloomProbe {
+  mipmapBlurPass: { levels: number };
+  luminancePass: { resolution: { scale: number } };
+}
+
 let latestHolograms: HologramStats | null = null;
 let latestLandscape: LandscapeStats | null = null;
+let latestPostprocessing: { composer: object | null; bloom: BloomProbe | null } | null = null;
 
 /**
  * 홀로그램 통계를 쓴다(?debug=stats일 때만 통계가 있다). 통계 기록기(Warmup)보다 먼저 올 수 있어(배열을 만들지 못한 경우)
@@ -195,10 +263,15 @@ export function recordLandscape(landscape: LandscapeStats | null): void {
   if (stats) stats.landscape = landscape;
 }
 
+/** 후처리(EffectComposer와 블룸)를 넘긴다. 준비된 순간에 렌더 타깃 메모리와 블룸 값을 읽는다. 장면을 내리면 null */
+export function recordPostprocessing(postprocessing: { composer: object | null; bloom: BloomProbe | null } | null): void {
+  latestPostprocessing = postprocessing;
+}
+
 const carWorld = new Vector3();
 
 /** 프레임마다 통계를 쓰는 기록기. 그리기 전에 begin(), 그린 뒤에 end(), 준비되는 순간 ready()를 부른다 */
-export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
+export function createStatsRecorder(gl: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
   // 후처리 패스마다 렌더러 통계가 비워지지 않게 하고, 프레임마다 한 번(begin) 비운다.
   gl.info.autoReset = false;
   const stats: JourneyStats = {
@@ -215,6 +288,9 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
     car: getCarStatus(),
     holograms: latestHolograms,
     landscape: latestLandscape,
+    quality: null,
+    renderTargetBytes: 0,
+    lens: { fov: camera.fov, center: 0.5 },
   };
   let ready = false;
   (window as StatsWindow).__journeyStats = stats;
@@ -232,6 +308,8 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
       stats.carPosition = car ? (car.getWorldPosition(carWorld).toArray() as [number, number, number]) : null;
       const travel = scene.getObjectByName("journey-car-model")?.userData.wheelTravel as { value: number } | undefined;
       stats.wheelTravel = travel ? travel.value : null;
+      const view = camera.view?.enabled ? camera.view : null;
+      stats.lens = { fov: camera.fov, center: view ? Number((0.5 - view.offsetY / view.fullHeight).toFixed(4)) : 0.5 };
       if (ready && stats.calls > stats.maxCalls) {
         stats.maxCalls = stats.calls;
         stats.maxCallsProgress = stats.progress;
@@ -241,6 +319,17 @@ export function createStatsRecorder(gl: WebGLRenderer, scene: Scene) {
       ready = true;
       stats.programsAtReady = gl.info.programs?.length ?? 0;
       stats.textureBytes = sceneTextureBytes(scene);
+      const sky = scene.getObjectByName("journey-sky") as Mesh | undefined;
+      const galaxy = (sky?.material as ShaderMaterial | undefined)?.uniforms.uGalaxy?.value as Texture | undefined;
+      const bloom = latestPostprocessing?.bloom ?? null;
+      stats.quality = {
+        tier: detectTier(),
+        dpr: gl.getPixelRatio(),
+        galaxyWidth: (galaxy?.image as { width?: number } | undefined)?.width ?? 0,
+        bloomLevels: bloom?.mipmapBlurPass.levels ?? 0,
+        luminanceScale: bloom?.luminancePass.resolution.scale ?? 0,
+      };
+      stats.renderTargetBytes = latestPostprocessing?.composer ? renderTargetBytes(latestPostprocessing.composer) : 0;
     },
   };
 }

@@ -2,7 +2,7 @@
 
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import { HalfFloatType, WebGLRenderTarget } from "three";
+import { HalfFloatType, WebGLRenderTarget, type PerspectiveCamera } from "three";
 import { setRenderStep } from "@/lib/journey/engine";
 import { setSceneStatus } from "@/lib/journey/sceneStatus";
 import { createStatsRecorder, statsEnabled } from "./frameStats";
@@ -29,7 +29,7 @@ export function Warmup() {
 
   useEffect(() => {
     let cancelled = false;
-    const stats = statsEnabled() ? createStatsRecorder(gl, scene) : null;
+    const stats = statsEnabled() ? createStatsRecorder(gl, scene, camera as PerspectiveCamera) : null;
     const target = new WebGLRenderTarget(1, 1, { type: HalfFloatType });
     const previous = gl.getRenderTarget();
     gl.setRenderTarget(target);

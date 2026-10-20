@@ -16,8 +16,9 @@ import {
   SRGBColorSpace,
   Texture,
   WebGLCubeRenderTarget,
+  WebGLRenderTarget,
 } from "three";
-import { sceneTextureBytes, textureBytes } from "./frameStats";
+import { renderTargetBytes, sceneTextureBytes, textureBytes } from "./frameStats";
 
 function imageTexture(width: number, height: number): Texture {
   const texture = new Texture();
@@ -118,5 +119,25 @@ describe("텍스처 메모리 추정", () => {
     scene.background = shared;
     scene.add(new Mesh(undefined, new MeshStandardMaterial({ map: shared, normalMap: shared })));
     expect(sceneTextureBytes(scene)).toBe(64 * 64 * 4);
+  });
+});
+
+describe("후처리 렌더 타깃 메모리 추정(2-4a, 텍스처 예산과 따로)", () => {
+  it("후처리에서 닿는 렌더 타깃을 한 번씩만 크기 × 화소 크기(깊이 버퍼가 있으면 4바이트 더)로 센다", () => {
+    const hdr = new WebGLRenderTarget(100, 50, { type: HalfFloatType });
+    const plain = new WebGLRenderTarget(40, 20, { depthBuffer: false });
+    const mip = new WebGLRenderTarget(20, 10, { type: HalfFloatType, depthBuffer: false });
+    const composer = {
+      inputBuffer: hdr,
+      outputBuffer: hdr,
+      passes: [{ effects: [{ renderTarget: plain, luminancePass: { renderTarget: plain }, mipmapBlurPass: { downsamplingMipmaps: [mip] } }] }],
+    };
+    expect(renderTargetBytes(composer)).toBe(100 * 50 * (8 + 4) + 40 * 20 * 4 + 20 * 10 * 8);
+  });
+
+  it("렌더러·장면·카메라 쪽으로는 따라가지 않는다", () => {
+    const scene = new Scene();
+    const composer = { renderer: { target: new WebGLRenderTarget(1000, 1000) }, scene, passes: [] };
+    expect(renderTargetBytes(composer)).toBe(0);
   });
 });

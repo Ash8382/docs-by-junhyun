@@ -12,7 +12,8 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    // 서버는 이 맥 안(127.0.0.1)에만 연다. 0.0.0.0으로 열면 공인 주소에 바로 붙은 맥에서는 테스트하는 동안 인터넷에 열린다(2-4b)
+    baseURL: `http://127.0.0.1:${PORT}`,
     // 사이트는 <html class="dark">로 어두운 배경을 고정하지만, 글의 `dark:` 클래스는 브라우저의
     // 색상 설정을 따른다. 기본값(light)으로 찍으면 text-zinc-950 제목·본문이 어두운 배경에 묻힌다.
     colorScheme: "dark",
@@ -29,8 +30,8 @@ export default defineConfig({
   ],
   webServer: {
     // 항상 새로 빌드한다. 이전 빌드 서버를 재사용하면 바뀐 코드를 보지 못하고 거짓 통과한다.
-    command: `npx next build && npx next start --port ${PORT}`,
-    url: `http://localhost:${PORT}`,
+    command: `npx next build && npx next start -H 127.0.0.1 --port ${PORT}`,
+    url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: false,
     timeout: 300_000,
   },

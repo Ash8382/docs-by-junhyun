@@ -67,7 +67,7 @@ function StackChips({ stack }: { stack: string[] }) {
 
 function IntroStop() {
   return (
-    <div className="container flex h-full items-center">
+    <div data-journey-card="intro" className="container flex h-full items-center">
       <div className={`${PANEL} max-w-xl`}>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A Journey Through Code</h1>
         <p aria-hidden className="mt-6 text-2xl text-zinc-400">
@@ -81,7 +81,7 @@ function IntroStop() {
 function ActStop({ act }: { act: 1 | 2 | 3 }) {
   const info = ACTS[act];
   return (
-    <div className="container flex h-full items-center justify-center">
+    <div data-journey-card={`act-${act}`} className="container flex h-full items-center justify-center">
       <div className={`${PANEL} text-center`}>
         <p className="font-mono text-xs tracking-[0.2em] text-zinc-400">{info.period}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h2>
@@ -94,7 +94,7 @@ function ActStop({ act }: { act: 1 | 2 | 3 }) {
 function CaptionStop({ stop }: { stop: Stop }) {
   const project = projectOf(stop);
   return (
-    <div className="container flex h-full items-center">
+    <div data-journey-card={stop.id} className="container flex h-full items-center">
       <div className={`${PANEL} max-w-sm ${panelSide(stop)}`}>
         <p className="text-xs text-zinc-400">{project.period}</p>
         <h3 className="mt-1 text-xl font-semibold">{project.title}</h3>
@@ -110,7 +110,7 @@ function ExhibitStop({ stop }: { stop: Stop }) {
   const project = projectOf(stop);
   const thumbnail = project.screens[0];
   return (
-    <div className="container sticky top-24 flex">
+    <div data-journey-card={stop.id} className="container sticky top-24 flex">
       <div className={`${PANEL} max-w-md ${panelSide(stop)}`}>
         <p className="text-xs text-zinc-400">
           {project.period} · {project.team}
@@ -148,7 +148,7 @@ function HallStop({ stop }: { stop: Stop }) {
   if (project.kind !== "repos") throw new Error("전시실은 저장소 구조 글이어야 합니다");
   return (
     <>
-      <div className="container sticky top-20 z-10">
+      <div data-journey-card={stop.id} className="container sticky top-20 z-10">
         <div className={`${PANEL} max-w-md py-4`}>
           <p className="text-xs text-zinc-400">
             {project.period} · {project.team}
@@ -161,6 +161,7 @@ function HallStop({ stop }: { stop: Stop }) {
         {project.repos.map((repo) => (
           <div
             key={repo.id}
+            data-journey-card={`${stop.id}/${repo.id}`}
             className="container flex items-end pb-[12svh]"
             style={{ height: `${((stop.length - HALL_REPO_START - HALL_REPO_END) / project.repos.length) * 100}svh` }}
           >
@@ -177,12 +178,20 @@ function HallStop({ stop }: { stop: Stop }) {
   );
 }
 
-/** 엔딩. 넓은 화면에서는 패널을 오른쪽에 좁게 두어 왼쪽의 길 전체 내려다보기(drive.ts OVERVIEW)를 가리지 않는다 */
+/**
+ * 엔딩. 넓은 화면에서는 패널을 오른쪽에 좁게 두어 왼쪽의 길 전체 내려다보기(drive.ts OVERVIEW)를 가리지 않는다.
+ * 스크롤 끝에서 패널 위끝이 헤더(3.5rem, 세로 화면은 진행 막대까지 5rem)보다 0.5rem 아래에 오도록 높이를 화면에 맞추고, 넘치면 패널
+ * 안에서 스크롤한다(휠은 useJourneyScroll의 allowNestedScroll). 짧은 휴대폰 화면(사파리 도구 막대가 펴진 높이, 가로 방향)에서 연락처가
+ * 헤더 밑으로 숨지 않게 한다.
+ * 세로 화면의 아래 여백은 고정 카드와 같은 5svh다.
+ */
 function EndingStop() {
   const recent = sortedPosts.filter((post) => post.category === "post").slice(0, 3);
   return (
-    <div className="container flex h-full items-end pb-[10svh]">
-      <div className={`${PANEL} w-full sm:ml-auto sm:max-w-md`}>
+    <div className="container flex h-full items-end pb-[10svh] portrait:pb-[5svh]">
+      <div
+        className={`${PANEL} max-h-[calc(90svh-4rem)] w-full overflow-y-auto sm:ml-auto sm:max-w-md portrait:max-h-[calc(95svh-5.5rem)]`}
+      >
         <h2 className="text-3xl font-bold tracking-tight">연락처</h2>
         <div className="mt-6">
           <EmailCopy email={EMAIL} />
@@ -246,6 +255,7 @@ function StopBody({ stop }: { stop: Stop }) {
 /**
  * 여정 본문. 3D가 없어도 그대로 읽히는 진짜 HTML이다.
  * 섹션은 클릭이 뒤의 캔버스로 가도록 pointer-events를 끄고, 패널만 켠다.
+ * 카드(data-journey-card)는 세로 화면에서 3D를 쓰는 동안 화면 아래 고정 자리로 옮겨진다(portraitCards, globals.css).
  */
 export function JourneyContent() {
   return (

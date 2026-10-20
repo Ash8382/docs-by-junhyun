@@ -12,11 +12,12 @@ import { setProgress } from "@/lib/journey/scrollState";
  * 부드러운 스크롤(Lenis), 스크롤 진행률(ScrollTrigger), 3D 렌더를 GSAP ticker 하나에 묶는다.
  * 스크롤 위치의 원천은 브라우저 기본 스크롤이라 키보드·찾기·접근성이 그대로 동작한다.
  * 터치는 Lenis 기본값(syncTouch: false)대로 OS 관성을 쓰고, 움직임 줄이기 설정은 Lenis가 존중한다.
+ * 휠은 그 방향으로 더 굴릴 수 있는 안쪽 요소(넘친 엔딩 패널)가 있으면 그 요소가 받는다(allowNestedScroll). 끝에 닿으면 다시 페이지가 굴러간다.
  */
 export function useJourneyScroll(): void {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
-    const lenis = new Lenis({ autoRaf: false });
+    const lenis = new Lenis({ autoRaf: false, allowNestedScroll: true });
     setLenis(lenis);
 
     const trigger = ScrollTrigger.create({

@@ -4,6 +4,8 @@ import { expect, test, type Page } from "@playwright/test";
 // 기준(e2e/__screenshots__/)은 기계마다 렌더링이 달라 git에 넣지 않는 로컬 전용이다. 새로 클론한 곳에서
 // 처음 실행하면 그 순간의 화면이 기준이 되므로, 의도한 화면에서 --update-snapshots로 찍는다.
 // 2026-10-14: 헤더에 Journey 링크를 넣으며 높이·DOM·마크업이 같음을 확인하고 기준을 갱신했다.
+// 2026-10-19(여정 2-4a): 작은 화면의 헤더 메뉴 간격·글자를 줄이며 높이·DOM·마크업·콘솔 에러 기준이 같음을 확인하고
+// 모바일의 첫 화면 조각(헤더가 든 *-0.png)만 갱신했다.
 const SLUGS = [
   "kokoa-clone",
   "todo-app",

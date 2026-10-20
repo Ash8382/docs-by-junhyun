@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { LOUNGE_ENABLED } from "@/lib/lounge/enabled";
 
+/**
+ * 사이트 헤더. 작은 화면에서는 메뉴 간격과 글자를 줄이고 줄바꿈하지 않는다(여정 2-4a, 스펙 4절 "사이트 공통 요소 변경").
+ * 390px에서 한 줄에 다 들고, 375px 이하처럼 더 좁으면 메뉴를 옆으로 밀어 볼 수 있다(스크롤 막대는 숨긴다). 640px 이상은 예전과 같다.
+ */
 export function Header() {
   return (
     <header data-site-header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
-        <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold sm:inline-block">이준현의 블로그</span>
+        <div className="flex min-w-0 sm:mr-4">
+          <Link href="/" className="mr-3 flex shrink-0 items-center space-x-2 sm:mr-6">
+            <span className="whitespace-nowrap font-bold sm:inline-block">이준현의 블로그</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="flex min-w-0 items-center space-x-2.5 overflow-x-auto whitespace-nowrap text-[13px] font-medium [scrollbar-width:none] sm:space-x-6 sm:text-sm [&::-webkit-scrollbar]:hidden">
             <Link
               href="/blog"
               className="transition-colors hover:text-foreground/80 text-foreground/60"

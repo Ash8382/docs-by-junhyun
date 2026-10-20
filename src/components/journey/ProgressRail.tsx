@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { getLenis } from "@/lib/journey/engine";
 import { scrollState, subscribeProgress } from "@/lib/journey/scrollState";
 import { rangeOf } from "@/lib/journey/timeline";
@@ -32,15 +32,17 @@ function scrollToStop(id: string, align: "start" | "end") {
 }
 
 /**
- * 진행 막대. 채움 정도는 React 렌더 없이 DOM을 직접 고친다(스크롤 중 렌더 금지).
+ * 진행 막대. 채움 정도는 React 렌더 없이 CSS 변수(--progress)만 고친다(스크롤 중 렌더 금지).
  * 2막·3막의 밝은 장면 위에서도 보이도록 반투명 어두운 바탕 위에 그린다(흐림 없이 단색).
+ * 가로 화면은 오른쪽 가운데의 세로 막대, 세로 화면은 헤더 바로 아래의 화면 폭 가로 막대(높이 24px)다(2-4a, 스펙 2절 "진행 표시").
+ * 세로 막대는 세로 화면에서 3D 위쪽 영역(차와 홀로그램)의 가장자리에 걸렸다.
  */
 export function ProgressRail() {
   const fillRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const update = (progress: number) => {
-      if (fillRef.current) fillRef.current.style.transform = `scaleY(${progress})`;
+      fillRef.current?.style.setProperty("--progress", String(progress));
     };
     update(scrollState.progress);
     return subscribeProgress(update);
@@ -49,21 +51,25 @@ export function ProgressRail() {
   return (
     <nav
       aria-label="여정 진행"
-      className="fixed right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-zinc-950/70 px-3 py-4 sm:right-6"
+      className="fixed right-3 top-1/2 z-20 -translate-y-1/2 rounded-full bg-zinc-950/70 px-3 py-4 sm:right-6 portrait:inset-x-0 portrait:top-14 portrait:h-6 portrait:translate-y-0 portrait:rounded-none portrait:px-4 portrait:py-0"
     >
-      <div className="relative h-64 w-px bg-white/25">
-        <div ref={fillRef} className="absolute inset-0 origin-top bg-white/70" style={{ transform: "scaleY(0)" }} />
+      <div className="relative h-64 w-px bg-white/25 portrait:top-[11.5px] portrait:h-px portrait:w-full">
+        <div
+          ref={fillRef}
+          className="absolute inset-0 origin-top bg-white/70 [transform:scaleY(var(--progress))] portrait:origin-left portrait:[transform:scaleX(var(--progress))]"
+          style={{ "--progress": 0 } as CSSProperties}
+        />
         {MARKS.map((mark) => (
           <button
             key={mark.id}
             type="button"
             onClick={() => scrollToStop(mark.id, mark.align)}
             aria-label={mark.name}
-            className="group absolute -left-3 flex h-6 w-6 -translate-y-1/2 items-center justify-center"
-            style={{ top: mark.top }}
+            className="group absolute -left-3 top-[var(--mark)] flex h-6 w-6 -translate-y-1/2 items-center justify-center portrait:left-[var(--mark)] portrait:top-0 portrait:-translate-x-1/2"
+            style={{ "--mark": mark.top } as CSSProperties}
           >
             <span className="h-2 w-2 rounded-full bg-white/70 transition-colors group-hover:bg-white" />
-            <span className="pointer-events-none absolute right-8 whitespace-nowrap rounded bg-zinc-950/85 px-1.5 py-0.5 text-xs text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+            <span className="pointer-events-none absolute right-8 whitespace-nowrap rounded bg-zinc-950/85 px-1.5 py-0.5 text-xs text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 portrait:right-auto portrait:top-7">
               {mark.label}
             </span>
           </button>

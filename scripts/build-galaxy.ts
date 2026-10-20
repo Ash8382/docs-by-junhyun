@@ -9,10 +9,16 @@ import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
  * 원본과 출처: https://svs.gsfc.nasa.gov/4851 — NASA/Goddard Space Flight Center Scientific Visualization Studio,
  * Gaia DR2: ESA/Gaia/DPAC (페이지 엔딩에 표기한다)
  *
+ * 3D 경량(스펙 5절, 2-4a)이 쓰는 2048×1024(galaxy-2048.webp)도 같은 원본에서 줄여 만든다. EXR이 없으면 GALAXY_LITE=1로
+ * 이미 있는 4096 WebP에서 줄인다.
+ *
  * 사용법: GALAXY_EXR=<내려받은 starmap_2020_4k.exr 경로> npm run build:galaxy
+ *         GALAXY_LITE=1 npm run build:galaxy   # galaxy-2048.webp만(원본 EXR 없이)
  */
 const SOURCE = process.env.GALAXY_EXR;
 const OUTPUT = "public/journey/galaxy.webp";
+const LITE_OUTPUT = "public/journey/galaxy-2048.webp";
+const LITE_SIZE = { width: 2048, height: 1024 };
 const QUALITY = 82; // 4096×2048에서 약 1.6MB. 90이면 2.5MB인데 별 모양 차이가 눈에 띄지 않았다
 
 function encodeSrgb(linear: number): number {
@@ -21,7 +27,16 @@ function encodeSrgb(linear: number): number {
   return Math.round(255 * srgb);
 }
 
+async function writeLite(input: sharp.Sharp) {
+  const info = await input.resize(LITE_SIZE.width, LITE_SIZE.height).webp({ quality: QUALITY }).toFile(LITE_OUTPUT);
+  console.log(`${LITE_OUTPUT}: ${LITE_SIZE.width}×${LITE_SIZE.height}, ${(info.size / 1024 / 1024).toFixed(2)}MB`);
+}
+
 async function main() {
+  if (process.env.GALAXY_LITE === "1") {
+    await writeLite(sharp(OUTPUT));
+    return;
+  }
   if (!SOURCE) throw new Error("GALAXY_EXR에 내려받은 starmap_2020_4k.exr 경로를 주세요");
   const file = await readFile(SOURCE);
   const loader = new EXRLoader();
@@ -41,6 +56,7 @@ async function main() {
   }
   const info = await sharp(rgb, { raw: { width, height, channels: 3 } }).webp({ quality: QUALITY }).toFile(OUTPUT);
   console.log(`${OUTPUT}: ${width}×${height}, ${(info.size / 1024 / 1024).toFixed(2)}MB`);
+  await writeLite(sharp(rgb, { raw: { width, height, channels: 3 } }));
 }
 
 main().catch((error) => {

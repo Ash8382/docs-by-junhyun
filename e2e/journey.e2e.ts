@@ -3,6 +3,8 @@ import { driveAt } from "../src/lib/journey/drive";
 import { projects } from "../src/data/projects";
 import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT } from "../src/lib/journey/holograms";
 import { occlusionTargets } from "../src/lib/journey/landscapeOcclusion";
+import { PORTRAIT_LENS } from "../src/lib/journey/lens";
+import { cardProgress, portraitCamera } from "../src/lib/journey/portrait";
 import { HALL_REPO_END, HALL_REPO_START, rangeOf } from "../src/lib/journey/timeline";
 
 // WebGL을 쓸 수 없는 기기를 흉내 낸다. 3D 없이도 본문과 상세가 동작해야 한다(스펙 5절).
@@ -119,6 +121,8 @@ test("WebGL이 없으면 3D 없이 본문과 진행 막대가 동작한다", asy
 test("자세히 보기로 열고 ESC로 닫으면 포커스가 링크로 돌아온다", async ({ page }) => {
   await page.goto("/journey");
   const link = page.locator("#stop-pfplay a[data-journey-detail]");
+  // 세로 화면은 지금 정류장의 카드만 누를 수 있다(스펙 3절 "세로 화면"). 그 정류장으로 가서 누른다
+  await scrollToProgress(page, middleOf("pfplay"));
   await link.click();
   await expect(page.getByRole("dialog", { name: "PFPlay" })).toBeVisible();
   await expect(page).toHaveURL(/#pfplay$/);
@@ -130,6 +134,7 @@ test("자세히 보기로 열고 ESC로 닫으면 포커스가 링크로 돌아�
 
 test("브라우저 뒤로 가기로 닫힌다", async ({ page }) => {
   await page.goto("/journey");
+  await scrollToProgress(page, middleOf("tix2u"));
   await page.locator("#stop-tix2u a[data-journey-detail]").click();
   await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
   await page.goBack();
@@ -259,6 +264,7 @@ test("휠로 스크롤하면 페이지가 내려간다", async ({ page }) => {
 
 test("패널을 닫으면 다시 휠로 스크롤된다", async ({ page }) => {
   await page.goto("/journey");
+  await scrollToProgress(page, middleOf("pfplay"));
   await page.locator("#stop-pfplay a[data-journey-detail]").click();
   await expect(page.getByRole("dialog", { name: "PFPlay" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -268,6 +274,7 @@ test("패널을 닫으면 다시 휠로 스크롤된다", async ({ page }) => {
 
 test("패널을 연 채 블로그 원문으로 나갔다 돌아와 닫아도 스크롤된다", async ({ page }) => {
   await page.goto("/journey");
+  await scrollToProgress(page, middleOf("pfplay"));
   await page.locator("#stop-pfplay a[data-journey-detail]").click();
   await page.getByRole("link", { name: "블로그 원문 보기" }).click();
   await expect(page).toHaveURL(/\/blog\/pfplay$/);
@@ -447,6 +454,51 @@ test("디코더를 받지 못해도 빛 실루엣으로 대신한다", async ({ 
   await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "silhouette");
 });
 
+// ── 기기 단계와 3D 경량(2-4a, 스펙 5절) ───────────────────
+
+test.describe("해상도 배율 2 화면", () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test("3D 전체는 배율 2·은하 4096·블룸 그대로이고, ?tier=lite는 배율 1.5·은하 2048·줄인 블룸이다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    const full = await readStats(page);
+    expect(full.quality).toEqual({ tier: "full", dpr: 2, galaxyWidth: 4096, bloomLevels: 8, luminanceScale: 1 });
+    expect(full.renderTargetBytes).toBeGreaterThan(0);
+    await page.goto("/journey?debug=stats&tier=lite");
+    await waitReady(page);
+    const lite = await readStats(page);
+    expect(lite.quality).toEqual({ tier: "lite", dpr: 1.5, galaxyWidth: 2048, bloomLevels: 6, luminanceScale: 0.5 });
+    // 텍스처 추정: 58.8MiB에서 은하가 32.0 → 8.0MiB(스펙 5절)
+    expect(lite.textureBytes / 2 ** 20).toBeGreaterThan(34.3);
+    expect(lite.textureBytes / 2 ** 20).toBeLessThan(35.3);
+    expect(lite.renderTargetBytes).toBeLessThan(full.renderTargetBytes);
+  });
+});
+
+test("?tier=2d면 3D 장면·은하·차를 내려받지 않고 본문과 썸네일이 보인다", async ({ page }) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await page.goto("/journey?debug=stats&tier=2d");
+  // 하이드레이션 뒤 장면을 불러왔다면 그 요청까지 끝날 때를 기다린다
+  await page.waitForLoadState("networkidle");
+  await expect(page.locator("[data-journey-scene]")).toHaveCount(0);
+  expect(requests.filter((url) => url.includes("/journey/galaxy") || url.includes("/journey/car/"))).toEqual([]);
+  for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
+  await page.keyboard.press("End");
+  await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+test.describe("터치 기기", () => {
+  test.use({ hasTouch: true, isMobile: true });
+
+  test("포인터가 굵은 기기(터치)는 3D 경량으로 판정된다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    expect((await readStats(page)).quality?.tier).toBe("lite");
+  });
+});
+
 type HologramStats = {
   shown: string[];
   hovered: string | null;
@@ -475,6 +527,9 @@ type JourneyStats = {
   wheelTravel: number | null;
   holograms: HologramStats | null;
   landscape: LandscapeStats | null;
+  quality: { tier: string; dpr: number; galaxyWidth: number; bloomLevels: number; luminanceScale: number } | null;
+  renderTargetBytes: number;
+  lens: { fov: number; center: number };
 };
 
 async function readStats(page: Page): Promise<JourneyStats> {
@@ -667,7 +722,7 @@ const HALL_VIEWPORTS = [
 ];
 
 test("PiCKCARE 저장소 패널이 배치 모형의 자리에 있고, 네 화면 크기에서 저장소마다 읽기 자리에 그 패널만 화면 안에 다 들어온다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", "세로 화면의 PiCKCARE 배치는 2-4에서 맞춘다");
+  test.skip(testInfo.project.name === "mobile", "세로 화면은 아래 고정 카드라 배치 모형이 없다(세로 화면 PiCKCARE 테스트가 따로 본다)");
   const length = rangeOf("pickcare").stop.length;
   const block = (length - HALL_REPO_START - HALL_REPO_END) / REPO_COUNT;
   for (const viewport of HALL_VIEWPORTS) {
@@ -702,8 +757,8 @@ test("PiCKCARE 저장소 패널이 배치 모형의 자리에 있고, 네 화면
   }
 });
 
-// 스펙 3절 "홀로그램 상호작용". 홀로그램 자리를 쓰는 테스트는 넓은 화면에서만 본다(세로 화면의 자리는 2-4에서 맞춘다).
-const PORTRAIT_SKIP = "세로 화면의 홀로그램 자리는 2-4에서 맞춘다";
+// 스펙 3절 "홀로그램 상호작용". 마우스 호버·커서를 보는 테스트는 넓은 화면에서만 본다(휴대폰 세로 화면에는 호버가 없다).
+const HOVER_SKIP = "휴대폰 세로 화면에는 마우스 호버가 없어 넓은 화면에서만 본다";
 /** 카메라와 PiCKCARE 앞줄의 감쇠가 자리에 닿을 때까지 */
 const SETTLE_MS = 2500;
 
@@ -728,8 +783,7 @@ async function canvasCursor(page: Page): Promise<string> {
   return page.locator("[data-journey-scene] canvas").evaluate((canvas) => getComputedStyle(canvas).cursor);
 }
 
-test("홀로그램을 누르면 짝인 상세가 열리고, 닫으면 포커스가 그 링크로 돌아온다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+test("홀로그램을 누르면 짝인 상세가 열리고, 닫으면 포커스가 그 링크로 돌아온다", async ({ page }) => {
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   await settleAt(page, middleOf("stock2u"));
@@ -754,7 +808,7 @@ test("키보드(Enter)로 연 상세를 닫아도 포커스가 그 링크로 돌
 });
 
 test("홀로그램 위에서는 커서가 pointer이고, 누를 수 없는 코코아톡 위에서는 바뀌지 않는다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   await settleAt(page, middleOf("stock2u"));
@@ -814,7 +868,7 @@ async function expectHoverUnder(page: Page, point: { x: number; y: number }, lab
 }
 
 test("포인터를 두고 스크롤해도 호버는 포인터를 덮는 가장 가까운 홀로그램이고, 누르면 그 상세가 열린다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   const start = await pointAtPickcareBiz(page);
   let decided = 0;
   let last: string | null = null;
@@ -834,7 +888,7 @@ test("포인터를 두고 스크롤해도 호버는 포인터를 덮는 가장 �
 });
 
 test("마우스 휠로 스크롤해도 호버는 포인터를 덮는 가장 가까운 홀로그램을 따른다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   const start = await pointAtPickcareBiz(page);
   await expect.poll(async () => (await readStats(page)).holograms?.hovered).toBe("pickcare/biz");
   const range = rangeOf("pickcare");
@@ -856,7 +910,7 @@ test("마우스 휠로 스크롤해도 호버는 포인터를 덮는 가장 가�
 });
 
 test("홀로그램에서 본문 패널로 포인터를 옮기면 호버가 풀리고 다시 켜지지 않는다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   await settleAt(page, middleOf("stock2u"));
@@ -879,8 +933,7 @@ test("홀로그램마다 짝인 상세 링크가 정확히 하나다", async ({ 
   }
 });
 
-test("홀로그램을 두 번 눌러도 기록은 하나만 남는다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+test("홀로그램을 두 번 눌러도 기록은 하나만 남는다", async ({ page }) => {
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   await settleAt(page, middleOf("pfplay"));
@@ -973,6 +1026,425 @@ test("실행 중 장면이 실패하면(컨텍스트 손실) 2막 썸네일이 �
   await expect(page.getByText(EMAIL)).toBeInViewport();
 });
 
+// ── 세로 화면 카메라(2-4a, 스펙 3절 "세로 화면") ───────────────────
+
+test.describe("세로 화면(390×844)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("세로 렌즈(시야각 58°, 투영 중심 위 29%)로 그리고, 정류장 홀로그램이 헤더 아래·화면 위 60% 안에 든다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    for (const id of ["kokoa-clone", "stock2u", "pfplay"]) {
+      await settleAt(page, middleOf(id));
+      const stats = await readStats(page);
+      expect(stats.lens, id).toEqual({ fov: 58, center: 0.29 });
+      const screen = stats.holograms?.screens.find((item) => item.id === id);
+      if (!screen) throw new Error(`${id} 홀로그램이 화면에 없습니다`);
+      expect(screen.rect[0], id).toBeGreaterThan(0);
+      expect(screen.rect[2], id).toBeLessThan(1);
+      expect(screen.rect[1], id).toBeGreaterThan(80 / 844);
+      expect(screen.rect[3], id).toBeLessThan(0.6);
+    }
+  });
+
+  test("화면을 가로로 돌리면 가로 렌즈로, 다시 세우면 세로 렌즈로 바뀐다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 58, center: 0.29 });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 50, center: 0.5 });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 58, center: 0.29 });
+  });
+});
+
+test("가로 화면은 지금 렌즈(시야각 50°, 투영 중심 가운데) 그대로다", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  expect((await readStats(page)).lens).toEqual({ fov: 50, center: 0.5 });
+});
+
+// ── 모바일 헤더와 세로 화면 진행 막대(2-4a, 스펙 2절 "진행 표시", 4절 "사이트 공통 요소 변경") ───────────────────
+
+for (const width of [360, 390]) {
+  test(`${width}px 화면에서 헤더 메뉴가 줄바꿈 없이 한 줄이고 모든 메뉴에 닿는다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/journey");
+    const header = page.locator("[data-site-header]");
+    expect((await header.boundingBox())?.height).toBeLessThanOrEqual(57);
+    const heights = await header.getByRole("link").evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
+    expect(Math.max(...heights)).toBeLessThanOrEqual(24);
+    // 390px은 메뉴가 다 들어오고, 더 좁으면 메뉴를 옆으로 밀어 마지막 메뉴에 닿는다
+    const nav = await header.locator("nav").evaluate((element) => ({ client: element.clientWidth, scroll: element.scrollWidth }));
+    if (width >= 390) expect(nav.scroll).toBeLessThanOrEqual(nav.client);
+    const github = header.getByRole("link", { name: "GitHub" });
+    await github.scrollIntoViewIfNeeded();
+    const box = await github.boundingBox();
+    if (!box) throw new Error("GitHub 메뉴가 없습니다");
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width + 0.5);
+  });
+}
+
+test.describe("세로 화면 진행 막대(390×844)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("헤더 바로 아래 화면 폭 가로 막대이고, 점을 누르면 그 막과 연락처로 간다", async ({ page }) => {
+    await page.goto("/journey");
+    const header = await page.locator("[data-site-header]").boundingBox();
+    const rail = await page.getByRole("navigation", { name: "여정 진행" }).boundingBox();
+    if (!header || !rail) throw new Error("헤더나 진행 막대가 없습니다");
+    expect(Math.abs(rail.y - (header.y + header.height))).toBeLessThanOrEqual(1);
+    expect(rail.width).toBeGreaterThan(380);
+    expect(rail.height).toBeLessThanOrEqual(24);
+    await page.getByRole("button", { name: "3막으로 이동" }).click();
+    await expect(page.locator("#stop-act-3")).toBeInViewport();
+    await page.getByRole("button", { name: "연락처로 이동" }).click();
+    await expect(page.getByText(EMAIL)).toBeInViewport();
+  });
+});
+
+test("가로 화면 진행 막대는 오른쪽 세로 막대 그대로다", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/journey");
+  const rail = await page.getByRole("navigation", { name: "여정 진행" }).boundingBox();
+  if (!rail) throw new Error("진행 막대가 없습니다");
+  expect(rail.height).toBeGreaterThan(rail.width * 4);
+  expect(rail.x).toBeGreaterThan(1200);
+});
+
+test("3D 캔버스 틀은 화면 위에 붙은 큰 뷰포트 높이라 휴대폰 주소창이 접히고 펴져도 크기를 다시 잡지 않는다", async ({ page }) => {
+  await page.goto("/journey");
+  // 주소창은 에뮬레이션에 없어, 아래끝을 화면 아래에 묶지 않았는지(계산값 bottom: auto)와 높이가 100lvh인지를 본다.
+  // 묶으면 주소창이 움직일 때마다 캔버스·렌더 타깃을 다시 만들고 카메라 비율이 바뀌어 구도가 튄다
+  const frame = await page.locator("[data-journey-scene]").evaluate((element) => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:0;width:1px;height:100lvh;visibility:hidden";
+    document.body.append(probe);
+    const lvh = probe.getBoundingClientRect().height;
+    probe.remove();
+    const style = element.computedStyleMap();
+    return { top: String(style.get("top")), bottom: String(style.get("bottom")), height: element.getBoundingClientRect().height, lvh };
+  });
+  expect(frame.top).toBe("0px");
+  expect(frame.bottom).toBe("auto");
+  expect(frame.height).toBeCloseTo(frame.lvh, 0);
+});
+
+/** 엔딩 끝에서 피해야 할 위쪽 요소의 아래끝(헤더, 세로 화면은 헤더 아래 가로 진행 막대까지) */
+async function chromeBottom(page: Page): Promise<number> {
+  const header = await page.locator("[data-site-header]").boundingBox();
+  const rail = await page.getByRole("navigation", { name: "여정 진행" }).boundingBox();
+  if (!header || !rail) throw new Error("헤더나 진행 막대가 없습니다");
+  return Math.max(header.y + header.height, rail.width > rail.height ? rail.y + rail.height : 0);
+}
+
+/** 엔딩 패널이 넘치면(패널 안 스크롤) 위끝이 위쪽 요소보다 0.5rem(8px) 아래에 맞춰져 있다(2절 "엔딩") */
+async function expectEndingPanelFits(page: Page, top: number) {
+  const panel = await page.getByRole("heading", { name: "연락처" }).locator("..").evaluate((element) => ({
+    top: element.getBoundingClientRect().top,
+    overflows: element.scrollHeight > element.clientHeight,
+  }));
+  if (panel.overflows) expect(Math.abs(panel.top - (top + 8))).toBeLessThanOrEqual(1.5);
+}
+
+test("짧은 데스크톱 창(1280×500)에서 넘친 엔딩 패널은 헤더 0.5rem 아래까지 쓰고, 패널 위에서 휠을 굴리면 출처까지 닿는다", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "화면 크기를 정해 두므로 한 프로젝트에서만 본다");
+  await page.setViewportSize({ width: 1280, height: 500 });
+  await page.goto("/journey");
+  await waitReady(page);
+  await scrollToProgress(page, 1);
+  const heading = page.getByRole("heading", { name: "연락처" });
+  await expect(heading).toBeInViewport();
+  const top = await chromeBottom(page);
+  await expect.poll(async () => (await heading.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(top);
+  await expectEndingPanelFits(page, top);
+  // Lenis가 휠을 창 스크롤로 바꾸지 않고 넘친 패널 안을 굴리게 둔다
+  const box = await heading.locator("..").boundingBox();
+  if (!box) throw new Error("엔딩 패널이 없습니다");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const credit = page.getByRole("link", { name: "NASA/Goddard Space Flight Center Scientific Visualization Studio" });
+  await expect(async () => {
+    await page.mouse.wheel(0, 400);
+    await expect(credit).toBeInViewport({ ratio: 1, timeout: 500 });
+  }).toPass({ timeout: 5000 });
+});
+
+// 짧은 휴대폰 화면: 아이폰 사파리의 도구 막대가 펴진 높이(390×664), 아이폰 SE 사파리(375×548), 휴대폰 가로(750×340)
+const SHORT_VIEWPORTS = [
+  { width: 390, height: 664 },
+  { width: 375, height: 548 },
+  { width: 750, height: 340 },
+];
+
+for (const viewport of SHORT_VIEWPORTS) {
+  test(`짧은 화면(${viewport.width}×${viewport.height})에서도 엔딩 끝의 연락처가 헤더 아래에서 끝까지 읽힌다`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "desktop", "화면 크기를 정해 두므로 한 프로젝트에서만 본다");
+    await page.setViewportSize(viewport);
+    await page.goto("/journey");
+    await waitReady(page);
+    await scrollToProgress(page, 1);
+    const top = await chromeBottom(page);
+    const heading = page.getByRole("heading", { name: "연락처" });
+    await expect(heading).toBeInViewport();
+    await expect.poll(async () => (await heading.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(top);
+    await expectEndingPanelFits(page, top);
+    await expect(page.getByText(EMAIL)).toBeInViewport({ ratio: 1 });
+    // 패널 끝의 출처까지 닿는다(넘치면 패널 안에서 스크롤한다)
+    const credit = page.getByRole("link", { name: "NASA/Goddard Space Flight Center Scientific Visualization Studio" });
+    await credit.scrollIntoViewIfNeeded();
+    await expect(credit).toBeInViewport({ ratio: 1 });
+    expect((await credit.boundingBox())?.y ?? -1).toBeGreaterThanOrEqual(top);
+  });
+}
+
+// ── 휴대폰 측정 오버레이(2-4a, 스펙 8절 4항 ?debug=perf) ───────────────────
+
+type PerfRun = { frames: number; p95Ms: number; p99Ms: number; over50ms: number; reached: number };
+type PerfResult = {
+  device: { model: string; tier: string; dpr: number; canvas: string; gpu: string; browser: string };
+  speed: number;
+  runs: PerfRun[];
+  meets: boolean;
+  scene: { maxDrawCalls: number; programs: [number, number]; textureMiB: number; renderTargetMiB: number } | null;
+  longRun: { minutes: number; perMinute: { frames: number; p95Ms: number }[]; meets: boolean } | null;
+};
+
+async function readPerf(page: Page): Promise<PerfResult | null> {
+  return page.evaluate(() => (window as Window & { __journeyPerf?: PerfResult }).__journeyPerf ?? null);
+}
+
+test("?debug=perf가 없으면 측정 오버레이가 없다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await expect(page.getByRole("region", { name: "성능 측정" })).toHaveCount(0);
+});
+
+test("?debug=perf 오버레이는 기기 단계·해상도 배율·GPU·최근 프레임 시간·드로콜을 보인다", async ({ page }) => {
+  await page.goto("/journey?debug=perf");
+  await waitReady(page);
+  const overlay = page.getByRole("region", { name: "성능 측정" });
+  await expect(overlay).toContainText("단계 full");
+  await expect(overlay).toContainText("배율");
+  await expect(overlay).toContainText("GPU");
+  await expect.poll(async () => (await overlay.textContent()) ?? "").toMatch(/최근 10초 [\d.]+fps/);
+  await expect(overlay).toContainText("드로콜");
+});
+
+test("측정을 누르면 여정을 자동으로 3회 끝까지 지나가 결과를 내고, 복사한 JSON이 같다", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/journey?debug=perf&perfSpeed=10");
+  await waitReady(page);
+  await page.getByRole("textbox", { name: "기종" }).fill("테스트 기기");
+  await page.getByRole("button", { name: "측정", exact: true }).click();
+  await expect.poll(async () => (await readPerf(page))?.runs.length ?? 0, { timeout: 60_000 }).toBe(3);
+  const result = await readPerf(page);
+  if (!result) throw new Error("측정 결과가 없습니다");
+  expect(result.device.model).toBe("테스트 기기");
+  expect(result.device.tier).toBe("full");
+  expect(result.speed).toBe(10);
+  for (const run of result.runs) {
+    expect(run.frames).toBeGreaterThan(0);
+    expect(run.reached).toBeGreaterThan(0.999);
+  }
+  expect(result.scene?.programs[0]).toBe(result.scene?.programs[1]);
+  await page.getByRole("button", { name: "결과 복사" }).click();
+  expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toEqual(result);
+});
+
+test("오래 돌리기는 왕복하며 1분마다 프레임 시간을 묶어 낸다", async ({ page }) => {
+  await page.goto("/journey?debug=perf&perfSpeed=10&perfMinutes=0.05");
+  await waitReady(page);
+  await page.getByRole("button", { name: "오래 돌리기" }).click();
+  await expect.poll(async () => (await readPerf(page))?.longRun?.perMinute.length ?? 0, { timeout: 30_000 }).toBe(1);
+  const result = await readPerf(page);
+  expect(result?.longRun?.minutes).toBe(0.05);
+  expect(result?.longRun?.perMinute[0].frames).toBeGreaterThan(0);
+});
+
+// ── 세로 화면 아래 고정 카드(2-4a, 스펙 3절 "세로 화면") ───────────────────
+
+/** 보이는 카드(data-active): 이름, 패널의 화면 비율 위·아래, 불투명도, 배치 */
+async function activeCards(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-journey-card][data-active]")].map((card) => {
+      const panel = card.querySelector(".shadow-2xl")?.getBoundingClientRect();
+      return {
+        id: card.dataset.journeyCard ?? "",
+        top: (panel?.top ?? 0) / innerHeight,
+        bottom: (panel?.bottom ?? 0) / innerHeight,
+        opacity: getComputedStyle(card).opacity,
+        position: getComputedStyle(card).position,
+      };
+    }),
+  );
+}
+
+/** 포커스한 요소가 든 카드의 이름 */
+async function focusedCard(page: Page): Promise<string | null> {
+  return page.evaluate(() => document.activeElement?.closest<HTMLElement>("[data-journey-card]")?.dataset.journeyCard ?? null);
+}
+
+/** 스크롤이 0.5초 동안 그대로인가(포커스 되돌이·자동 스크롤이 없는가) */
+async function expectSettledScroll(page: Page, label: string) {
+  await page.waitForTimeout(600);
+  const before = await page.evaluate(() => window.scrollY);
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.scrollY), label).toBe(before);
+}
+
+test.describe("세로 화면 아래 고정 카드(390×844)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("처음 열 때와 가로에서 세로로 돌릴 때 보이지 않을 카드들이 아래 고정 자리에 겹쳐 보였다가 사라지지 않는다", async ({ page }) => {
+    // 고정 자리로 들어간 뒤 0.3초 동안 매 프레임 보이는(불투명도 0.05 초과) 카드 수의 최댓값을 모은다
+    await page.addInitScript(() => {
+      const record = window as Window & { __cardFlash?: number[] };
+      record.__cardFlash = [];
+      // 문서가 만들어질 때부터 본다. 본문이 생긴 뒤에 걸면 하이드레이션이 먼저 고정 자리로 옮겨 그 변화를 놓친다
+      new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          const main = mutation.target as HTMLElement;
+          if (main.dataset.journeyCards !== "fixed" || mutation.oldValue === "fixed") continue;
+          const start = performance.now();
+          let most = 0;
+          const sample = () => {
+            const shown = [...main.querySelectorAll("[data-journey-card]")].filter((card) => Number(getComputedStyle(card).opacity) > 0.05);
+            most = Math.max(most, shown.length);
+            if (performance.now() - start < 300) requestAnimationFrame(sample);
+            else record.__cardFlash?.push(most);
+          };
+          sample();
+        }
+      }).observe(document, { subtree: true, attributes: true, attributeFilter: ["data-journey-cards"], attributeOldValue: true });
+    });
+    const flashes = () => page.evaluate(() => (window as Window & { __cardFlash?: number[] }).__cardFlash ?? []);
+    await page.goto("/journey");
+    await expect.poll(flashes).toHaveLength(1);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(page.locator("[data-journey-page]")).not.toHaveAttribute("data-journey-cards", "fixed");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(flashes).toHaveLength(2);
+    expect(await flashes()).toEqual([1, 1]);
+  });
+
+  test("정류장마다 그 정류장의 카드 하나만 화면 아래 40% 안에 보이고, 나머지는 보이지 않는다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    for (const id of STOP_IDS.filter((stop) => stop !== "ending")) {
+      await scrollToProgress(page, cardProgress(id));
+      await expect.poll(async () => (await activeCards(page)).map((card) => card.id), id).toEqual([id]);
+      await expect.poll(async () => (await activeCards(page))[0]?.opacity, id).toBe("1");
+      const [card] = await activeCards(page);
+      expect(card.position, id).toBe("fixed");
+      expect(card.top, id).toBeGreaterThan(0.6);
+      expect(card.bottom, id).toBeLessThan(1);
+    }
+    const hidden = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("[data-journey-card]:not([data-active])")].map((card) => getComputedStyle(card).opacity),
+    );
+    expect(new Set(hidden)).toEqual(new Set(["0"]));
+  });
+
+  test("PiCKCARE에서는 저장소 카드가 늘 홀로그램 앞줄과 같은 저장소다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    for (let within = 0.2; within <= 0.96; within += 0.05) {
+      await scrollToProgress(page, at("pickcare", within));
+      await page.waitForTimeout(1200);
+      const front = (await readStats(page)).holograms?.front;
+      expect((await activeCards(page)).map((card) => card.id), within.toFixed(2)).toEqual([front]);
+    }
+  });
+
+  test("세로 화면 PiCKCARE: 저장소마다 읽기 자리에서 그 저장소 카드만 아래에 다 보이고, 앞줄 홀로그램이 헤더 아래·화면 위 60% 안에 있다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    for (const repo of ["frontend", "biz", "studio", "app", "cardnews"]) {
+      const id = `pickcare/${repo}`;
+      await settleAt(page, cardProgress(id));
+      const stats = await readStats(page);
+      expect(stats.holograms?.front, id).toBe(id);
+      const [card, ...rest] = await activeCards(page);
+      expect(rest, id).toEqual([]);
+      expect(card.id, id).toBe(id);
+      expect(card.top, id).toBeGreaterThan(0.6);
+      expect(card.bottom, id).toBeLessThan(1);
+      const screen = stats.holograms?.screens.find((item) => item.id === id);
+      if (!screen) throw new Error(`${id} 홀로그램이 화면에 없습니다`);
+      expect(screen.rect[0], id).toBeGreaterThan(0);
+      expect(screen.rect[2], id).toBeLessThan(1);
+      expect(screen.rect[1], id).toBeGreaterThan(80 / 844);
+      expect(screen.rect[3], id).toBeLessThan(0.6);
+    }
+  });
+
+  test("엔딩에서는 고정 카드가 없고 연락처가 스크롤로 올라온다", async ({ page }) => {
+    await page.goto("/journey");
+    await waitReady(page);
+    await page.keyboard.press("End");
+    await expect(page.getByText(EMAIL)).toBeInViewport();
+    await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed");
+    await expect.poll(async () => (await activeCards(page)).length).toBe(0);
+    expect(await page.locator("#stop-ending .shadow-2xl").evaluate((panel) => getComputedStyle(panel.parentElement as Element).position)).not.toBe("fixed");
+  });
+
+  test("Tab·Shift+Tab으로 상세 링크를 차례로 지나면 포커스한 링크의 카드가 보이고, 그 뒤 포커스와 스크롤이 움직이지 않는다", async ({ page }) => {
+    await page.goto("/journey");
+    await waitReady(page);
+    await page.locator("#stop-todo-app a[data-journey-detail]").focus();
+    const order = ["todo-app", "eutcha", "stock2u", "tix2u", "pfplay", "pickcare/frontend", "pickcare/biz", "pickcare/studio", "pickcare/app", "pickcare/cardnews"];
+    const visit = async (id: string, label: string) => {
+      expect(await focusedCard(page), label).toBe(id);
+      await expect.poll(async () => (await activeCards(page)).map((card) => card.id), label).toEqual([id]);
+      await expectSettledScroll(page, label);
+      expect(await focusedCard(page), label).toBe(id);
+    };
+    await visit("todo-app", "처음");
+    for (const id of order.slice(1)) {
+      await page.keyboard.press("Tab");
+      await visit(id, `Tab → ${id}`);
+    }
+    for (const id of [...order].reverse().slice(1, 4)) {
+      await page.keyboard.press("Shift+Tab");
+      await visit(id, `Shift+Tab → ${id}`);
+    }
+  });
+
+  test("이미 보이는 카드의 링크로 포커스가 가면 스크롤하지 않는다", async ({ page }) => {
+    await page.goto("/journey");
+    await waitReady(page);
+    await scrollToProgress(page, cardProgress("stock2u"));
+    await expect.poll(async () => (await activeCards(page)).map((card) => card.id)).toEqual(["stock2u"]);
+    const before = await page.evaluate(() => window.scrollY);
+    await page.locator("#stop-stock2u a[data-journey-detail]").focus();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  });
+
+  test("WebGL이 없으면 세로 화면에서도 카드를 고정하지 않는다", async ({ page }) => {
+    await disableWebGL(page);
+    await page.goto("/journey");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("[data-journey-page]")).not.toHaveAttribute("data-journey-cards", "fixed");
+    expect(await page.locator('[data-journey-card="stock2u"]').evaluate((card) => getComputedStyle(card).position)).not.toBe("fixed");
+  });
+
+  test("실행 중 장면이 실패하면(컨텍스트 손실) 카드가 스크롤 배치로 돌아온다", async ({ page }) => {
+    await page.goto("/journey");
+    await waitReady(page);
+    await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed");
+    await page.evaluate(() => {
+      const canvas = document.querySelector("[data-journey-scene] canvas");
+      if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
+      canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+    });
+    await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed");
+    await expect(page.locator("[data-journey-page]")).not.toHaveAttribute("data-journey-cards", "fixed");
+  });
+});
+
 // ── 막별 풍경(2-3b, 스펙 1절 완료 조건과 3절 "막별 풍경") ───────────────────
 
 const LANDSCAPE_MESHES = ["journey-landscape-act1", "journey-landscape-act2", "journey-landscape-act3", "journey-landscape-spire"];
@@ -1025,8 +1497,7 @@ test("다른 페이지에 다녀와도 풍경 메시 넷을 새로 만들어 그
   expect(after.meshes[3].calls).toBeGreaterThan(0);
 });
 
-test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀로그램 모서리와 열린 도로가 풍경에 막히지 않는다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀로그램 모서리와 열린 도로가 풍경에 막히지 않는다", async ({ page }) => {
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   const viewport = page.viewportSize();
@@ -1043,7 +1514,11 @@ test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀�
     await settleAt(page, progress);
     const landscape = (await readStats(page)).landscape;
     if (!landscape) throw new Error("풍경 통계가 없습니다");
-    const targets = occlusionTargets(progress, viewport.width / viewport.height, landscape.camera);
+    // 세로 화면은 세로 렌즈와 세로 카메라의 시선으로 화면 안 도로 표본을 고른다(2-4a)
+    const portrait = viewport.width < viewport.height;
+    const targets = portrait
+      ? occlusionTargets(progress, viewport.width / viewport.height, landscape.camera, PORTRAIT_LENS, portraitCamera(driveAt(progress)).target)
+      : occlusionTargets(progress, viewport.width / viewport.height, landscape.camera);
     expect(targets.length, `${id} ${within}`).toBeGreaterThan(0);
     const blocked = await page.evaluate(
       ([from, points]) => {
@@ -1060,7 +1535,7 @@ test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀�
 });
 
 test("3막 제목·진입·도착·떠날 때 첨탑이 헤더 아래 화면 안에 서고 본문 패널과 겹치지 않는다", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "mobile", PORTRAIT_SKIP);
+  test.skip(testInfo.project.name === "mobile", "세로 화면의 첨탑과 도로 끝은 네 화면 크기 캡처로 본다(스펙 3절 \"세로 화면\")");
   // 두 화면 크기 × 네 자리마다 카메라가 자리를 잡을 때까지 기다린다
   test.slow();
   for (const viewport of [

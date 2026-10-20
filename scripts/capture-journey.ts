@@ -16,6 +16,8 @@ import { rangeOf } from "@/lib/journey/timeline";
  * frontend 단독 노출 시작·읽기 시작·읽기 끝, biz·studio·app 읽기 가운데, cardnews 읽기 시작·읽기 끝·단독 노출 끝을 찍는다 — 3×3 한 장.
  * CAPTURE_SET=landscape는 막별 풍경(스펙 3절 "막별 풍경 (2-3b)")을 세 막에 걸쳐 본다: 1막 진입·코코아톡·Todo·EUTCHA 끝,
  * 2막 제목·Stock2U·Tix2U·PFPlay 끝, 3막 제목·PiCKCARE 머묾·떠날 때, 엔딩 — 열두 장, 3×4 한 장.
+ * CAPTURE_SET=portrait는 세로 화면(2-4a, 스펙 3절 "세로 화면")을 본다: 풍경 묶음 열두 장에 PiCKCARE 앞·뒤 저장소 자리와 엔딩 가운데
+ * (연락처가 오기 전)를 더한 열다섯 장, 5×3 한 장. CAPTURE_VIEWPORT=390x844처럼 세로 화면 크기와 함께 쓴다. 경량은 주소에 ?debug=stats&tier=lite.
  * CAPTURE_ORDER=reverse면 같은 자리를 거꾸로 찍는다(파일 이름은 같다). 정방향과 compare-captures로 비교한다(스펙 8절 4항).
  * CAPTURE_SETTLE=3700처럼 자리마다 기다리는 시간(ms, 기본 2500)을 바꾼다.
  * CAPTURE_VIEWPORT=1280x720처럼 화면 크기를 바꾼다(기본 1440x900).
@@ -29,6 +31,7 @@ import { rangeOf } from "@/lib/journey/timeline";
  *   CAPTURE_SET=hall CAPTURE_VIEWPORT=1280x720 CAPTURE_NAME=hall-1280x720 npm run capture:journey
  *   CAPTURE_SET=landscape CAPTURE_NAME=2-3b npm run capture:journey
  *   CAPTURE_SET=landscape CAPTURE_ORDER=reverse CAPTURE_NAME=2-3b-reverse npm run capture:journey
+ *   CAPTURE_SET=portrait CAPTURE_VIEWPORT=390x844 CAPTURE_HEADLESS=1 CAPTURE_NAME=2-4a-390x844 npm run capture:journey
  *   CAPTURE_HEADLESS=1을 더하면 창 없이 찍는다. 새 헤드리스(channel chromium)라 GPU로 그린다(Apple M4에서 Metal).
  *   예전 헤드리스 셸은 소프트웨어 렌더링(SwiftShader)이라 색과 속도가 실제와 달랐다.
  */
@@ -87,6 +90,14 @@ const LANDSCAPE_SHOTS: [string, string, number][] = [
   ["10-pickcare", "pickcare", 0.5],
   ["11-pickcare-leave", "pickcare", 0.97],
   ["12-ending", "ending", 1],
+];
+
+/** 세로 화면(2-4a): 풍경 묶음에 PiCKCARE 앞·뒤 저장소 자리와 엔딩 가운데(내려다보기를 마치고 연락처가 오기 전)를 더한다 */
+const PORTRAIT_SHOTS: [string, string, number][] = [
+  ...LANDSCAPE_SHOTS,
+  ["13-pickcare-early", "pickcare", 0.3],
+  ["14-pickcare-late", "pickcare", 0.75],
+  ["15-ending-mid", "ending", 0.5],
 ];
 
 function progressOf(id: string, within: number): number {
@@ -222,11 +233,13 @@ async function main() {
                 ? HOLOGRAM_SHOTS
                 : SET === "landscape"
                   ? LANDSCAPE_SHOTS
-                  : SHOTS,
+                  : SET === "portrait"
+                    ? PORTRAIT_SHOTS
+                    : SHOTS,
           );
     // 거꾸로 찍어도 한 장으로 붙일 때는 이름 순서(정방향)로 둔다
     if (REVERSE) files.sort();
-    const columns = SET === "edge" ? 4 : 3;
+    const columns = SET === "edge" ? 4 : SET === "portrait" ? 5 : 3;
     const rows = Math.ceil(files.length / columns);
     const tiles = await Promise.all(files.map((file) => sharp(file).resize(TILE.width, TILE.height).toBuffer()));
     await sharp({ create: { width: TILE.width * columns, height: TILE.height * rows, channels: 3, background: "#18181b" } })

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getCarStatus,
+  getSceneFailure,
   getSceneStatus,
   getServerCarStatus,
   getServerSceneStatus,
@@ -47,6 +48,16 @@ describe("장면 준비 상태", () => {
     setSceneStatus("ready");
     setSceneStatus("failed");
     expect(getSceneStatus()).toBe("failed");
+  });
+
+  it("실패의 종류(컨텍스트 손실·장면 실패)를 남기고, 다시 준비할 때 지운다(2-4b)", () => {
+    expect(getSceneFailure()).toBeNull();
+    setSceneStatus("failed", "context-lost");
+    expect(getSceneFailure()).toBe("context-lost");
+    setSceneStatus("loading");
+    expect(getSceneFailure()).toBeNull();
+    setSceneStatus("failed");
+    expect(getSceneFailure()).toBe("failed");
   });
 });
 

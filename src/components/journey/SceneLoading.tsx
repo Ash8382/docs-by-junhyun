@@ -4,7 +4,8 @@ import { useSyncExternalStore } from "react";
 import { getSceneStatus, getServerSceneStatus, subscribeSceneStatus } from "@/lib/journey/sceneStatus";
 
 /**
- * 3D 장면이 셰이더를 컴파일하는 동안 화면 아래에 흐르는 가는 막대(스펙 2절 "입구: 로딩 표시").
+ * 3D 장면이 셰이더를 컴파일하는 동안 화면 아래에 흐르는 가는 막대(스펙 2절 "입구: 로딩 표시"). 세로 화면에서는 아래가 고정 입구 카드 자리라
+ * 진행 막대 바로 아래에 둔다(2-4b).
  * 글을 넣지 않는 장식이라 보조 기술에는 숨긴다. 본문은 이미 진짜 HTML로 읽힌다.
  * 바깥 상자는 늘 두고 상태를 data-journey-loading에 적는다(e2e가 준비·실패를 기다리는 표지).
  */
@@ -14,7 +15,7 @@ export function SceneLoading() {
     <div
       data-journey-loading={status}
       aria-hidden
-      className="pointer-events-none fixed inset-x-0 bottom-10 z-20 flex justify-center"
+      className="pointer-events-none fixed inset-x-0 bottom-10 z-20 flex justify-center portrait:bottom-auto portrait:top-[5.5rem]"
     >
       {status === "loading" && (
         <span className="block h-px w-24 overflow-hidden bg-white/15">

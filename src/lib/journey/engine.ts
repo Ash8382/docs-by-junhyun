@@ -8,6 +8,7 @@ type ScrollEngine = Pick<Lenis, "stop" | "start" | "scrollTo">;
 
 let lenis: ScrollEngine | null = null;
 let locked = false;
+let afterUnlock: (() => void)[] = [];
 let renderStep: ((timeMs: number) => void) | null = null;
 
 export function setLenis(next: ScrollEngine | null): void {
@@ -29,6 +30,18 @@ export function lockScroll(): void {
 export function unlockScroll(): void {
   locked = false;
   lenis?.start();
+  const pending = afterUnlock;
+  afterUnlock = [];
+  for (const callback of pending) callback();
+}
+
+/**
+ * 스크롤 잠금이 풀리면 한 번 부른다(잠겨 있지 않으면 바로 부른다). 상세 패널이 열린 동안에는 Lenis가 <html>의 스크롤을 막아(lenis-stopped)
+ * 스크롤 위치를 바꿀 수 없으므로, 그동안 바뀐 배치에 맞추는 일(modeSwitch)을 패널이 닫힐 때로 미룬다(2-4b)
+ */
+export function whenUnlocked(callback: () => void): void {
+  if (locked) afterUnlock.push(callback);
+  else callback();
 }
 
 export function setRenderStep(step: ((timeMs: number) => void) | null): void {

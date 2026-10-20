@@ -66,10 +66,15 @@ export function ProjectDialog() {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
-  // 공유 주소(/journey#pfplay)로 들어오면 해당 정류장으로 먼저 옮긴다.
+  // 공유 주소(/journey#pfplay)로 들어오면 해당 정류장으로 먼저 옮긴다. 하이드레이션 때 2D 배치로 바뀌는 기기가 있어(JourneyStage의
+  // 2D 표지는 이 패널보다 늦게 걸린다) 한 프레임 뒤에 옮긴다(2-4b).
   useEffect(() => {
     const initial = parseJourneyHash(window.location.hash);
-    if (initial) document.getElementById(`stop-${initial.slug}`)?.scrollIntoView({ block: "start", behavior: "instant" });
+    if (!initial) return;
+    const frame = requestAnimationFrame(() =>
+      document.getElementById(`stop-${initial.slug}`)?.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // slug가 있으면 잠그고 연다. 닫기·잠금 해제·포커스 복귀는 정리 함수가 맡아 언마운트(블로그 원문으로 이동)에서도 잠금이 남지 않는다.
@@ -115,7 +120,7 @@ export function ProjectDialog() {
         pressedBackdrop.current = false;
         if (fromBackdrop && event.detail === 1) requestClose();
       }}
-      className="m-0 ml-auto h-dvh max-h-none w-full max-w-xl border-0 border-l border-white/10 bg-zinc-950 p-0 text-zinc-100 backdrop:bg-black/60"
+      className="m-0 ml-auto h-dvh max-h-none w-full max-w-xl border-0 border-l border-white/10 bg-zinc-950 p-0 text-zinc-100 backdrop:bg-black/60 max-sm:motion-safe:animate-[journey-sheet_0.25s_ease-out]"
     >
       {project && (
         <div data-lenis-prevent className="h-full overflow-y-auto overscroll-contain">

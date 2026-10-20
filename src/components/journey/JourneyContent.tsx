@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { sortedPosts } from "@/data/posts";
 import { projects } from "@/data/projects";
 import type { Project, RepoId } from "@/data/projects/types";
@@ -7,6 +8,7 @@ import { renderInline } from "@/lib/inline";
 import { CAR_CREDIT } from "@/lib/journey/carAsset";
 import { DETAIL_SLUGS, journeyHash } from "@/lib/journey/hash";
 import { HALL_REPO_END, HALL_REPO_START, STOPS, objectSide, type Stop } from "@/lib/journey/timeline";
+import { TRAIL_HEX } from "@/lib/journey/trail";
 import { EmailCopy } from "./EmailCopy";
 import { HologramThumbnail } from "./HologramThumbnail";
 
@@ -24,6 +26,9 @@ const ACTS = {
 
 // 움직이는 캔버스 위에서 backdrop-filter(흐림)는 매 프레임 GPU 재합성을 일으켜 스크롤을 끊는다. 반투명 단색만 쓴다.
 const PANEL = "pointer-events-auto rounded-xl border border-white/10 bg-zinc-950/85 p-6 text-zinc-100 shadow-2xl";
+
+/** 2D 왼쪽 선의 막 색(빛의 길과 같은 색, 스펙 5절 "2D 레이아웃"). 엔딩은 마지막 막 색으로 끝난다 */
+const ACT_LINE: Record<1 | 2 | 3, string> = { 1: TRAIL_HEX.start, 2: TRAIL_HEX.middle, 3: TRAIL_HEX.end };
 const DETAIL_LINK =
   "mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-300 underline-offset-4 hover:underline";
 
@@ -65,9 +70,13 @@ function StackChips({ stack }: { stack: string[] }) {
   );
 }
 
+/**
+ * 입구. 세로 화면에서는 서버가 그린 자리를 아래 고정 자리(화면 아래 5svh)와 맞춰 첫 로딩 때 옮겨지지 않게 한다(2-4b). 서버가 그린 배치에서
+ * 본문은 헤더(3.5rem) 아래에서 시작하므로 그만큼 더 띄운다(고정 자리에서는 globals.css가 아래 여백을 5svh로 덮는다)
+ */
 function IntroStop() {
   return (
-    <div data-journey-card="intro" className="container flex h-full items-center">
+    <div data-journey-card="intro" className="container flex h-full items-center portrait:items-end portrait:pb-[calc(5svh+3.5rem)]">
       <div className={`${PANEL} max-w-xl`}>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A Journey Through Code</h1>
         <p aria-hidden className="mt-6 text-2xl text-zinc-400">
@@ -162,8 +171,8 @@ function HallStop({ stop }: { stop: Stop }) {
           <div
             key={repo.id}
             data-journey-card={`${stop.id}/${repo.id}`}
-            className="container flex items-end pb-[12svh]"
-            style={{ height: `${((stop.length - HALL_REPO_START - HALL_REPO_END) / project.repos.length) * 100}svh` }}
+            className="container flex h-[calc(var(--repo-length)*100svh)] items-end pb-[12svh]"
+            style={{ "--repo-length": (stop.length - HALL_REPO_START - HALL_REPO_END) / project.repos.length } as CSSProperties}
           >
             <div className={`${PANEL} ml-auto max-w-sm`}>
               <p className="font-mono text-sm text-amber-300">{repo.id}</p>
@@ -256,6 +265,8 @@ function StopBody({ stop }: { stop: Stop }) {
  * 여정 본문. 3D가 없어도 그대로 읽히는 진짜 HTML이다.
  * 섹션은 클릭이 뒤의 캔버스로 가도록 pointer-events를 끄고, 패널만 켠다.
  * 카드(data-journey-card)는 세로 화면에서 3D를 쓰는 동안 화면 아래 고정 자리로 옮겨진다(portraitCards, globals.css).
+ * 정류장 높이(정류장 길이 × 100svh)는 3D 배치만 쓴다. 2D면 <html>의 표지로 CSS가 내용 높이의 세로 타임라인으로 바꾸고, 왼쪽 선은
+ * --act-color를 쓴다(2-4b, globals.css). 본문 DOM은 하나라 링크·포커스·낭독 순서가 3D와 같다.
  */
 export function JourneyContent() {
   return (
@@ -265,8 +276,13 @@ export function JourneyContent() {
           key={stop.id}
           id={`stop-${stop.id}`}
           data-stop={stop.id}
-          className="relative"
-          style={{ height: `${stop.length * 100}svh` }}
+          className="relative h-[calc(var(--stop-length)*100svh)]"
+          style={
+            {
+              "--stop-length": stop.length,
+              "--act-color": ACT_LINE[stop.kind === "ending" ? 3 : stop.act === 0 ? 1 : stop.act],
+            } as CSSProperties
+          }
         >
           <StopBody stop={stop} />
         </section>

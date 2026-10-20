@@ -1,12 +1,12 @@
 import type { WebGLRenderer } from "three";
 import { setRenderStep } from "@/lib/journey/engine";
-import { setSceneStatus } from "@/lib/journey/sceneStatus";
+import { setSceneStatus, type SceneFailure } from "@/lib/journey/sceneStatus";
 
-/** 3D 장면을 멈추고 실패로 알린다. 본문·진행 막대·상세는 HTML이라 그대로 동작한다. 복구는 2-4에서 한다 */
-export function failScene(reason: string, detail?: unknown): void {
+/** 3D 장면을 멈추고 실패로 알린다. 여정은 2D로 바뀌고(2-4b) 본문·진행 막대·상세는 HTML이라 그대로 동작한다 */
+export function failScene(reason: string, detail?: unknown, why: SceneFailure = "failed"): void {
   console.error(`여정 3D 장면을 멈춥니다: ${reason}`, detail ?? "");
   setRenderStep(null);
-  setSceneStatus("failed");
+  setSceneStatus("failed", why);
 }
 
 /**
@@ -23,7 +23,7 @@ export function watchRenderer(gl: WebGLRenderer): () => void {
     });
   };
   const canvas = gl.domElement;
-  const onContextLost = () => failScene("WebGL 컨텍스트 손실");
+  const onContextLost = () => failScene("WebGL 컨텍스트 손실", undefined, "context-lost");
   canvas.addEventListener("webglcontextlost", onContextLost);
   return () => {
     gl.debug.onShaderError = null;

@@ -246,3 +246,139 @@ body:has([data-journey-page]) [data-site-footer] {
   max-height: 18svh;
   width: auto;
 }
+
+/*
+ * 여정 2D(스펙 5절 "2D 레이아웃", 2-4b). 2D면 <html>에 data-journey-mode="2d"가 붙는다(JourneyStage, 처음 그리기 스크립트).
+ * 모드를 바꾸거나 공유 주소로 열 때 카드로 스크롤하면 카드 위끝이 헤더와 막 탭 아래에 오도록 위 여백을 둔다.
+ */
+html[data-journey-mode="2d"] [data-journey-card],
+html[data-journey-mode="2d"] [data-stop] {
+  scroll-margin-top: 6.5rem;
+}
+
+/*
+ * 2D 세로 타임라인: 가운데 열 하나(최대 45rem)에 정류장을 내용 높이로 쌓는다. 3D 배치의 고정·sticky·absolute와 좌우 배치를 모두 풀고,
+ * 왼쪽 선은 섹션마다 그 막의 빛의 길 색(--act-color)이다. 입구에는 선이 없고, 막 정류장은 선 위의 점과 제목 줄, 엔딩은 ◆로 끝난다.
+ * 유틸리티 클래스는 @layer utilities 안에 있어 층 밖의 이 규칙이 앞선다.
+ */
+html[data-journey-mode="2d"] [data-journey-page] {
+  max-width: 45rem;
+  margin-inline: auto;
+  padding: 3.5rem 1rem 4rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop] {
+  height: auto;
+  padding: 0 0 1rem 1.75rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop]:not([data-stop="intro"])::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0.5rem;
+  width: 2px;
+  background-color: var(--act-color);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop^="act-"]::after {
+  content: "";
+  position: absolute;
+  top: 1.1rem;
+  left: calc(0.5rem - 5px);
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background-color: var(--act-color);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop="ending"]::before {
+  inset-block: auto;
+  top: 1.4rem;
+  left: calc(0.5rem - 5px);
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] .container,
+html[data-journey-mode="2d"] [data-journey-card],
+html[data-journey-mode="2d"] [data-stop="ending"] > div {
+  position: static;
+  display: block;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-journey-mode="2d"] [data-stop="pickcare"] > .absolute {
+  position: static;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] .pointer-events-auto {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow: visible;
+}
+
+html[data-journey-mode="2d"] [data-journey-card^="pickcare/"] {
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-card^="act-"] > div {
+  padding: 0.75rem 0 0.25rem;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+}
+
+/* 2D의 진행 표시는 헤더 아래 막 탭이다(스펙 2절 "진행 표시", ProgressRail) */
+html[data-journey-mode="2d"] [data-journey-rail] {
+  display: none;
+}
+
+html[data-journey-mode="2d"] [data-journey-tabs] {
+  display: block;
+}
+
+/* 2D 등장(기존 FadeIn과 같은 움직임): 카드가 화면에 처음 들어올 때 아래 20px에서 0.5초 동안 나타난다. 관찰을 건 뒤에만(data-journey-reveal) 감춘다 */
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div):not([data-revealed]) {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed] {
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+/* 모드를 바꿀 때 지키는 카드(modeSwitch)는 전환 없이 곧바로 보인다 */
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed="instant"] {
+  transition: none;
+}
+
+/* 휴대폰(640px 미만)의 상세는 이미 전체 화면이라 아래에서 올라오는 효과만 더한다(스펙 5절 "2D 레이아웃", ProjectDialog, 2-4b) */
+@keyframes journey-sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* 움직임 줄이기(스펙 5절, 2-4b): 고정 카드 바꿈과 2D 등장 효과를 끈다(카드는 감추지 않고 곧바로 보인다) */
+@media (prefers-reduced-motion: reduce) {
+  [data-journey-cards="fixed"][data-journey-cards-settled] [data-journey-card] {
+    transition: none;
+  }
+
+  html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div):not([data-revealed]),
+  html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ROAD_END, ROAD_START, driveAt, roadFrame, roadPoint, stopScreenSide, toCarFrame, type CameraPose } from "./drive";
 import { HOLOGRAMS, hologramsAt, imageCorners, pickcareFront } from "./holograms";
 import { PORTRAIT_LENS, WIDE_LENS, lensFor, projectThrough } from "./lens";
-import { CARDS, activeCard, cardProgress, followPortrait, portraitCamera, portraitViewWeight, type PortraitView } from "./portrait";
+import { CARDS, activeCard, cardProgress, followPortrait, portraitCamera, portraitViewWeight, stopFocus, type PortraitView } from "./portrait";
 import { SCROLL_LENGTH, STOP_RANGES, rangeOf, stopAt, viewWeight, type Vec3 } from "./timeline";
 
 /** 세로 화면 네 크기(스펙 3절 "세로 화면") */
@@ -209,6 +209,22 @@ describe("세로 화면 카메라 목표 자세", () => {
           });
           expect(spike?.progress, `${screensPerSecond}화면/s ${hz}Hz ${forward ? "앞으로" : "뒤로"}`).toBeUndefined();
         }
+      }
+    }
+  });
+});
+
+describe("정류장 홀로그램 자리 기억(2-4b)", () => {
+  it("정류장과 앞줄 번호로 기억해도 정류장 가운데에서 다 떠오른 홀로그램 자리를 매번 새로 계산한 것과 같다", () => {
+    for (const hash of ["", "#pickcare/app", "#pickcare/frontend"]) {
+      for (let index = 0; index <= 400; index++) {
+        const progress = index / 400;
+        const { range } = stopAt(progress);
+        const indices = HOLOGRAMS.flatMap((hologram, at) => (hologram.stopId === range.stop.id ? [at] : []));
+        const front = pickcareFront(progress, hash);
+        const expected =
+          indices.length === 0 ? null : hologramsAt((range.start + range.end) / 2, front)[range.stop.kind === "hall" ? indices[front] : indices[0]].center;
+        expect(stopFocus(progress, hash), `${hash} ${progress}`).toEqual(expected);
       }
     }
   });

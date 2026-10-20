@@ -44,14 +44,26 @@ function lerp3(a: Vec3, b: Vec3, t: number): Vec3 {
   return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 }
 
-/** 정류장의 홀로그램 자리(없으면 null). 1·2막은 그 정류장 홀로그램, PiCKCARE는 지금 앞줄. 다 떠오른 자리(정류장 가운데)다 */
+/** 정류장과 그 홀로그램 번호마다 한 번 계산한 자리. 다 떠오른 자리라 진행률에 따라 바뀌지 않는다 */
+const focusCache = new Map<string, Vec3>();
+
+/**
+ * 정류장의 홀로그램 자리(없으면 null). 1·2막은 그 정류장 홀로그램, PiCKCARE는 지금 앞줄. 다 떠오른 자리(정류장 가운데)다.
+ * 세로 카메라가 매 프레임 부르므로 정류장과 홀로그램 번호(PiCKCARE는 앞줄에 따라 다르다)로 기억해 홀로그램 11개를 매번 다시 놓지 않는다(2-4b)
+ */
 export function stopFocus(progress: number, hash = ""): Vec3 | null {
   const { range } = stopAt(progress);
   const indices = HOLOGRAMS.flatMap((hologram, index) => (hologram.stopId === range.stop.id ? [index] : []));
   if (indices.length === 0) return null;
   const front = pickcareFront(progress, hash);
-  const placements = hologramsAt((range.start + range.end) / 2, front);
-  return placements[range.stop.kind === "hall" ? indices[front] : indices[0]].center;
+  const index = range.stop.kind === "hall" ? indices[front] : indices[0];
+  const key = `${range.stop.id}:${index}`;
+  let center = focusCache.get(key);
+  if (!center) {
+    center = hologramsAt((range.start + range.end) / 2, front)[index].center;
+    focusCache.set(key, center);
+  }
+  return center;
 }
 
 /** 세로 화면에서 정류장 시점으로 도는 정도. 멈추는 정류장은 viewWeight 그대로, 1막(멈추지 않는 프로젝트 정류장)은 가운데에서 홀로그램 쪽으로 돈다 */

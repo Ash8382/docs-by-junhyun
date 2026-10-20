@@ -6,6 +6,7 @@ import { occlusionTargets } from "../src/lib/journey/landscapeOcclusion";
 import { PORTRAIT_LENS } from "../src/lib/journey/lens";
 import { cardProgress, portraitCamera } from "../src/lib/journey/portrait";
 import { HALL_REPO_END, HALL_REPO_START, rangeOf } from "../src/lib/journey/timeline";
+import { TRAIL_HEX } from "../src/lib/journey/trail";
 
 // WebGL을 쓸 수 없는 기기를 흉내 낸다. 3D 없이도 본문과 상세가 동작해야 한다(스펙 5절).
 async function disableWebGL(page: Page) {
@@ -186,6 +187,22 @@ test("WebGL이 없어도 상세 패널이 열린다", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Todo App" })).toBeVisible();
 });
 
+test("상세가 열린 채 컨텍스트를 잃어도 2D로 바뀌고 상세는 그대로이며, 닫으면 그 정류장 카드와 링크로 돌아온다", async ({ page }) => {
+  await page.goto("/journey");
+  await waitReady(page);
+  await settleAt(page, middleOf("tix2u"));
+  const link = page.locator("#stop-tix2u a[data-journey-detail]");
+  await link.click();
+  await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
+  await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('[data-journey-card="tix2u"]')).toBeInViewport();
+  await expect(link).toBeFocused();
+});
+
 test("헤더의 Journey 링크로 들어오고, 여정 페이지에서는 헤더 흐림이 꺼진다", async ({ page }) => {
   await page.goto("/");
   await page.locator("header").getByRole("link", { name: "Journey", exact: true }).click();
@@ -210,11 +227,9 @@ test("3D 장면 청크를 받지 못해도 본문과 진행 막대가 동작한�
     initial.has(route.request().url()) ? route.continue() : route.abort(),
   );
   await page.goto("/journey");
-  // 오류 경계가 실패한 import를 잡으면 장면 상태가 failed가 되고 로딩 막대가 사라진다.
-  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed", {
-    timeout: 15_000,
-  });
-  await expect(page.locator("[data-journey-loading] span")).toHaveCount(0);
+  // 오류 경계가 실패한 import를 잡으면 장면 상태가 failed가 되고 2D로 바뀐다(로딩 막대도 함께 내려간다, 2-4b).
+  await expectFlat(page, "failed");
+  await expect(page.locator("[data-journey-loading]")).toHaveCount(0);
   await expect(page.getByText("Application error")).toBeHidden();
   await expect(page.locator("[data-stop]")).toHaveCount(12);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
@@ -238,8 +253,8 @@ test("렌더러를 만들지 못해도 틱마다 에러가 쏟아지지 않는�
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/journey");
-  // 렌더러를 만들지 못하면 장면 상태가 failed가 되어 로딩 막대가 사라진다.
-  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed");
+  // 렌더러를 만들지 못하면 장면 상태가 failed가 되어 2D로 바뀐다(2-4b).
+  await expectFlat(page, "failed");
   await page.waitForTimeout(1000);
   // 남는 하나는 렌더러를 만들지 못했다는, 처리되지 않은 거부다. three r181은 이 오류를 기록하는 catch에서
   // 매개변수 이름이 기록 함수(error)를 가려 메시지가 "… is not a function"으로 바뀌므로 문구는 보지 않는다.
@@ -373,9 +388,7 @@ test("WebGL이 없으면 은하 이미지를 내려받지 않고, 3D를 띄우�
 test("은하 이미지를 받지 못해도 본문과 진행 막대가 동작한다", async ({ page }) => {
   await page.route("**/journey/galaxy*", (route) => route.abort());
   await page.goto("/journey");
-  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed", {
-    timeout: 15_000,
-  });
+  await expectFlat(page, "failed");
   await expect(page.locator("[data-stop]")).toHaveCount(12);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
@@ -404,7 +417,28 @@ async function waitReady(page: Page) {
   await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
 }
 
-test("셰이더 컴파일 실패를 감지해 장면 상태와 콘솔에 남긴다", async ({ page }) => {
+/** 2D로 바뀌었고 그 이유가 reason이다(<html>의 표지, 스펙 5절 "모드 전환", 2-4b). 3D 장면은 내려간다 */
+async function expectFlat(page: Page, reason: string) {
+  await expect(page.locator("html")).toHaveAttribute("data-journey-mode", "2d", { timeout: 15_000 });
+  await expect(page.locator("html")).toHaveAttribute("data-journey-reason", reason);
+  await expect(page.locator("[data-journey-scene]")).toHaveCount(0);
+}
+
+/** 2D로 바뀐 뒤 그 카드의 위끝이 헤더와 막 탭 아래(scroll-margin-top 6.5rem = 104px)에 있다: 보던 카드를 지켰다 */
+async function expectFlatAnchor(page: Page, card: string) {
+  await expect.poll(async () => Math.round((await page.locator(`[data-journey-card="${card}"]`).boundingBox())?.y ?? -1)).toBe(104);
+}
+
+/** 여정 캔버스의 WebGL 컨텍스트를 일부러 잃게 한다(WEBGL_lose_context) */
+async function loseContext(page: Page) {
+  await page.evaluate(() => {
+    const canvas = document.querySelector("[data-journey-scene] canvas");
+    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
+    canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+  });
+}
+
+test("셰이더 컴파일 실패를 감지해 콘솔에 남기고 2D로 바꾼다", async ({ page }) => {
   const errors = collectErrors(page);
   // 모든 프로그램의 링크가 실패하는 드라이버를 흉내 낸다.
   await page.addInitScript(() => {
@@ -415,24 +449,18 @@ test("셰이더 컴파일 실패를 감지해 장면 상태와 콘솔에 남긴�
     };
   });
   await page.goto("/journey");
-  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed", { timeout: 30_000 });
-  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed");
+  await expectFlat(page, "failed");
   expect(errors.some((message) => message.includes("셰이더 컴파일 실패"))).toBe(true);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
 });
 
-test("WebGL 컨텍스트를 잃으면 장면 상태와 콘솔에 남긴다", async ({ page }) => {
+test("WebGL 컨텍스트를 잃으면 콘솔에 남기고 2D(이유: 컨텍스트 손실)로 바꾼다", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/journey");
   await waitReady(page);
-  await page.evaluate(() => {
-    const canvas = document.querySelector("[data-journey-scene] canvas");
-    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
-    canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
-  });
-  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed");
-  await expect(page.locator("[data-journey-loading]")).toHaveAttribute("data-journey-loading", "failed");
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
   expect(errors.some((message) => message.includes("WebGL 컨텍스트 손실"))).toBe(true);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
@@ -463,12 +491,12 @@ test.describe("해상도 배율 2 화면", () => {
     await page.goto("/journey?debug=stats");
     await waitReady(page);
     const full = await readStats(page);
-    expect(full.quality).toEqual({ tier: "full", dpr: 2, galaxyWidth: 4096, bloomLevels: 8, luminanceScale: 1 });
+    expect(full.quality).toEqual({ tier: "full", level: "full", dpr: 2, galaxyWidth: 4096, bloomLevels: 8, luminanceScale: 1 });
     expect(full.renderTargetBytes).toBeGreaterThan(0);
     await page.goto("/journey?debug=stats&tier=lite");
     await waitReady(page);
     const lite = await readStats(page);
-    expect(lite.quality).toEqual({ tier: "lite", dpr: 1.5, galaxyWidth: 2048, bloomLevels: 6, luminanceScale: 0.5 });
+    expect(lite.quality).toEqual({ tier: "lite", level: "lite", dpr: 1.5, galaxyWidth: 2048, bloomLevels: 6, luminanceScale: 0.5 });
     // 텍스처 추정: 58.8MiB에서 은하가 32.0 → 8.0MiB(스펙 5절)
     expect(lite.textureBytes / 2 ** 20).toBeGreaterThan(34.3);
     expect(lite.textureBytes / 2 ** 20).toBeLessThan(35.3);
@@ -482,11 +510,399 @@ test("?tier=2d면 3D 장면·은하·차를 내려받지 않고 본문과 썸네
   await page.goto("/journey?debug=stats&tier=2d");
   // 하이드레이션 뒤 장면을 불러왔다면 그 요청까지 끝날 때를 기다린다
   await page.waitForLoadState("networkidle");
-  await expect(page.locator("[data-journey-scene]")).toHaveCount(0);
+  await expectFlat(page, "tier");
   expect(requests.filter((url) => url.includes("/journey/galaxy") || url.includes("/journey/car/"))).toEqual([]);
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
   await page.keyboard.press("End");
   await expect(page.getByText(EMAIL)).toBeInViewport();
+});
+
+// ── 모드와 2D 전환(2-4b, 스펙 5절 "모드 전환", "컨텍스트 손실과 장면 실패") ───────────────────
+
+test("2D 표지는 여정 페이지에만 있고, 다른 페이지로 가면 지워진다", async ({ page }) => {
+  await page.goto("/journey?debug=stats&tier=2d");
+  await expectFlat(page, "tier");
+  await page.locator("[data-site-header]").getByRole("link", { name: "블로그", exact: true }).click();
+  await expect(page).not.toHaveURL(/\/journey/);
+  await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
+});
+
+test("실행 중 컨텍스트를 잃으면 2D로 바뀌고 보던 정류장의 카드가 화면에 있다", async ({ page }) => {
+  await page.goto("/journey");
+  await waitReady(page);
+  await settleAt(page, middleOf("tix2u"));
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
+  await expectFlatAnchor(page, "tix2u");
+});
+
+// ── 2D 세로 타임라인(2-4b, 스펙 5절 "2D 레이아웃") ───────────────────
+
+/** 빛의 길 색(trail.ts TRAIL_HEX)을 getComputedStyle의 rgb 문자열로 */
+function rgb(hex: string): string {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return `rgb(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255})`;
+}
+
+test.describe("2D 휴대폰(412×839)", () => {
+  test.use({ viewport: { width: 412, height: 839 } });
+
+  test("문서 높이가 3D 배치(18.7화면)의 절반 이하이고, 카드가 고정·sticky 없이 문서 순서대로 쌓인다", async ({ page }) => {
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    const layout = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll<HTMLElement>("[data-journey-card]")];
+      return {
+        screens: document.documentElement.scrollHeight / window.innerHeight,
+        positions: [...new Set(cards.map((card) => getComputedStyle(card).position))],
+        tops: cards.map((card) => card.getBoundingClientRect().top),
+      };
+    });
+    expect(layout.screens).toBeLessThan(18.7 / 2);
+    expect(layout.positions).toEqual(["static"]);
+    expect(layout.tops).toEqual([...layout.tops].sort((a, b) => a - b));
+  });
+
+  test("왼쪽 선은 막마다 빛의 길 색이고, 입구에는 선이 없다", async ({ page }) => {
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    const line = (id: string) =>
+      page.locator(`#stop-${id}`).evaluate((section) => {
+        const style = getComputedStyle(section, "::before");
+        return style.content === "none" ? null : style.backgroundColor;
+      });
+    expect(await line("intro")).toBeNull();
+    for (const [id, hex] of [
+      ["kokoa-clone", TRAIL_HEX.start],
+      ["stock2u", TRAIL_HEX.middle],
+      ["pickcare", TRAIL_HEX.end],
+    ] as const)
+      expect(await line(id), id).toBe(rgb(hex));
+  });
+
+  test("엔딩 연락처는 패널 안 스크롤 없이 보이고, 처음 화면 밖이던 카드는 들어올 때 나타난다", async ({ page }) => {
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    const far = page.locator('[data-journey-card="pickcare/app"]');
+    await expect(far).not.toHaveAttribute("data-revealed");
+    expect(await far.evaluate((card) => getComputedStyle(card).opacity)).toBe("0");
+    await far.scrollIntoViewIfNeeded();
+    await expect(far).toHaveAttribute("data-revealed", "");
+    await expect.poll(() => far.evaluate((card) => getComputedStyle(card).opacity)).toBe("1");
+    await page.keyboard.press("End");
+    await expect(page.getByText(EMAIL)).toBeInViewport();
+    const panel = await page.getByRole("heading", { name: "연락처" }).locator("..").evaluate((element) => element.scrollHeight - element.clientHeight);
+    expect(panel).toBe(0);
+  });
+});
+
+test("2D 데스크톱은 가운데 열 하나(최대 720px)다", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/journey?debug=stats&tier=2d");
+  await expectFlat(page, "tier");
+  const box = await page.locator("[data-journey-page]").boundingBox();
+  if (!box) throw new Error("본문이 없습니다");
+  expect(box.width).toBeLessThanOrEqual(720);
+  expect(Math.abs(box.x + box.width / 2 - 640)).toBeLessThanOrEqual(1);
+});
+
+// ── 막 탭과 수동 전환·알림(2-4b, 스펙 2절 "진행 표시", 5절 "수동 전환", "자동 2D 알림", "처음 그리기") ───────────────────
+
+const NOTICE = "기기에 맞춰 2D로 바꿨어요";
+
+/**
+ * 앱 스크립트(/_next/static/chunks의 script)를 붙잡아 하이드레이션 전의 화면(서버가 그린 HTML과 CSS, 처음 그리기 스크립트)을 본다.
+ * 스타일시트는 그대로 보낸다. 다 본 뒤 돌려받은 함수로 풀어 준다. 늦추기만 하면 문서를 다 읽기 전에 스크립트가 도착해 하이드레이션이 먼저 끝날 수 있다
+ */
+async function holdScripts(page: Page): Promise<() => void> {
+  let release = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/_next/static/chunks/**", async (route) => {
+    if (route.request().resourceType() === "script") await held;
+    await route.continue();
+  });
+  return release;
+}
+
+test("3D에서 2D로 보기를 누르면 보던 카드가 2D에서 화면에 있고, 3D로 보기로 돌아오면 장면이 다시 준비되어 그대로 남는다", async ({ page }) => {
+  await page.goto("/journey");
+  await waitReady(page);
+  await settleAt(page, middleOf("pfplay"));
+  await page.getByRole("button", { name: "2D로 보기" }).click();
+  await expectFlat(page, "manual");
+  await expectFlatAnchor(page, "pfplay");
+  await expect(page.getByRole("status")).not.toContainText(NOTICE);
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
+  await waitReady(page);
+  await expect(page.locator('[data-journey-card="pfplay"]')).toBeInViewport();
+  // 우리가 내린 첫 렌더러의 손실(R3F의 forceContextLoss, 500ms 뒤)로 2D가 되돌아오지 않는다
+  await page.waitForTimeout(1500);
+  await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
+  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "ready");
+});
+
+test("막 제목과 엔딩에서 2D로 갔다가 3D로 돌아오면 같은 정류장으로 온다", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  for (const [stop, at] of [
+    ["act-2", middleOf("act-2")],
+    ["ending", 1],
+  ] as const) {
+    await settleAt(page, at);
+    await page.getByRole("button", { name: "2D로 보기" }).click();
+    await expectFlat(page, "manual");
+    await page.getByRole("button", { name: "3D로 보기" }).click();
+    await waitReady(page);
+    const range = rangeOf(stop);
+    await expect.poll(async () => (await readStats(page)).progress, { message: stop }).toBeGreaterThanOrEqual(range.start);
+    expect((await readStats(page)).progress, stop).toBeLessThanOrEqual(range.end);
+  }
+});
+
+test("키보드로 2D로 보기·3D로 보기를 누르면 포커스가 반대쪽 전환 버튼으로 옮겨 간다", async ({ page }) => {
+  await page.goto("/journey");
+  await waitReady(page);
+  await page.getByRole("button", { name: "2D로 보기" }).focus();
+  await page.keyboard.press("Enter");
+  await expectFlat(page, "manual");
+  await expect(page.getByRole("button", { name: "3D로 보기" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await waitReady(page);
+  await expect(page.getByRole("button", { name: "2D로 보기" })).toBeFocused();
+});
+
+test("고른 2D는 기억되어 새로고침해도 2D로 열리고, 3D를 고르면 다시 3D로 열린다", async ({ page }) => {
+  await page.goto("/journey");
+  await page.getByRole("button", { name: "2D로 보기" }).click();
+  await expectFlat(page, "manual");
+  await page.reload();
+  await expectFlat(page, "manual");
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await page.reload();
+  await waitReady(page);
+});
+
+test("저장소가 막힌 브라우저에서도 2D로 보기가 되고 오류가 없으며, 기억하지 못해 새로고침하면 3D로 연다", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new DOMException("저장소가 막혀 있습니다", "SecurityError");
+      },
+    });
+  });
+  const errors = collectErrors(page);
+  await page.goto("/journey");
+  await waitReady(page);
+  await page.getByRole("button", { name: "2D로 보기" }).click();
+  await expectFlat(page, "manual");
+  await page.reload();
+  await waitReady(page);
+  expect(errors).toEqual([]);
+});
+
+test("2D를 기억한 방문자는 하이드레이션 전(서버가 그린 화면)부터 2D 배치다", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("journey-view", "2d"));
+  const release = await holdScripts(page);
+  await page.goto("/journey", { waitUntil: "commit" });
+  await page.locator("[data-journey-page]").waitFor({ state: "attached" });
+  await expect(page.locator("html")).toHaveAttribute("data-journey-mode", "2d");
+  const width = await page.locator("[data-journey-page]").evaluate((main) => main.getBoundingClientRect().width);
+  expect(width).toBeLessThanOrEqual(720);
+  await expect(page.getByRole("navigation", { name: "여정 진행" })).toBeHidden();
+  release();
+  await expectFlat(page, "manual");
+});
+
+test("자동으로 2D가 되면 알림이 한 번 나오고 6초 뒤 사라진다", async ({ page }) => {
+  await page.goto("/journey");
+  await waitReady(page);
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
+  await expect(page.getByRole("status")).toHaveText(NOTICE);
+  await expect(page.getByRole("status")).toHaveText("", { timeout: 8000 });
+});
+
+test("2D 막 탭을 누르면 그 막으로 가고 지금 읽는 막에 aria-current가 붙는다", async ({ page }) => {
+  await page.goto("/journey?debug=stats&tier=2d");
+  await expectFlat(page, "tier");
+  const tabs = page.getByRole("navigation", { name: "여정 막" });
+  await expect(tabs).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "여정 진행" })).toBeHidden();
+  await tabs.getByRole("button", { name: "2막 협업으로 이동" }).click();
+  await expect(page.locator("#stop-act-2")).toBeInViewport();
+  await expect(tabs.getByRole("button", { name: "2막 협업으로 이동" })).toHaveAttribute("aria-current", "true");
+  await expect(tabs.getByRole("button", { name: "1막 시작으로 이동" })).not.toHaveAttribute("aria-current", /.*/);
+  await tabs.getByRole("button", { name: "연락처로 이동" }).click();
+  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expect(tabs.getByRole("button", { name: "연락처로 이동" })).toHaveAttribute("aria-current", "true");
+});
+
+test("2D에서 공유 주소로 열면 그 정류장으로 간다", async ({ page }) => {
+  await page.goto("/journey?debug=stats&tier=2d#tix2u");
+  await expectFlat(page, "tier");
+  await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+  await page.getByRole("button", { name: "닫기" }).click();
+  await expect(page.locator('[data-journey-card="tix2u"]')).toBeInViewport();
+});
+
+test("WebGL2가 없으면 3D로 보기 버튼이 없다", async ({ page }) => {
+  await disableWebGL(page);
+  await page.goto("/journey");
+  await expectFlat(page, "tier");
+  await expect(page.getByRole("navigation", { name: "여정 막" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "3D로 보기" })).toHaveCount(0);
+});
+
+// ── 실행 중 강등(2-4b, 스펙 5절 "실행 중 강등") ───────────────────
+
+/** 지금 3D 품질 단계와 블룸 mip 단계, <html>의 2D 표지 */
+async function qualityNow(page: Page): Promise<{ level: string | null; bloom: number | null; flat: string | null }> {
+  return page.evaluate(() => {
+    const quality = (window as Window & { __journeyStats?: { quality: { level: string; bloomLevels: number } | null } }).__journeyStats?.quality;
+    return { level: quality?.level ?? null, bloom: quality?.bloomLevels ?? null, flat: document.documentElement.dataset.journeyMode ?? null };
+  });
+}
+
+test("프레임을 일부러 늦추면(busy 50ms, 20fps) 전체 → 경량 → 최소 → 2D로 차례로 내려가고, 고른 3D는 최소부터 2D로 내리지 않는다", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/journey?debug=stats&busy=50");
+  await waitReady(page);
+  await scrollToProgress(page, middleOf("stock2u"));
+  const seen: { level: string; bloom: number | null }[] = [];
+  await expect
+    .poll(
+      async () => {
+        const now = await qualityNow(page);
+        if (now.level && seen.at(-1)?.level !== now.level) seen.push({ level: now.level, bloom: now.bloom });
+        return now.flat;
+      },
+      { timeout: 30_000, intervals: [100] },
+    )
+    .toBe("2d");
+  expect(seen.map((step) => step.level)).toEqual(["full", "lite", "min"]);
+  expect(seen.at(-1)?.bloom).toBe(0);
+  await expectFlat(page, "slow");
+  await expect(page.getByRole("status")).toHaveText(NOTICE);
+  await expectFlatAnchor(page, "stock2u");
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await waitReady(page);
+  await expect.poll(async () => (await qualityNow(page)).level).toBe("min");
+  await page.waitForTimeout(6000);
+  expect((await qualityNow(page)).flat).toBeNull();
+});
+
+test.describe("배율 2 화면의 실행 중 강등", () => {
+  // 1280×800에 배율 2면 헤드리스의 소프트웨어 렌더링이 한 프레임에 250ms를 넘어 창을 비우므로(탭 전환과 같게 본다) 세로 화면 크기로 잰다
+  test.use({ deviceScaleFactor: 2, viewport: { width: 390, height: 844 } });
+
+  test("강등으로 내린 해상도 배율은 창 크기가 바뀌어도 그 단계의 상한을 넘지 않는다", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto("/journey?debug=stats&busy=50");
+    await waitReady(page);
+    await expect.poll(async () => (await qualityNow(page)).level, { timeout: 20_000, intervals: [100] }).not.toBe("full");
+    const size = page.viewportSize();
+    if (!size) throw new Error("화면 크기가 없습니다");
+    await page.setViewportSize({ width: size.width - 40, height: size.height });
+    const cap: Record<string, number> = { full: 2, lite: 1.5, min: 1 };
+    for (let sample = 0; sample < 8; sample++) {
+      await page.waitForTimeout(150);
+      const quality = (await readStats(page)).quality;
+      if (!quality || (await qualityNow(page)).flat) break;
+      expect(quality.dpr, quality.level).toBeLessThanOrEqual(cap[quality.level]);
+    }
+  });
+});
+
+// e2e의 헤드리스는 소프트웨어 렌더링이라 원래 느리다. 자동화 브라우저는 확인용 busy가 없으면 단계를 바꾸지 않아 다른 검사가 흔들리지 않는다
+test("자동화 브라우저는 느려도 확인용 busy가 없으면 6초가 지나도 전체에 머문다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await page.waitForTimeout(6000);
+  expect(await qualityNow(page)).toEqual({ level: "full", bloom: 8, flat: null });
+});
+
+test("측정 오버레이(?debug=perf) 중에는 단계를 바꾸지 않는다", async ({ page }) => {
+  await page.goto("/journey?debug=perf&busy=50");
+  await waitReady(page);
+  await page.waitForTimeout(6000);
+  expect((await qualityNow(page)).level).toBe("full");
+});
+
+test("컨텍스트를 잃은 뒤 3D로 보기를 고르면 장면이 다시 준비되고 기기 단계(전체)부터다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await waitReady(page);
+  await expect.poll(async () => (await qualityNow(page)).level).toBe("full");
+});
+
+// ── 움직임 줄이기와 휴대폰 상세 시트(2-4b, 스펙 5절 "움직임 줄이기", "2D 레이아웃") ───────────────────
+
+/** 한 번에 멀리 스크롤한 직후 몇 프레임의 카메라 뒤처짐(감쇠한 자세와 목표 자세의 거리, m) 가운데 가장 큰 값 */
+async function lagAfterJump(page: Page): Promise<number> {
+  await scrollToProgress(page, middleOf("tix2u"));
+  await page.waitForTimeout(2000);
+  await scrollToProgress(page, middleOf("pfplay"));
+  let largest = 0;
+  for (let sample = 0; sample < 6; sample++) {
+    await page.waitForTimeout(50);
+    largest = Math.max(largest, (await readStats(page)).cameraLag);
+  }
+  return largest;
+}
+
+test("움직임 줄이기가 아니면 카메라는 감쇠로 뒤따라오고 빛줄기가 보이며, 휴대폰 상세는 아래에서 올라온다", async ({ page }) => {
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  expect(await lagAfterJump(page)).toBeGreaterThan(0.05);
+  expect((await readStats(page)).streaks).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/journey#pfplay");
+  const dialog = page.getByRole("dialog", { name: "PFPlay" });
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate((element) => [getComputedStyle(element).animationName, getComputedStyle(element).animationDuration])).toEqual([
+    "journey-sheet",
+    "0.25s",
+  ]);
+});
+
+test.describe("움직임 줄이기", () => {
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
+  test("휠은 브라우저 기본 스크롤로 곧바로 가고, 카메라는 스크롤한 만큼만 움직이며 빛줄기는 감춘다", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    expect(await lagAfterJump(page)).toBeLessThan(1e-6);
+    expect((await readStats(page)).streaks).toBe(false);
+    await page.mouse.move(640, 400);
+    const before = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(300);
+    expect((await page.evaluate(() => window.scrollY)) - before).toBeGreaterThanOrEqual(390);
+  });
+
+  test("2D 카드는 감추지 않고 곧바로 보이며, 세로 화면 고정 카드 바꿈과 휴대폰 상세 시트에 효과가 없다", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    const far = page.locator('[data-journey-card="pickcare/app"]');
+    expect(await far.evaluate((card) => [getComputedStyle(card).opacity, getComputedStyle(card).transform])).toEqual(["1", "none"]);
+    await page.goto("/journey");
+    await waitReady(page);
+    await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards-settled", "");
+    expect(await page.locator('[data-journey-card="intro"]').evaluate((card) => getComputedStyle(card).transitionDuration)).toBe("0s");
+    await page.goto("/journey#pfplay");
+    const dialog = page.getByRole("dialog", { name: "PFPlay" });
+    await expect(dialog).toBeVisible();
+    expect(await dialog.evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
+  });
 });
 
 test.describe("터치 기기", () => {
@@ -527,9 +943,11 @@ type JourneyStats = {
   wheelTravel: number | null;
   holograms: HologramStats | null;
   landscape: LandscapeStats | null;
-  quality: { tier: string; dpr: number; galaxyWidth: number; bloomLevels: number; luminanceScale: number } | null;
+  quality: { tier: string; level: string; dpr: number; galaxyWidth: number; bloomLevels: number; luminanceScale: number } | null;
   renderTargetBytes: number;
   lens: { fov: number; center: number };
+  cameraLag: number;
+  streaks: boolean;
 };
 
 async function readStats(page: Page): Promise<JourneyStats> {
@@ -1011,16 +1429,12 @@ test("텍스처 배열을 올리지 못하면 2막 썸네일이 모두 보인다
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
 });
 
-test("실행 중 장면이 실패하면(컨텍스트 손실) 2막 썸네일이 다시 보이고 스크롤된다", async ({ page }) => {
+test("실행 중 장면이 실패하면(컨텍스트 손실) 2D로 바뀌어 2막 썸네일이 다시 보이고 스크롤된다", async ({ page }) => {
   await page.goto("/journey");
   await waitReady(page);
   await expectThumbnail(page, "stock2u", true);
-  await page.evaluate(() => {
-    const canvas = document.querySelector("[data-journey-scene] canvas");
-    if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
-    canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
-  });
-  await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed");
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
   await page.keyboard.press("End");
   await expect(page.getByText(EMAIL)).toBeInViewport();
@@ -1114,22 +1528,23 @@ test("가로 화면 진행 막대는 오른쪽 세로 막대 그대로다", asyn
   expect(rail.x).toBeGreaterThan(1200);
 });
 
-test("3D 캔버스 틀은 화면 위에 붙은 큰 뷰포트 높이라 휴대폰 주소창이 접히고 펴져도 크기를 다시 잡지 않는다", async ({ page }) => {
+test("3D 캔버스 틀은 화면 위에 붙은 큰 뷰포트 높이(100vh)라 휴대폰 주소창이 접히고 펴져도 크기를 다시 잡지 않는다", async ({ page }) => {
   await page.goto("/journey");
-  // 주소창은 에뮬레이션에 없어, 아래끝을 화면 아래에 묶지 않았는지(계산값 bottom: auto)와 높이가 100lvh인지를 본다.
-  // 묶으면 주소창이 움직일 때마다 캔버스·렌더 타깃을 다시 만들고 카메라 비율이 바뀌어 구도가 튄다
+  // 주소창은 에뮬레이션에 없어, 아래끝을 화면 아래에 묶지 않았는지(계산값 bottom: auto)와 높이가 100vh인지를 본다.
+  // 묶으면 주소창이 움직일 때마다 캔버스·렌더 타깃을 다시 만들고 카메라 비율이 바뀌어 구도가 튄다. 지금의 iOS Safari·Chrome에서 100vh는
+  // 큰 뷰포트(100lvh)와 같고, lvh를 모르는 iOS 15.0~15.3에서도 높이가 무효가 되지 않는다(2-4b)
   const frame = await page.locator("[data-journey-scene]").evaluate((element) => {
     const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;top:0;width:1px;height:100lvh;visibility:hidden";
+    probe.style.cssText = "position:fixed;top:0;width:1px;height:100vh;visibility:hidden";
     document.body.append(probe);
-    const lvh = probe.getBoundingClientRect().height;
+    const vh = probe.getBoundingClientRect().height;
     probe.remove();
     const style = element.computedStyleMap();
-    return { top: String(style.get("top")), bottom: String(style.get("bottom")), height: element.getBoundingClientRect().height, lvh };
+    return { top: String(style.get("top")), bottom: String(style.get("bottom")), height: element.getBoundingClientRect().height, vh };
   });
   expect(frame.top).toBe("0px");
   expect(frame.bottom).toBe("auto");
-  expect(frame.height).toBeCloseTo(frame.lvh, 0);
+  expect(frame.height).toBeCloseTo(frame.vh, 0);
 });
 
 /** 엔딩 끝에서 피해야 할 위쪽 요소의 아래끝(헤더, 세로 화면은 헤더 아래 가로 진행 막대까지) */
@@ -1329,6 +1744,38 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
     expect(await flashes()).toEqual([1, 1]);
   });
 
+  test("입구 카드는 서버가 그린 자리와 아래 고정 자리가 같아 첫 로딩 때 옮겨지지 않는다", async ({ page }) => {
+    // 앱 스크립트를 붙잡아 하이드레이션 전(서버가 그린 배치)에 입구 패널을 재고, 풀어 준 뒤 고정 자리로 들어가면 다시 잰다
+    const release = await holdScripts(page);
+    await page.goto("/journey", { waitUntil: "commit" });
+    const panel = page.locator('[data-journey-card="intro"] .pointer-events-auto');
+    await panel.waitFor({ state: "attached" });
+    const before = await panel.boundingBox();
+    release();
+    await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed", { timeout: 30_000 });
+    const after = await panel.boundingBox();
+    if (!before || !after) throw new Error("입구 패널이 없습니다");
+    expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
+  });
+
+  test("장면을 준비하는 동안 로딩 줄은 진행 막대 바로 아래에 있어 고정된 입구 카드와 겹치지 않는다", async ({ page }) => {
+    await page.route("**/journey/galaxy*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 8000));
+      await route.continue();
+    });
+    await page.goto("/journey");
+    await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed");
+    const bar = page.locator('[data-journey-loading="loading"] > span');
+    await expect(bar).toBeVisible();
+    const line = await bar.boundingBox();
+    const panel = await page.locator('[data-journey-card="intro"] .pointer-events-auto').boundingBox();
+    const rail = await page.getByRole("navigation", { name: "여정 진행" }).boundingBox();
+    if (!line || !panel || !rail) throw new Error("로딩 줄·입구 패널·진행 막대가 없습니다");
+    expect(line.y).toBeGreaterThanOrEqual(rail.y + rail.height);
+    expect(line.y + line.height).toBeLessThan(panel.y);
+  });
+
   test("정류장마다 그 정류장의 카드 하나만 화면 아래 40% 안에 보이고, 나머지는 보이지 않는다", async ({ page }) => {
     await page.goto("/journey?debug=stats");
     await waitReady(page);
@@ -1431,16 +1878,12 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
     expect(await page.locator('[data-journey-card="stock2u"]').evaluate((card) => getComputedStyle(card).position)).not.toBe("fixed");
   });
 
-  test("실행 중 장면이 실패하면(컨텍스트 손실) 카드가 스크롤 배치로 돌아온다", async ({ page }) => {
+  test("실행 중 장면이 실패하면(컨텍스트 손실) 2D로 바뀌어 카드 고정이 풀린다", async ({ page }) => {
     await page.goto("/journey");
     await waitReady(page);
     await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed");
-    await page.evaluate(() => {
-      const canvas = document.querySelector("[data-journey-scene] canvas");
-      if (!(canvas instanceof HTMLCanvasElement)) throw new Error("여정 캔버스가 없습니다");
-      canvas.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
-    });
-    await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-state", "failed");
+    await loseContext(page);
+    await expectFlat(page, "context-lost");
     await expect(page.locator("[data-journey-page]")).not.toHaveAttribute("data-journey-cards", "fixed");
   });
 });

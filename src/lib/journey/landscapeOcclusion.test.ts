@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { driveAt } from "./drive";
 import { landscapePieces, spireBase, spireTip } from "./landscapeBuild";
-import { occlusionTargets, segmentBlocked } from "./landscapeOcclusion";
+import { PORTRAIT_LENS, projectThrough } from "./lens";
+import { OCCLUSION, occlusionTargets, segmentBlocked } from "./landscapeOcclusion";
+import { portraitCamera } from "./portrait";
 import { rangeOf, type Vec3 } from "./timeline";
 
 const pieces = landscapePieces();
@@ -60,6 +62,31 @@ describe("가림 판정", () => {
       }
     }
     expect(checked).toBeGreaterThan(1000);
+    expect(blocked).toEqual([]);
+  });
+
+  it("세로 화면 카메라(390×844, 세로 렌즈)에서도 홀로그램 모서리와 세로 화면 안 열린 도로로 가는 선분이 풍경에 막히지 않는다", () => {
+    const aspect = 390 / 844;
+    const blocked: string[] = [];
+    let roads = 0;
+    for (const [id, within] of VIEWS) {
+      const progress = at(id, within);
+      const pose = portraitCamera(driveAt(progress));
+      const targets = occlusionTargets(progress, aspect, pose.position, PORTRAIT_LENS, pose.target);
+      expect(targets.length, `${id} ${within}`).toBeGreaterThan(0);
+      for (const target of targets) {
+        if (target.label.startsWith("도로")) {
+          roads += 1;
+          const screen = projectThrough(pose, target.point, aspect, PORTRAIT_LENS);
+          expect(screen.x, `${id} ${within} ${target.label}`).toBeGreaterThan(OCCLUSION.screenMargin);
+          expect(screen.x, `${id} ${within} ${target.label}`).toBeLessThan(1 - OCCLUSION.screenMargin);
+          expect(screen.y, `${id} ${within} ${target.label}`).toBeLessThan(1 - OCCLUSION.screenMargin);
+        }
+        const hit = segmentBlocked(pose.position, target.point, pieces);
+        if (hit) blocked.push(`${id} ${within} ${target.label} ← ${hit.piece} #${hit.item}`);
+      }
+    }
+    expect(roads).toBeGreaterThan(300);
     expect(blocked).toEqual([]);
   });
 

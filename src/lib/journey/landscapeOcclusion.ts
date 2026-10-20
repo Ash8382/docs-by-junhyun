@@ -1,6 +1,7 @@
 import { ROAD_START, driveAt, roadFrame, type CameraPose } from "./drive";
 import { HOLOGRAMS, hologramsAt, imageCorners, pickcareFront } from "./holograms";
 import { projectPoint } from "./landscape";
+import { WIDE_LENS, type Lens } from "./lens";
 import type { LandscapePiece } from "./landscapeBuild";
 import type { Vec3 } from "./timeline";
 
@@ -21,11 +22,18 @@ export const OCCLUSION = { roadStep: 2, screenMargin: 0.02 } as const;
 
 /**
  * 진행률 p의 표적: 나타난 홀로그램(나타난 정도 0.05 이상)의 그림 영역 네 모서리와, 열린 도로(열린 끝까지) 가운데 화면(aspect) 안에 드는 표본.
- * camera는 선분이 시작하는 자리(단위 테스트는 카메라 목표 자리, e2e는 실제 카메라 자리)다.
+ * camera는 선분이 시작하는 자리(단위 테스트는 카메라 목표 자리, e2e는 실제 카메라 자리)다. 세로 화면은 세로 렌즈와 세로 카메라의 시선을 넘긴다
+ * (2-4a, 기본은 가로 화면 렌즈와 driveAt의 시선).
  */
-export function occlusionTargets(progress: number, aspect: number, camera: Vec3 = driveAt(progress).camera.position): OcclusionTarget[] {
+export function occlusionTargets(
+  progress: number,
+  aspect: number,
+  camera: Vec3 = driveAt(progress).camera.position,
+  lens: Lens = WIDE_LENS,
+  target: Vec3 = driveAt(progress).camera.target,
+): OcclusionTarget[] {
   const state = driveAt(progress);
-  const pose: CameraPose = { position: camera, target: state.camera.target };
+  const pose: CameraPose = { position: camera, target };
   const targets: OcclusionTarget[] = [];
   hologramsAt(progress, pickcareFront(progress, "")).forEach((placement, index) => {
     if (placement.presence < 0.05) return;
@@ -33,7 +41,7 @@ export function occlusionTargets(progress: number, aspect: number, camera: Vec3 
   });
   for (let s = ROAD_START; s <= state.revealS; s += OCCLUSION.roadStep) {
     const point = roadFrame(s).position;
-    const screen = projectPoint(pose, point, aspect);
+    const screen = projectPoint(pose, point, aspect, lens);
     const margin = OCCLUSION.screenMargin;
     if (screen.depth > 0 && screen.x > margin && screen.x < 1 - margin && screen.y > margin && screen.y < 1 - margin) {
       targets.push({ label: `도로 s ${s}`, point });

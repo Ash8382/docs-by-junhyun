@@ -1,6 +1,7 @@
 import { ROAD_END, ROAD_SCALE, ROAD_START, driveAt, roadFrame, type CameraPose } from "./drive";
 import { HOLOGRAMS, hologramsAt, luminance, pickcareFront } from "./holograms";
-import { CAMERA_FOV, pathSpan, rangeOf, smoothstep, type Vec3 } from "./timeline";
+import { WIDE_LENS, projectThrough, type Lens } from "./lens";
+import { pathSpan, rangeOf, smoothstep, type Vec3 } from "./timeline";
 import { trailColor, type LinearRgb } from "./trail";
 
 /**
@@ -203,27 +204,8 @@ export function behindSight(point: Vec3, radius: number, sights: readonly Sight[
 
 /**
  * 카메라 자리(위치·목표)에서 본 점의 화면 자리. x·y는 화면 비율(왼쪽 위 0, 오른쪽 아래 1), depth는 시선 방향 거리(m, 뒤면 음수).
- * aspect는 가로/세로. 장면 카메라와 같은 세로 시야각(CAMERA_FOV)이고 위쪽은 +y다.
+ * aspect는 가로/세로. 렌즈를 주지 않으면 가로 화면 렌즈(세로 시야각 CAMERA_FOV, 투영 중심 가운데)이고 위쪽은 +y다(lens.ts).
  */
-export function projectPoint(pose: CameraPose, point: Vec3, aspect: number): { x: number; y: number; depth: number } {
-  const f = normalize([pose.target[0] - pose.position[0], pose.target[1] - pose.position[1], pose.target[2] - pose.position[2]]);
-  const right = normalize([-f[2], 0, f[0]]);
-  const up: Vec3 = [right[1] * f[2] - right[2] * f[1], right[2] * f[0] - right[0] * f[2], right[0] * f[1] - right[1] * f[0]];
-  const offset: Vec3 = [point[0] - pose.position[0], point[1] - pose.position[1], point[2] - pose.position[2]];
-  const depth = dot(offset, f);
-  const tan = Math.tan((CAMERA_FOV / 2) * (Math.PI / 180));
-  return {
-    x: 0.5 + dot(offset, right) / depth / (tan * aspect) / 2,
-    y: 0.5 - dot(offset, up) / depth / tan / 2,
-    depth,
-  };
-}
-
-function dot(a: Vec3, b: Vec3): number {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-function normalize(a: Vec3): Vec3 {
-  const length = Math.hypot(a[0], a[1], a[2]);
-  return [a[0] / length, a[1] / length, a[2] / length];
+export function projectPoint(pose: CameraPose, point: Vec3, aspect: number, lens: Lens = WIDE_LENS): { x: number; y: number; depth: number } {
+  return projectThrough(pose, point, aspect, lens);
 }

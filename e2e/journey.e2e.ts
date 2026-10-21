@@ -438,7 +438,7 @@ async function expectFlat(page: Page, reason: string) {
   await expect(page.locator("[data-journey-scene]")).toHaveCount(0);
 }
 
-/** 2D로 바뀐 뒤 그 카드의 위끝이 헤더와 막 탭 아래(scroll-margin-top 6.5rem = 104px)에 있다: 보던 카드를 지켰다 */
+/** 2D로 바뀐 뒤 그 카드의 위끝이 헤더와 막 탭 아래(scroll-padding-top 6.5rem = 104px)에 있다: 보던 카드를 지켰다 */
 async function expectFlatAnchor(page: Page, card: string) {
   await expect.poll(async () => Math.round((await page.locator(`[data-journey-card="${card}"]`).boundingBox())?.y ?? -1)).toBe(104);
 }
@@ -972,9 +972,12 @@ test.describe("접근성(axe, WCAG 2.1 A·AA)", () => {
     expect(await axeViolations(page)).toEqual([]);
   });
 
-  test("2D 화면에 위반이 없다", async ({ page }) => {
+  test("2D 화면에 위반이 없다(화면 밖 카드까지 보인 상태)", async ({ page }) => {
+    // 2D 카드는 화면에 처음 들어올 때 나타나(opacity 0) axe가 대비를 건너뛴다. 움직임 줄이기로 열어 모든 카드가 보인 상태로 검사한다(2-4c 최종 리뷰)
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/journey?debug=stats&tier=2d");
     await expectFlat(page, "tier");
+    await expect(page.locator('[data-journey-card="pfplay"]')).toHaveCSS("opacity", "1");
     expect(await axeViolations(page)).toEqual([]);
   });
 
@@ -1093,6 +1096,18 @@ test("헤더 메뉴의 첫 링크와 끝 링크에 포커스해도 테두리 자
   }
 });
 
+// 아이콘은 16px이라 누르는 자리를 "2D" 버튼처럼 24px로 넓힌다. 배치(한 줄, 링크 높이 24px 이하, 테두리 여유)는 위 테스트들이 지킨다(2-4c 최종 리뷰)
+test("390px 미만에서 GitHub 아이콘 링크의 누르는 자리는 24×24px 이상이다", async ({ page }) => {
+  for (const width of [360, 375]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/journey");
+    const box = await page.locator("[data-site-header] nav").getByRole("link", { name: "GitHub", exact: true }).boundingBox();
+    if (!box) throw new Error("GitHub 링크가 없습니다");
+    expect(box.width, `${width}px`).toBeGreaterThanOrEqual(24);
+    expect(box.height, `${width}px`).toBeGreaterThanOrEqual(24);
+  }
+});
+
 test("좁은 휴대폰(360px) 헤더의 GitHub 아이콘 링크에도 접근성 위반이 없다", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/journey");
@@ -1153,7 +1168,7 @@ test("2D를 기억한 방문자가 블로그에서 헤더로 들어와도 첫 �
   await page.locator("[data-site-header]").getByRole("link", { name: "Journey", exact: true }).click();
   await expect(page).toHaveURL(/\/journey$/);
   await expectFlat(page, "manual");
-  expect(await page.evaluate(() => (window as Window & { __flash3d?: boolean }).__flash3d ?? false)).toBe(false);
+  expect(await page.evaluate(() => (window as Window & { __flash3d?: boolean }).__flash3d)).toBe(false);
 });
 
 // ── 짧은 가로 화면(2-4c, 스펙 5절 "짧은 가로 화면") ───────────────────
@@ -1258,6 +1273,59 @@ test.describe("짧은 가로 화면(터치, 750×340)", () => {
     await expect(page.locator("html")).toHaveAttribute("data-journey-mode", "2d");
     release();
     await expectFlat(page, "screen");
+  });
+
+  // 서버는 화면을 모르므로 버튼을 그린다. 하이드레이션 전에 보이면 눌러도 반응이 없다(2-4c 최종 리뷰)
+  test("하이드레이션 전에도 3D로 보기가 보이지 않는다", async ({ page }) => {
+    const release = await holdScripts(page);
+    await page.goto("/journey", { waitUntil: "commit" });
+    await page.locator("[data-journey-page]").waitFor({ state: "attached" });
+    await expect(page.getByRole("navigation", { name: "여정 막" })).toBeVisible();
+    await expect(page.locator("[data-journey-tabs] [data-view-toggle]")).toBeHidden();
+    release();
+    await expectFlat(page, "screen");
+    await expect(page.locator("[data-journey-tabs] [data-view-toggle]")).toBeHidden();
+  });
+
+  // 짧은 가로에서는 막 탭의 전환 버튼이 CSS로 감춰져 있어 그리로 옮기면 포커스가 사라진다. 막 탭의 첫 버튼으로 간다
+  test("세로 3D의 2D 버튼에 포커스한 채 가로로 돌리면 포커스가 막 탭의 첫 버튼으로 간다", async ({ page }) => {
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.goto("/journey");
+    await waitReady(page);
+    await page.getByRole("button", { name: "2D로 보기" }).focus();
+    await page.setViewportSize({ width: 750, height: 340 });
+    await expectFlat(page, "screen");
+    await expect(page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "1막 시작으로 이동" })).toBeFocused();
+  });
+
+  // 모드는 페이지를 떠나도 남아, 그동안 돌린 화면을 모른 채 첫 그림을 그렸다(2-4c 최종 리뷰)
+  test("다른 페이지에 다녀오는 동안 가로로 돌리면 돌아올 때 첫 그림부터 2D이고 장면을 올리지 않는다", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as Window & { __flash3d?: boolean; __canvas?: boolean };
+      new MutationObserver(() => {
+        if (w.__flash3d === undefined && document.querySelector("[data-journey-page]")) w.__flash3d = document.documentElement.dataset.journeyMode !== "2d";
+        if (document.querySelector("[data-journey-scene] canvas")) w.__canvas = true;
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.goto("/journey");
+    await waitReady(page);
+    await page.locator("[data-site-header]").getByRole("link", { name: "블로그", exact: true }).click();
+    await expect(page).toHaveURL(/\/blog$/);
+    await page.setViewportSize({ width: 750, height: 340 });
+    await page.evaluate(() => {
+      const w = window as Window & { __flash3d?: boolean; __canvas?: boolean };
+      delete w.__flash3d;
+      w.__canvas = false;
+    });
+    await page.locator("[data-site-header]").getByRole("link", { name: "Journey", exact: true }).click();
+    await expect(page).toHaveURL(/\/journey$/);
+    await expectFlat(page, "screen");
+    const seen = await page.evaluate(() => {
+      const w = window as Window & { __flash3d?: boolean; __canvas?: boolean };
+      return { flash3d: w.__flash3d, canvas: w.__canvas };
+    });
+    expect(seen).toEqual({ flash3d: false, canvas: false });
   });
 });
 

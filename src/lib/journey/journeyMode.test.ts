@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { choose, downgrade, fail, initialMode, isAutoFlat, type JourneyMode } from "./journeyMode";
+import { choose, downgrade, fail, fitScreen, initialMode, isAutoFlat, type JourneyMode } from "./journeyMode";
 
 const FULL: JourneyMode = initialMode("full", null, true);
 
@@ -59,11 +59,38 @@ describe("수동 전환", () => {
     expect(fail(back, "context-lost").view).toBe("2d");
   });
 
+  it("자동 2D 뒤 3D를 고른 방문은 수동 2D를 거쳐 다시 3D로 와도 이미 내린 단계를 유지한다(2-4c)", () => {
+    const back = choose(downgrade(downgrade(downgrade(FULL))), "3d");
+    const again = choose(choose(back, "2d"), "3d");
+    expect(again).toMatchObject({ view: "3d", quality: "min", keep3d: true });
+    const lost = downgrade(choose(fail(FULL, "context-lost"), "3d"));
+    expect(choose(choose(lost, "2d"), "3d")).toMatchObject({ view: "3d", quality: "lite", keep3d: true });
+  });
+
   it("자동으로 2D가 된 것만 알림 대상이다", () => {
     expect(isAutoFlat(downgrade(downgrade(downgrade(FULL))))).toBe(true);
     expect(isAutoFlat(fail(FULL, "failed"))).toBe(true);
     expect(isAutoFlat(choose(FULL, "2d"))).toBe(false);
     expect(isAutoFlat(initialMode("2d", null, true))).toBe(false);
     expect(isAutoFlat(FULL)).toBe(false);
+  });
+});
+
+describe("짧은 가로 화면(5절, 2-4c)", () => {
+  it("3D로 보던 중 짧은 가로가 되면 2D(이유: 화면)이고, 짧은 가로가 아니게 되면 같은 품질의 3D로 돌아온다", () => {
+    const lite = downgrade(FULL);
+    const flat = fitScreen(lite, true);
+    expect(flat).toMatchObject({ view: "2d", reason: "screen", quality: "lite" });
+    expect(fitScreen(flat, true)).toBe(flat);
+    expect(fitScreen(flat, false)).toEqual(lite);
+    expect(fitScreen(FULL, false)).toBe(FULL);
+  });
+
+  it("이미 2D였으면(수동·기기·느림·실패) 돌려도 그대로 2D이고, 화면 2D는 알림 대상이 아니다", () => {
+    for (const flat of [choose(FULL, "2d"), initialMode("2d", null, true), downgrade(downgrade(downgrade(FULL))), fail(FULL, "failed")]) {
+      expect(fitScreen(flat, true)).toBe(flat);
+      expect(fitScreen(flat, false)).toBe(flat);
+    }
+    expect(isAutoFlat(fitScreen(FULL, true))).toBe(false);
   });
 });

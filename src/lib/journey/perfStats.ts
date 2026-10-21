@@ -53,3 +53,13 @@ export function minuteSummaries(frames: { at: number; ms: number }[], start: num
   }
   return [...minutes].map((sample) => summarize(sample ?? []));
 }
+
+/** 측정 오버레이의 확인용 쿼리(perfSpeed 초당 화면 수, perfMinutes 오래 돌리기 분). 양수만 받고 그 밖은 기본값(1, 5)이다(2-4c) */
+export function perfOptions(search: string): { speed: number; minutes: number } {
+  const params = new URLSearchParams(search);
+  const positive = (name: string, fallback: number) => {
+    const value = Number(params.get(name) || Number.NaN);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  };
+  return { speed: positive("perfSpeed", 1), minutes: positive("perfMinutes", 5) };
+}

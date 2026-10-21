@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PERF_TARGET, meetsTarget, minuteSummaries, summarize } from "./perfStats";
+import { PERF_TARGET, meetsTarget, minuteSummaries, perfOptions, summarize } from "./perfStats";
 
 describe("프레임 시간 요약", () => {
   it("평균·fps·p95·p99·최대·50ms 초과 개수를 낸다(정렬한 표본의 비율 자리)", () => {
@@ -41,5 +41,14 @@ describe("오래 돌리기", () => {
     const minutes = minuteSummaries(frames, 0);
     expect(minutes.map((minute) => minute.frames)).toEqual([2, 2, 1]);
     expect(minutes.map((minute) => minute.p95Ms)).toEqual([16.7, 33.4, 50.1]);
+  });
+});
+
+describe("측정 오버레이 쿼리(2-4c)", () => {
+  it("perfSpeed·perfMinutes는 양수만 받고, 없거나 0·음수·숫자가 아니면 기본값(1화면/s, 5분)이다", () => {
+    expect(perfOptions("")).toEqual({ speed: 1, minutes: 5 });
+    expect(perfOptions("?perfSpeed=2&perfMinutes=1")).toEqual({ speed: 2, minutes: 1 });
+    expect(perfOptions("?perfSpeed=0&perfMinutes=-3")).toEqual({ speed: 1, minutes: 5 });
+    expect(perfOptions("?perfSpeed=abc&perfMinutes=")).toEqual({ speed: 1, minutes: 5 });
   });
 });

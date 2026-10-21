@@ -1,4 +1,5 @@
 import { detectTier, type Tier } from "./capability";
+import { isShortLandscape } from "./screen";
 import { hasWebGL2 } from "./webgl";
 
 /**
@@ -9,8 +10,8 @@ import { hasWebGL2 } from "./webgl";
 export type View = "3d" | "2d";
 /** 3D 품질 단계: 전체 → 경량 → 최소(해상도 배율 1, 블룸 끔) */
 export type QualityLevel = "full" | "lite" | "min";
-/** 2D가 된 이유: 기기 단계, 수동, 느림(실행 중 강등), 컨텍스트 손실, 장면 실패 */
-export type Reason = "tier" | "manual" | "slow" | "context-lost" | "failed";
+/** 2D가 된 이유: 기기 단계, 수동, 느림(실행 중 강등), 컨텍스트 손실, 장면 실패, 화면(짧은 가로, 2-4c) */
+export type Reason = "tier" | "manual" | "slow" | "context-lost" | "failed" | "screen";
 
 export interface JourneyMode {
   view: View;
@@ -66,9 +67,20 @@ export function choose(mode: JourneyMode, view: View): JourneyMode {
     ...mode,
     view: "3d",
     reason: null,
-    quality: mode.reason === "slow" ? "min" : mode.base,
+    // 자동 2D 뒤 3D를 고른 방문(keep3d)은 수동 2D를 거쳐 돌아와도 이미 내린 단계를 유지한다(전체부터 다시 내려가며 끊기지 않게, 2-4c)
+    quality: mode.reason === "slow" ? "min" : mode.keep3d ? mode.quality : mode.base,
     keep3d: mode.keep3d || isAutoFlat(mode),
   };
+}
+
+/**
+ * 짧은 가로 화면(스펙 5절, 2-4c). 3D로 보던 중 짧은 가로가 되면 2D(이유: 화면)로, 짧은 가로가 아니게 되면 같은 품질의 3D로 돌아온다.
+ * 이미 다른 이유로 2D였으면 그대로다. 알림을 띄우지 않고 기억하지 않는다
+ */
+export function fitScreen(mode: JourneyMode, shortLandscape: boolean): JourneyMode {
+  if (shortLandscape && mode.view === "3d") return { ...mode, view: "2d", reason: "screen" };
+  if (!shortLandscape && mode.reason === "screen") return { ...mode, view: "3d", reason: null };
+  return mode;
 }
 
 // ── 저장소(브라우저) ─────────────────────────────────────────
@@ -80,11 +92,11 @@ let current: JourneyMode | null = null;
 const listeners = new Set<() => void>();
 
 /**
- * 이 페이지의 모드. 처음 읽을 때 기기 단계와 기억한 선택으로 한 번 정한다(브라우저에서만 부른다). 어디서 먼저 읽든 같은 결정이다.
+ * 이 페이지의 모드. 처음 읽을 때 기기 단계와 기억한 선택, 짧은 가로 화면인지로 한 번 정한다(브라우저에서만 부른다). 어디서 먼저 읽든 같은 결정이다.
  * 하이드레이션 때는 자식 컴포넌트의 effect가 JourneyStage보다 먼저 돌므로, 읽는 쪽마다 정해지지 않은 값을 받지 않게 한다
  */
 export function getJourneyMode(): JourneyMode {
-  current ??= initialMode(detectTier(), storedView(), hasWebGL2());
+  current ??= fitScreen(initialMode(detectTier(), storedView(), hasWebGL2()), isShortLandscape());
   return current;
 }
 

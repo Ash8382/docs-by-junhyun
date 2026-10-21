@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getLenis, lockScroll, renderFrame, setLenis, setRenderStep, unlockScroll, whenUnlocked } from "./engine";
+import { getLenis, isScrollLocked, lockScroll, renderFrame, setLenis, setRenderStep, unlockScroll, whenUnlocked } from "./engine";
 
 function fakeLenis() {
   return { stop: vi.fn(), start: vi.fn(), scrollTo: vi.fn() };
@@ -40,6 +40,14 @@ describe("엔진", () => {
     const now = vi.fn();
     whenUnlocked(now);
     expect(now).toHaveBeenCalledTimes(1);
+  });
+
+  it("잠긴 동안만 잠겨 있다고 답한다(2-4c 최종 리뷰)", () => {
+    expect(isScrollLocked()).toBe(false);
+    lockScroll();
+    expect(isScrollLocked()).toBe(true);
+    unlockScroll();
+    expect(isScrollLocked()).toBe(false);
   });
 
   it("렌더 단계가 등록돼 있을 때만 그린다", () => {

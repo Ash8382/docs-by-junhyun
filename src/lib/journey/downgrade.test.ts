@@ -47,4 +47,22 @@ describe("실행 중 강등 판정(스펙 5절)", () => {
     expect(run("full", 1000 / 30, 2.9, 0, watch)).toBeNull();
     expect(run("full", 1000 / 30, 0.2, 3000, watch)).not.toBeNull();
   });
+
+  it("모든 프레임이 250ms를 넘으면(4fps 아래) 긴 간격 세 번째에 바로 내린다(2-4c)", () => {
+    expect(run("full", 300, 2)).toBe(900);
+  });
+
+  it("긴 간격 두 번 뒤 정상 프레임이 오면 다시 센다", () => {
+    const watch = createWatch();
+    expect(run("full", 300, 0.6, 0, watch)).toBeNull();
+    expect(run("full", 1000 / 60, 1, 616, watch)).toBeNull();
+    expect(run("full", 300, 0.3, 1916, watch)).toBeNull();
+  });
+
+  it("단계를 바꾼 직후(holdWatch)에는 긴 간격을 다시 센다", () => {
+    const watch = createWatch();
+    expect(run("full", 300, 0.6, 0, watch)).toBeNull();
+    holdWatch(watch, 600, 0);
+    expect(run("full", 300, 0.6, 900, watch)).toBeNull();
+  });
 });

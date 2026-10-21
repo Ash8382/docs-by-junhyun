@@ -27,6 +27,11 @@ export function lockScroll(): void {
   lenis?.stop();
 }
 
+/** 상세 패널이 열려 스크롤이 잠겨 있다. 그동안의 스크롤 위치는 잠그기 전 배치의 값이라 지금 배치로 읽지 않는다(2-4c 최종 리뷰) */
+export function isScrollLocked(): boolean {
+  return locked;
+}
+
 export function unlockScroll(): void {
   locked = false;
   lenis?.start();

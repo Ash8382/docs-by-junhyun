@@ -161,6 +161,29 @@ describe("홀로그램 자리", () => {
     }
   });
 
+  // 원반이 열린 끝과 함께 먼저 나타나면 정류장 30~60m 앞에서 거의 옆으로 보여 떠 있는 짧은 선이 됐다(3막 제목 장면, 2막 바위 옆. 병합 뒤)
+  it("2·3막 원반은 홀로그램이 처음 떠오를 때 함께 나타나고, 정류장을 떠난 뒤에도 남는다", () => {
+    for (const id of ["stock2u", "tix2u", "pfplay", "pickcare/studio"]) {
+      const stop = id.split("/")[0];
+      const range = rangeOf(stop);
+      expect(placementOf(id, range.start - 1e-6, 2).placement.discOpacity, `${id} 앞`).toBe(0);
+      const entering = range.start + (range.end - range.start) * 0.05;
+      expect(placementOf(id, entering, 2).placement.discOpacity, `${id} 들어섬`).toBeCloseTo(viewWeight(entering), 6);
+      for (const t of [0.5, 0.95]) expect(placementOf(id, at(stop, t), 2).placement.discOpacity, `${id} ${t}`).toBe(1);
+      expect(placementOf(id, range.end + 1e-6, 2).placement.discOpacity, `${id} 떠난 뒤`).toBe(1);
+    }
+  });
+
+  it("3막 제목 자리에서는 PiCKCARE 원반이 보이지 않고, 1막 원반은 홀로그램과 함께 열린 끝을 따른다", () => {
+    for (const hologram of HOLOGRAMS.filter((item) => item.act === 3)) {
+      expect(placementOf(hologram.id, at("act-3", 0.5)).placement.discOpacity, hologram.id).toBe(0);
+    }
+    for (let p = 0; p < at("act-2", 0); p += 1e-3) {
+      const { placement } = placementOf("kokoa-clone", p);
+      expect(placement.discOpacity, p.toFixed(3)).toBeCloseTo(placement.presence, 9);
+    }
+  });
+
   it("2·3막 화면은 실제 카메라를 수직축으로만 돌아 향하고, 1막은 고정 지점을 향한다", () => {
     const { placement } = placementOf("stock2u", at("stock2u", 0.5));
     const camera: Vec3 = [placement.center[0] + 10, placement.center[1] + 4, placement.center[2] - 3];

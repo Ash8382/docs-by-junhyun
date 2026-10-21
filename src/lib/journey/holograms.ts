@@ -169,7 +169,7 @@ export interface HologramPlacement {
   box: [number, number];
   /** 나타난 정도(0~1). 크기·높이에 곱해져 있고 불투명도로 쓴다 */
   presence: number;
-  /** 빛 원반 자리(노면 높이)와 보이는 정도. 원반은 홀로그램이 내려가도 남는다 */
+  /** 빛 원반 자리(노면 높이)와 보이는 정도. 원반은 홀로그램이 처음 떠오를 때 함께 나타나고, 홀로그램이 내려가도 남는다 */
   disc: Vec3;
   discOpacity: number;
   /** 테두리·빛기둥·원반의 궤적 색 자리(도로 s, m) */
@@ -236,6 +236,18 @@ function viewAt(stopId: string, progress: number): number {
   return stopAt(progress).range.stop.id === stopId ? viewWeight(progress) : 0;
 }
 
+/**
+ * 그 정류장에 들어선 정도: 정류장 앞에서는 0, 들어서며 정류장 시점으로 도는 만큼(viewWeight) 오르고, 정류장 가운데부터는 1로 남는다
+ * (떠난 뒤·엔딩 포함). 2·3막 원반은 이만큼 나타난다. 열린 끝만 따르면 원반이 정류장 30~60m 앞에서 거의 옆으로 보여 떠 있는 짧은 선이
+ * 됐다(3막 제목 장면의 PiCKCARE 원반, 2막 바위 옆. 병합 뒤 사용자 결정 "떠오를 때 함께")
+ */
+function arrived(frame: StopFrame, progress: number): number {
+  const { start, end } = frame.range;
+  if (progress < start) return 0;
+  if (progress >= (start + end) / 2) return 1;
+  return viewWeight(progress);
+}
+
 /** 원반 위 DISC_LIFT에서 top까지 presence만큼 떠오른 높이 */
 function liftedHeight(top: number, presence: number): number {
   return DISC_LIFT + (top - DISC_LIFT) * presence;
@@ -252,7 +264,9 @@ function placeRoadside(
   const discS = frame.s0 + act.along;
   const lateral = frame.side * (roadFrame(discS).width / 2 + act.aside);
   const reveal = revealed(discS, revealS);
+  // 1막은 열린 끝과 함께 서 있어 원반도 그때 나타나고, 2막은 정류장에 들어서 떠오를 때 함께 나타난다
   const stay = hologram.act === 1 ? 1 : viewAt(hologram.stopId, progress);
+  const arrival = hologram.act === 1 ? 1 : arrived(frame, progress);
   const presence = reveal * stay * (1 - ending);
   const facing: Facing =
     hologram.act === 1
@@ -265,7 +279,7 @@ function placeRoadside(
     box: [act.box[0] * presence, act.box[1] * presence],
     presence,
     disc: roadPoint(discS, lateral, 0),
-    discOpacity: reveal,
+    discOpacity: reveal * arrival,
     colorS: frame.s0,
   };
 }
@@ -295,7 +309,7 @@ function placeHall(
     box: [hall.box[0] * size, hall.box[1] * size],
     presence,
     disc,
-    discOpacity: reveal,
+    discOpacity: reveal * arrived(frame, progress),
     colorS: frame.s0,
   };
 }

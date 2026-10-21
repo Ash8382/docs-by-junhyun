@@ -249,11 +249,11 @@ body:has([data-journey-page]) [data-site-footer] {
 
 /*
  * 여정 2D(스펙 5절 "2D 레이아웃", 2-4b). 2D면 <html>에 data-journey-mode="2d"가 붙는다(JourneyStage, 처음 그리기 스크립트).
- * 모드를 바꾸거나 공유 주소로 열 때 카드로 스크롤하면 카드 위끝이 헤더와 막 탭 아래에 오도록 위 여백을 둔다.
+ * 모드를 바꾸거나 공유 주소로 열 때 카드로 스크롤하면 카드 위끝이 헤더와 막 탭 아래에 오도록 위 여백을 둔다. 여백은 페이지 전체의
+ * scroll-padding이라 키보드 포커스가 막 탭 밑에 걸친 링크로 가도 그 아래로 옮겨 보인다(2-4c, WCAG 2.4.11). Lenis scrollTo(요소)도 뺀다.
  */
-html[data-journey-mode="2d"] [data-journey-card],
-html[data-journey-mode="2d"] [data-stop] {
-  scroll-margin-top: 6.5rem;
+html[data-journey-mode="2d"] {
+  scroll-padding-top: 6.5rem;
 }
 
 /*
@@ -381,4 +381,17 @@ html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data
     transform: none;
     transition: none;
   }
+}
+
+/*
+ * 상세를 열면 스크롤을 잠근다(Lenis의 lenis-stopped는 overflow: clip). clip에서는 스크롤 막대 자리가 사라져 본문이 15px 옆으로 밀렸다.
+ * 여정 페이지에서는 막대 자리를 늘 남기고(scrollbar-gutter는 스크롤 컨테이너에만 걸려 clip 대신 hidden으로 잠근다), 막대가 원래 있는
+ * 자리라 화면은 같다(스펙 5절 "상세를 열 때 밀림", 2-4c)
+ */
+html:has([data-journey-page]) {
+  scrollbar-gutter: stable;
+}
+
+html.lenis.lenis-stopped:has([data-journey-page]) {
+  overflow: hidden;
 }

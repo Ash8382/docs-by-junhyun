@@ -45,3 +45,12 @@ next-env.d.ts
 
 # 쉼터 로컬 DB
 /server/*.db
+
+# 브레인스토밍 시안 도구 작업 파일 (서버 상태, 시안 HTML)
+/.superpowers/
+
+# Playwright 산출물. 기준 화면은 로컬 전용이다.
+/test-results/
+/playwright-report/
+/blob-report/
+/e2e/__screenshots__/

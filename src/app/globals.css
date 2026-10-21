@@ -184,3 +184,214 @@ h1, h2, h3, h4, h5, h6 {
   color: #fafafa !important;
 }
 
+/* 여정 페이지: 움직이는 3D 캔버스 위의 배경 흐림(backdrop-filter)은 매 프레임 GPU 재합성을 일으켜 스크롤을 끊는다. */
+body:has([data-journey-page]) [data-site-header] {
+  backdrop-filter: none;
+  background-color: rgb(9 9 11 / 0.92);
+}
+
+/* 여정 페이지: 화면에 고정된 3D 캔버스(z-0)가 위치 지정 없는 푸터를 덮지 않게 올리고, 장면이 비치지 않게 칠한다. */
+body:has([data-journey-page]) [data-site-footer] {
+  position: relative;
+  z-index: 10;
+  background-color: rgb(9 9 11);
+}
+
+/* 여정 페이지: 3D 장면을 준비하는 동안 흐르는 로딩 막대(SceneLoading) */
+@keyframes journey-loading {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/*
+ * 여정 페이지 세로 화면의 아래 고정 카드(스펙 3절 "세로 화면 (2-4a)"). portraitCards가 세로 화면에서 3D를 쓰는 동안 본문(<main>)에
+ * data-journey-cards="fixed"를, 지금 구간의 카드에 data-active를 붙인다. 카드는 스크롤과 함께 움직이지 않고 화면 아래에 있으며 지금 카드만
+ * 보이고 누를 수 있다. 보이지 않는 카드도 접근성 트리에 남는다(불투명도만 0). 가로 화면·2D·3D 실패에서는 붙지 않아 지금 배치 그대로다.
+ * 저장소 카드의 높이는 인라인 스타일이라 !important로 덮는다.
+ */
+[data-journey-cards="fixed"] [data-journey-card] {
+  position: fixed;
+  inset-inline: 0;
+  top: auto;
+  bottom: 0;
+  height: auto !important;
+  align-items: flex-end;
+  padding-bottom: 5svh;
+  opacity: 0;
+}
+
+/* 카드가 서로 바뀌는 효과는 고정 자리에 들어간 다음부터 건다(들어가는 순간 보이지 않을 카드들이 겹쳐 보이며 사라지지 않게, portraitCards) */
+[data-journey-cards="fixed"][data-journey-cards-settled] [data-journey-card] {
+  transition: opacity 250ms ease;
+}
+
+[data-journey-cards="fixed"] [data-journey-card] .pointer-events-auto {
+  pointer-events: none;
+}
+
+[data-journey-cards="fixed"] [data-journey-card][data-active] {
+  opacity: 1;
+}
+
+[data-journey-cards="fixed"] [data-journey-card][data-active] .pointer-events-auto {
+  pointer-events: auto;
+}
+
+/* 홀로그램 이미지를 받지 못해 2막 썸네일이 보이면, 카드가 위쪽 3D를 덮지 않게 썸네일 높이를 줄인다 */
+[data-journey-cards="fixed"] [data-journey-card] img {
+  max-height: 18svh;
+  width: auto;
+}
+
+/*
+ * 여정 2D(스펙 5절 "2D 레이아웃", 2-4b). 2D면 <html>에 data-journey-mode="2d"가 붙는다(JourneyStage, 처음 그리기 스크립트).
+ * 모드를 바꾸거나 공유 주소로 열 때 카드로 스크롤하면 카드 위끝이 헤더와 막 탭 아래에 오도록 위 여백을 둔다. 여백은 페이지 전체의
+ * scroll-padding이라 키보드 포커스가 막 탭 밑에 걸친 링크로 가도 그 아래로 옮겨 보인다(2-4c, WCAG 2.4.11). Lenis scrollTo(요소)도 뺀다.
+ */
+html[data-journey-mode="2d"] {
+  scroll-padding-top: 6.5rem;
+}
+
+/*
+ * 2D 세로 타임라인: 가운데 열 하나(최대 45rem)에 정류장을 내용 높이로 쌓는다. 3D 배치의 고정·sticky·absolute와 좌우 배치를 모두 풀고,
+ * 왼쪽 선은 섹션마다 그 막의 빛의 길 색(--act-color)이다. 입구에는 선이 없고, 막 정류장은 선 위의 점과 제목 줄, 엔딩은 ◆로 끝난다.
+ * 유틸리티 클래스는 @layer utilities 안에 있어 층 밖의 이 규칙이 앞선다.
+ */
+html[data-journey-mode="2d"] [data-journey-page] {
+  max-width: 45rem;
+  margin-inline: auto;
+  padding: 3.5rem 1rem 4rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop] {
+  height: auto;
+  padding: 0 0 1rem 1.75rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop]:not([data-stop="intro"])::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0.5rem;
+  width: 2px;
+  background-color: var(--act-color);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop^="act-"]::after {
+  content: "";
+  position: absolute;
+  top: 1.1rem;
+  left: calc(0.5rem - 5px);
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background-color: var(--act-color);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] > [data-stop="ending"]::before {
+  inset-block: auto;
+  top: 1.4rem;
+  left: calc(0.5rem - 5px);
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+}
+
+html[data-journey-mode="2d"] [data-journey-page] .container,
+html[data-journey-mode="2d"] [data-journey-card],
+html[data-journey-mode="2d"] [data-stop="ending"] > div {
+  position: static;
+  display: block;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-journey-mode="2d"] [data-stop="pickcare"] > .absolute {
+  position: static;
+}
+
+html[data-journey-mode="2d"] [data-journey-page] .pointer-events-auto {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow: visible;
+}
+
+html[data-journey-mode="2d"] [data-journey-card^="pickcare/"] {
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+}
+
+html[data-journey-mode="2d"] [data-journey-card^="act-"] > div {
+  padding: 0.75rem 0 0.25rem;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+}
+
+/* 2D의 진행 표시는 헤더 아래 막 탭이다(스펙 2절 "진행 표시", ProgressRail) */
+html[data-journey-mode="2d"] [data-journey-rail] {
+  display: none;
+}
+
+html[data-journey-mode="2d"] [data-journey-tabs] {
+  display: block;
+}
+
+/* 2D 등장(기존 FadeIn과 같은 움직임): 카드가 화면에 처음 들어올 때 아래 20px에서 0.5초 동안 나타난다. 관찰을 건 뒤에만(data-journey-reveal) 감춘다 */
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div):not([data-revealed]) {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed] {
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+/* 모드를 바꿀 때 지키는 카드(modeSwitch)는 전환 없이 곧바로 보인다 */
+html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed="instant"] {
+  transition: none;
+}
+
+/* 휴대폰(640px 미만)의 상세는 이미 전체 화면이라 아래에서 올라오는 효과만 더한다(스펙 5절 "2D 레이아웃", ProjectDialog, 2-4b) */
+@keyframes journey-sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* 움직임 줄이기(스펙 5절, 2-4b): 고정 카드 바꿈과 2D 등장 효과를 끈다(카드는 감추지 않고 곧바로 보인다) */
+@media (prefers-reduced-motion: reduce) {
+  [data-journey-cards="fixed"][data-journey-cards-settled] [data-journey-card] {
+    transition: none;
+  }
+
+  html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div):not([data-revealed]),
+  html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div)[data-revealed] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+ * 상세를 열면 스크롤을 잠근다(Lenis의 lenis-stopped는 overflow: clip). clip에서는 스크롤 막대 자리가 사라져 본문이 15px 옆으로 밀렸다.
+ * 여정 페이지에서는 막대 자리를 늘 남기고(scrollbar-gutter는 스크롤 컨테이너에만 걸려 clip 대신 hidden으로 잠근다), 막대가 원래 있는
+ * 자리라 화면은 같다(스펙 5절 "상세를 열 때 밀림", 2-4c)
+ */
+html:has([data-journey-page]) {
+  scrollbar-gutter: stable;
+}
+
+html.lenis.lenis-stopped:has([data-journey-page]) {
+  overflow: hidden;
+}

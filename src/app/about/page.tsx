@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { FadeIn } from "@/components/FadeIn";
 import { TechCarousel } from "@/components/TechCarousel";
 import { SkillCards } from "@/components/SkillCards";
@@ -65,6 +66,11 @@ export default function AboutPage() {
             </p>
             <p>
               주어진 역할에 한계를 두지 않고, 팀에 필요한 문제를 주도적으로 찾아 해결하는 올라운더 프론트엔드 개발자입니다.
+            </p>
+            <p>
+              <Link href="/journey" className="font-medium text-foreground underline underline-offset-4">
+                A Journey Through Code
+              </Link>
             </p>
           </div>
         </section>

@@ -15,7 +15,7 @@ export function Header() {
           <Link href="/" className="mr-3 flex shrink-0 items-center space-x-2 sm:mr-6">
             <span className="whitespace-nowrap font-bold sm:inline-block">이준현의 블로그</span>
           </Link>
-          <nav className="-m-1 flex min-w-0 items-center space-x-2.5 overflow-x-auto whitespace-nowrap p-1 text-[13px] font-medium [scrollbar-width:none] sm:space-x-6 sm:text-sm [&::-webkit-scrollbar]:hidden">
+          <nav className="-m-1.5 flex min-w-0 items-center space-x-2.5 overflow-x-auto whitespace-nowrap p-1.5 text-[13px] font-medium [scrollbar-width:none] sm:space-x-6 sm:text-sm [&::-webkit-scrollbar]:hidden">
             <Link
               href="/blog"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
@@ -52,7 +52,7 @@ export function Header() {
               href="https://github.com/Ash8382"
               target="_blank"
               rel="noreferrer"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
+              className="transition-colors hover:text-foreground/80 text-foreground/60 max-[390px]:-m-1 max-[390px]:inline-flex max-[390px]:p-1"
             >
               <span className="max-[390px]:sr-only">GitHub</span>
               <svg viewBox="0 0 16 16" aria-hidden="true" className="hidden size-4 fill-current max-[390px]:block">

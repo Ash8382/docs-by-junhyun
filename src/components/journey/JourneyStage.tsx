@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useLayoutEffect, useSyncExternalStore } from "react";
 import { isScrollLocked } from "@/lib/journey/engine";
-import { fail, fitScreen, getJourneyMode, getServerJourneyMode, subscribeJourneyMode } from "@/lib/journey/journeyMode";
+import { fail, fitScreen, getJourneyMode, getServerJourneyMode, leaveJourney, subscribeJourneyMode } from "@/lib/journey/journeyMode";
 import { activeCard } from "@/lib/journey/portrait";
 import { getSceneFailure, getSceneStatus, setCarStatus, setSceneStatus, subscribeSceneStatus } from "@/lib/journey/sceneStatus";
 import { isShortLandscape, subscribeShortLandscape } from "@/lib/journey/screen";
@@ -66,6 +66,8 @@ function useModeAttributes(): void {
       unsubscribe();
       delete root.dataset.journeyMode;
       delete root.dataset.journeyReason;
+      // 다른 페이지에 있는 동안 화면을 돌렸을 수 있다. 다시 들어와 처음 읽을 때 화면에 맞춘다
+      leaveJourney();
     };
   }, []);
 }

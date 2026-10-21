@@ -92,12 +92,13 @@ export function scrollToCard(card: string, view: View): void {
 }
 
 /**
- * 보이게 된 진행 표시(2D는 막 탭, 3D는 진행 막대)의 전환 버튼으로 포커스를 옮긴다. 전환 버튼이 없으면(WebGL2 없음) 그 표시의 첫 버튼이다.
- * 화면은 움직이지 않는다
+ * 보이게 된 진행 표시(2D는 막 탭, 3D는 진행 막대)의 전환 버튼으로 포커스를 옮긴다. 전환 버튼이 없거나(WebGL2 없음) 감춰져 있으면(짧은 가로
+ * 화면의 "3D로 보기", CSS로 감춘다) 그 표시의 첫 버튼이다. 화면은 움직이지 않는다
  */
 function focusShownProgress(view: View): void {
   const shown = document.querySelector<HTMLElement>(view === "2d" ? "[data-journey-tabs]" : "[data-journey-rail]");
-  const target = shown?.querySelector<HTMLElement>("[data-view-toggle]") ?? shown?.querySelector<HTMLElement>("button");
+  const toggle = shown?.querySelector<HTMLElement>("[data-view-toggle]");
+  const target = toggle && toggle.getClientRects().length > 0 ? toggle : shown?.querySelector<HTMLElement>("button");
   target?.focus({ preventScroll: true });
 }
 

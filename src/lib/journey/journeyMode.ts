@@ -67,7 +67,7 @@ export function choose(mode: JourneyMode, view: View): JourneyMode {
     ...mode,
     view: "3d",
     reason: null,
-    // 자동 2D 뒤 3D를 고른 방문(keep3d)은 수동 2D를 거쳐 돌아와도 이미 내린 단계를 유지한다(전체부터 다시 내려가며 끊기지 않게, 2-4c)
+    // 자동 2D 뒤 3D를 고른 방문(keep3d)은 수동 2D나 실패를 거쳐 돌아와도 이미 내린 단계를 유지한다(전체부터 다시 내려가며 끊기지 않게, 2-4c)
     quality: mode.reason === "slow" ? "min" : mode.keep3d ? mode.quality : mode.base,
     keep3d: mode.keep3d || isAutoFlat(mode),
   };
@@ -89,6 +89,8 @@ export function fitScreen(mode: JourneyMode, shortLandscape: boolean): JourneyMo
 export const VIEW_KEY = "journey-view";
 
 let current: JourneyMode | null = null;
+/** 여정 페이지를 떠나 있었다(leaveJourney). 다시 들어와 처음 읽을 때 화면에 다시 맞춘다 */
+let away = false;
 const listeners = new Set<() => void>();
 
 /**
@@ -97,7 +99,20 @@ const listeners = new Set<() => void>();
  */
 export function getJourneyMode(): JourneyMode {
   current ??= fitScreen(initialMode(detectTier(), storedView(), hasWebGL2()), isShortLandscape());
+  if (away) {
+    away = false;
+    current = fitScreen(current, isShortLandscape());
+  }
   return current;
+}
+
+/**
+ * 여정 페이지를 떠난다(JourneyStage를 내릴 때). 강등 단계·고른 3D 같은 이 방문의 모드는 남기고, 다른 페이지에 있는 동안 화면을 돌렸을 수
+ * 있어 다시 들어와 처음 읽을 때 짧은 가로 화면에만 다시 맞춘다. 그러지 않으면 돌아온 첫 그림이 앞 화면의 배치였고 장면도 올렸다 내렸다
+ * (2-4c 최종 리뷰)
+ */
+export function leaveJourney(): void {
+  away = true;
 }
 
 /** 서버 렌더와 첫 하이드레이션에서는 아직 정하지 않았다 */

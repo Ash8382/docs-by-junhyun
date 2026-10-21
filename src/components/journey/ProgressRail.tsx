@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { getLenis, whenUnlocked } from "@/lib/journey/engine";
 import { getJourneyMode, isAutoFlat, subscribeJourneyMode } from "@/lib/journey/journeyMode";
-import { isShortLandscape, subscribeShortLandscape } from "@/lib/journey/screen";
 import { scrollState, subscribeProgress } from "@/lib/journey/scrollState";
 import { rangeOf } from "@/lib/journey/timeline";
 import { hasWebGL2 } from "@/lib/journey/webgl";
@@ -84,8 +83,6 @@ export function ProgressRail() {
   const fillRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const canSwitch = useSyncExternalStore(subscribeNothing, hasWebGL2, () => true);
-  // 짧은 가로 화면에서는 쓸 3D 배치가 없어 "3D로 보기"를 두지 않는다(스펙 5절 "짧은 가로 화면", 2-4c)
-  const shortLandscape = useSyncExternalStore(subscribeShortLandscape, isShortLandscape, () => false);
   const [notice, setNotice] = useState(false);
 
   useEffect(() => {
@@ -196,7 +193,7 @@ export function ProgressRail() {
               {tab.label}
             </button>
           ))}
-          {canSwitch && !shortLandscape && (
+          {canSwitch && (
             <button
               type="button"
               data-view-toggle

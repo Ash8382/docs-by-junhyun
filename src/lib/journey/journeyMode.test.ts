@@ -67,6 +67,13 @@ describe("수동 전환", () => {
     expect(choose(choose(lost, "2d"), "3d")).toMatchObject({ view: "3d", quality: "lite", keep3d: true });
   });
 
+  // 실패 뒤 새로 올린 렌더러도 이미 내린 단계로 시작하는 편이 낫다(2-4c 최종 리뷰에서 스펙 문장을 이 동작에 맞춤)
+  it("자동 2D 뒤 3D를 고른 방문은 그 뒤 실패로 2D가 됐다가 다시 3D를 골라도 이미 내린 단계를 유지한다", () => {
+    const lowered = downgrade(choose(fail(FULL, "context-lost"), "3d"));
+    expect(lowered).toMatchObject({ view: "3d", quality: "lite", keep3d: true });
+    expect(choose(fail(lowered, "failed"), "3d")).toMatchObject({ view: "3d", quality: "lite", keep3d: true });
+  });
+
   it("자동으로 2D가 된 것만 알림 대상이다", () => {
     expect(isAutoFlat(downgrade(downgrade(downgrade(FULL))))).toBe(true);
     expect(isAutoFlat(fail(FULL, "failed"))).toBe(true);

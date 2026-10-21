@@ -345,6 +345,16 @@ html[data-journey-mode="2d"] [data-journey-tabs] {
   display: block;
 }
 
+/*
+ * 짧은 가로 화면에서는 쓸 3D 배치가 없어 막 탭 끝의 "3D로 보기"를 감춘다(스펙 5절 "짧은 가로 화면", 2-4c). 서버는 화면을 모르므로
+ * CSS로 감춰 하이드레이션 전부터 보이지 않게 한다. 조건은 screen.ts의 SHORT_LANDSCAPE_QUERY와 같다(2-4c 최종 리뷰)
+ */
+@media (orientation: landscape) and (max-height: 499.98px) and (pointer: coarse) {
+  [data-journey-tabs] [data-view-toggle] {
+    display: none;
+  }
+}
+
 /* 2D 등장(기존 FadeIn과 같은 움직임): 카드가 화면에 처음 들어올 때 아래 20px에서 0.5초 동안 나타난다. 관찰을 건 뒤에만(data-journey-reveal) 감춘다 */
 html[data-journey-mode="2d"][data-journey-reveal] :is([data-journey-card], [data-stop="ending"] > div):not([data-revealed]) {
   opacity: 0;

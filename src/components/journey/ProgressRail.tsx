@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { getLenis } from "@/lib/journey/engine";
+import { getLenis, whenUnlocked } from "@/lib/journey/engine";
 import { getJourneyMode, isAutoFlat, subscribeJourneyMode } from "@/lib/journey/journeyMode";
+import { isShortLandscape, subscribeShortLandscape } from "@/lib/journey/screen";
 import { scrollState, subscribeProgress } from "@/lib/journey/scrollState";
 import { rangeOf } from "@/lib/journey/timeline";
 import { hasWebGL2 } from "@/lib/journey/webgl";
-import { FLAT_READING_LINE, atPageEnd, switchView } from "./modeSwitch";
+import { atPageEnd, flatReadingLine, switchView } from "./modeSwitch";
 
 // name은 스크린 리더가 읽는 버튼 이름이다(조사를 라벨마다 맞춘다).
 // align: 엔딩은 연락처가 섹션 아래쪽에 있어 섹션 끝을 화면 끝에 맞춘다. 그래서 점도 도착하는 자리(구간 끝)에 둔다.
@@ -42,7 +43,7 @@ function scrollToStop(id: string, align: "start" | "end") {
   lenis.scrollTo(section, { offset: align === "end" ? section.offsetHeight - window.innerHeight : 0 });
 }
 
-/** 2D 막 탭: 그 막 섹션으로 간다. 위 여백은 섹션의 scroll-margin-top이 정한다(Lenis도 scroll-margin을 뺀다) */
+/** 2D 막 탭: 그 막 섹션으로 간다. 위 여백은 페이지의 scroll-padding-top이 정한다(Lenis도 scroll-padding을 뺀다) */
 function scrollToAct(id: string) {
   const section = document.getElementById(`stop-${id}`);
   if (!section) return;
@@ -52,15 +53,16 @@ function scrollToAct(id: string) {
 }
 
 /**
- * 2D에서 지금 읽는 막: 위끝이 읽는 자리(막 탭 바로 아래, modeSwitch의 FLAT_READING_LINE)를 지난 마지막 막 섹션. 입구에서는 없다. 엔딩은 페이지 끝이라 위끝이 거기까지
+ * 2D에서 지금 읽는 막: 위끝이 읽는 자리(막 탭 바로 아래, modeSwitch의 flatReadingLine)를 지난 마지막 막 섹션. 입구에서는 없다. 엔딩은 페이지 끝이라 위끝이 거기까지
  * 오르지 못하므로, 끝까지 내려가면 연락처다
  */
 function readingAct(): string | null {
   if (atPageEnd()) return "ending";
+  const line = flatReadingLine();
   let current: string | null = null;
   for (const tab of TABS) {
     const top = document.getElementById(`stop-${tab.id}`)?.getBoundingClientRect().top ?? Infinity;
-    if (top <= FLAT_READING_LINE) current = tab.id;
+    if (top <= line) current = tab.id;
   }
   return current;
 }
@@ -82,6 +84,8 @@ export function ProgressRail() {
   const fillRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const canSwitch = useSyncExternalStore(subscribeNothing, hasWebGL2, () => true);
+  // 짧은 가로 화면에서는 쓸 3D 배치가 없어 "3D로 보기"를 두지 않는다(스펙 5절 "짧은 가로 화면", 2-4c)
+  const shortLandscape = useSyncExternalStore(subscribeShortLandscape, isShortLandscape, () => false);
   const [notice, setNotice] = useState(false);
 
   useEffect(() => {
@@ -108,7 +112,8 @@ export function ProgressRail() {
     };
   }, []);
 
-  // 3D에서 자동으로 2D가 되는 순간에만 알림을 켠다(수동 2D·기기 단계 2D는 알리지 않는다)
+  // 3D에서 자동으로 2D가 되는 순간에만 알림을 켠다(수동 2D·기기 단계 2D·화면 2D는 알리지 않는다). 상세가 열려 스크롤이 잠겨 있으면
+  // 상세 밖의 알림은 가려지고 화면 낭독기에도 읽히지 않으므로, 상세를 닫은 뒤(보던 카드를 맞추는 때와 같다) 띄운다(2-4c)
   useEffect(() => {
     let previous = getJourneyMode();
     let timer = 0;
@@ -117,8 +122,14 @@ export function ProgressRail() {
       const flattened = isAutoFlat(next) && previous.view === "3d";
       previous = next;
       window.clearTimeout(timer);
-      setNotice(flattened);
-      if (flattened) timer = window.setTimeout(() => setNotice(false), 6000);
+      if (!flattened) {
+        setNotice(false);
+        return;
+      }
+      whenUnlocked(() => {
+        setNotice(true);
+        timer = window.setTimeout(() => setNotice(false), 6000);
+      });
     });
     return () => {
       unsubscribe();
@@ -161,7 +172,7 @@ export function ProgressRail() {
             data-view-toggle
             onClick={() => switchView("2d")}
             aria-label="2D로 보기"
-            className="rounded px-1 text-xs font-medium text-zinc-300 transition-colors hover:text-white"
+            className="inline-flex min-h-6 min-w-6 items-center justify-center rounded px-1 text-xs font-medium text-zinc-300 transition-colors hover:text-white"
           >
             2D
           </button>
@@ -185,7 +196,7 @@ export function ProgressRail() {
               {tab.label}
             </button>
           ))}
-          {canSwitch && (
+          {canSwitch && !shortLandscape && (
             <button
               type="button"
               data-view-toggle

@@ -107,11 +107,21 @@ export function statsEnabled(): boolean {
   return debug === "stats" || debug === "perf";
 }
 
+/** 확인용 busy의 상한(ms). 만든 링크(?debug=stats&busy=100000)로 그 링크를 연 탭을 멈추지 못하게 한다(2-4c) */
+export const BUSY_MAX_MS = 500;
+
+/** 주소의 쿼리에서 확인용 busy를 읽는다. ?debug=stats(또는 perf)일 때만, 양수만, 상한까지 */
+export function busyFrom(search: string): number {
+  const params = new URLSearchParams(search);
+  const debug = params.get("debug");
+  if (debug !== "stats" && debug !== "perf") return 0;
+  const busy = Number(params.get("busy"));
+  return Number.isFinite(busy) && busy > 0 ? Math.min(busy, BUSY_MAX_MS) : 0;
+}
+
 /** 확인용 ?debug=stats(또는 perf)&busy=<ms>: 렌더 단계마다 그 시간만큼 일부러 끌어 실행 중 강등을 재현한다(2-4b). 없으면 0 */
 export function busyMs(): number {
-  if (!statsEnabled()) return 0;
-  const busy = Number(new URLSearchParams(window.location.search).get("busy"));
-  return Number.isFinite(busy) && busy > 0 ? busy : 0;
+  return busyFrom(window.location.search);
 }
 
 const MIPMAP_FILTERS = new Set<number>([

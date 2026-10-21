@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { detectTier } from "@/lib/journey/capability";
-import { meetsTarget, minuteSummaries, summarize, type FrameSummary } from "@/lib/journey/perfStats";
+import { meetsTarget, minuteSummaries, perfOptions, summarize, type FrameSummary } from "@/lib/journey/perfStats";
 import { scrollState } from "@/lib/journey/scrollState";
 
 /**
@@ -41,8 +41,7 @@ const RECENT_MS = 10_000;
 const MIB = 1024 * 1024;
 
 function options(): { speed: number; minutes: number } {
-  const params = new URLSearchParams(window.location.search);
-  return { speed: Number(params.get("perfSpeed") ?? 1), minutes: Number(params.get("perfMinutes") ?? 5) };
+  return perfOptions(window.location.search);
 }
 
 function gpuName(): string {

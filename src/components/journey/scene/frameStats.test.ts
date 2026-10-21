@@ -18,7 +18,7 @@ import {
   WebGLCubeRenderTarget,
   WebGLRenderTarget,
 } from "three";
-import { renderTargetBytes, sceneTextureBytes, textureBytes } from "./frameStats";
+import { BUSY_MAX_MS, busyFrom, renderTargetBytes, sceneTextureBytes, textureBytes } from "./frameStats";
 
 function imageTexture(width: number, height: number): Texture {
   const texture = new Texture();
@@ -139,5 +139,17 @@ describe("후처리 렌더 타깃 메모리 추정(2-4a, 텍스처 예산과 따
     const scene = new Scene();
     const composer = { renderer: { target: new WebGLRenderTarget(1000, 1000) }, scene, passes: [] };
     expect(renderTargetBytes(composer)).toBe(0);
+  });
+});
+
+describe("확인용 busy(2-4c)", () => {
+  it("?debug=stats(또는 perf)일 때만 읽고, 500ms를 넘으면 500ms로 묶는다(만든 링크로 탭을 멈추지 못하게)", () => {
+    expect(BUSY_MAX_MS).toBe(500);
+    expect(busyFrom("?debug=stats&busy=50")).toBe(50);
+    expect(busyFrom("?debug=perf&busy=300")).toBe(300);
+    expect(busyFrom("?debug=stats&busy=100000")).toBe(500);
+    expect(busyFrom("?busy=50")).toBe(0);
+    expect(busyFrom("?debug=stats&busy=-5")).toBe(0);
+    expect(busyFrom("?debug=stats&busy=abc")).toBe(0);
   });
 });

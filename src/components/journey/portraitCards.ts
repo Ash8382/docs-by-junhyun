@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { getLenis } from "@/lib/journey/engine";
+import { subscribeHash } from "@/lib/journey/hashStore";
 import { getJourneyMode, subscribeJourneyMode } from "@/lib/journey/journeyMode";
 import { isPortrait } from "@/lib/journey/lens";
 import { activeCard, cardProgress } from "@/lib/journey/portrait";
@@ -61,15 +62,16 @@ export function usePortraitCards(): void {
     const unsubscribeProgress = subscribeProgress(update);
     const unsubscribeStatus = subscribeSceneStatus(update);
     const unsubscribeMode = subscribeJourneyMode(update);
+    // 해시는 브라우저의 hashchange뿐 아니라 앱의 pushHash·replaceHash(상세 열기·탭)로도 바뀐다. PiCKCARE 앞줄이 해시를 따른다(2-4c)
+    const unsubscribeHash = subscribeHash(update);
     window.addEventListener("resize", update);
-    window.addEventListener("hashchange", update);
     main.addEventListener("focusin", onFocusIn);
     return () => {
       unsubscribeProgress();
       unsubscribeStatus();
       unsubscribeMode();
+      unsubscribeHash();
       window.removeEventListener("resize", update);
-      window.removeEventListener("hashchange", update);
       main.removeEventListener("focusin", onFocusIn);
       if (active) cards.get(active)?.removeAttribute("data-active");
       delete main.dataset.journeyCards;

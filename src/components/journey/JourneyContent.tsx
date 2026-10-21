@@ -240,6 +240,19 @@ function EndingStop() {
             {CAR_CREDIT.license}
           </a>
           , 로고 제거·재질 수정
+          <br />
+          차 모델 디코더:{" "}
+          <a href="https://github.com/google/draco" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            Draco
+          </a>
+          ,{" "}
+          <a href="https://github.com/BinomialLLC/basis_universal" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            Basis Universal
+          </a>
+          ,{" "}
+          <a href="/journey/decoders/LICENSE.txt" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+            Apache-2.0
+          </a>
         </p>
       </div>
     </div>

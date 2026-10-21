@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { driveAt } from "../src/lib/journey/drive";
 import { projects } from "../src/data/projects";
@@ -106,7 +107,10 @@ test("캔버스는 여정 장면 하나뿐이다(사이트 별 배경이 꺼진�
   await page.goto("/journey");
   await expect(page.locator("[data-journey-scene] canvas")).toHaveCount(1);
   await expect(page.locator("canvas")).toHaveCount(1);
-  await page.keyboard.press("End");
+  // 이 테스트는 캔버스 수와 오류를 본다. End 키로 끝까지 가면 드물게 반영되지 않아 흔들렸다(메모리 압박에서 12번 중 10번, 캐시가 빈 첫 실행에서
+  // 20번 중 1번, 2-4b 전 빌드도 같음. CPU를 20배 느리게 해도 재현되지 않아 원인은 확정하지 못했다, 스펙 10절). End 키 동작은
+  // "End 키로 엔딩에 닿고…"가 따로 보므로 여기서는 끝으로 바로 스크롤한다(2-4c)
+  await scrollToProgress(page, 1);
   await expect(page.getByText(EMAIL)).toBeInViewport();
   expect(errors).toEqual([]);
 });
@@ -411,6 +415,16 @@ test("엔딩에 차 모델의 출처와 라이선스가 있다", async ({ page }
   await expect(page.locator("#stop-ending a[href='https://creativecommons.org/licenses/by/4.0/']")).toHaveText("CC BY 4.0");
 });
 
+test("엔딩에 차 모델 디코더(Draco·Basis Universal)의 Apache-2.0 고지가 있고, 라이선스 전문을 받을 수 있다", async ({ page, request }) => {
+  await page.goto("/journey");
+  const notice = page.locator("#stop-ending").getByRole("link", { name: "Apache-2.0" });
+  await expect(notice).toHaveAttribute("href", "/journey/decoders/LICENSE.txt");
+  const response = await request.get("/journey/decoders/LICENSE.txt");
+  expect(response.ok()).toBe(true);
+  const text = await response.text();
+  for (const word of ["Draco", "Basis Universal", "Apache License", "END OF TERMS AND CONDITIONS"]) expect(text, word).toContain(word);
+});
+
 // ── 장면 감시와 차(2-2b, 스펙 1절 완료 조건과 5절 "실패 대응") ───────────────────
 
 async function waitReady(page: Page) {
@@ -663,6 +677,23 @@ test("막 제목과 엔딩에서 2D로 갔다가 3D로 돌아오면 같은 정�
   }
 });
 
+// 2D의 카드 자리는 rem(scroll-padding-top 6.5rem)이라 브라우저 글자 크기 설정을 따른다. 읽는 자리도 그 값을 따라야 놓은 카드를 읽는다(2-4c 최종 리뷰)
+test("글자 크기를 키운 브라우저(20px)에서도 2D 막 탭은 이동한 막을 가리키고, 3D로 돌아오면 그 정류장이다", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("journey-view", "2d"));
+  await page.goto("/journey?debug=stats");
+  await expectFlat(page, "manual");
+  await page.addStyleTag({ content: "html { font-size: 20px; }" });
+  const tab = page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "2막 협업으로 이동" });
+  await tab.click();
+  await expect.poll(async () => Math.round((await page.locator('[data-journey-card="act-2"]').boundingBox())?.y ?? -1)).toBe(130);
+  await expect(tab).toHaveAttribute("aria-current", "true");
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await waitReady(page);
+  const range = rangeOf("act-2");
+  await expect.poll(async () => (await readStats(page)).progress).toBeGreaterThanOrEqual(range.start);
+  expect((await readStats(page)).progress).toBeLessThanOrEqual(range.end);
+});
+
 test("키보드로 2D로 보기·3D로 보기를 누르면 포커스가 반대쪽 전환 버튼으로 옮겨 간다", async ({ page }) => {
   await page.goto("/journey");
   await waitReady(page);
@@ -817,6 +848,27 @@ test.describe("배율 2 화면의 실행 중 강등", () => {
   });
 });
 
+test("모든 프레임이 250ms를 넘는 아주 느린 기기(busy 300ms)도 전체 → 경량 → 최소 → 2D로 내려간다", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/journey?debug=stats&busy=300");
+  await waitReady(page);
+  // 한 프레임이 250ms를 넘으면 창을 비우는 규칙만으로는 매 프레임 창이 비워져 영영 내려가지 않았다. 연속 3번이면 바로 내린다(2-4c)
+  await expect.poll(async () => (await qualityNow(page)).flat, { timeout: 40_000, intervals: [250] }).toBe("2d");
+  await expectFlat(page, "slow");
+});
+
+test("아주 느린 기기에서 자동으로 2D가 된 뒤 다시 고른 3D는 최소에 머물고 2D로 내리지 않는다", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.goto("/journey?debug=stats&busy=300");
+  await waitReady(page);
+  await expect.poll(async () => (await qualityNow(page)).flat, { timeout: 40_000, intervals: [250] }).toBe("2d");
+  await page.getByRole("button", { name: "3D로 보기" }).click();
+  await waitReady(page);
+  await expect.poll(async () => (await qualityNow(page)).level).toBe("min");
+  await page.waitForTimeout(6000);
+  expect((await qualityNow(page)).flat).toBeNull();
+});
+
 // e2e의 헤드리스는 소프트웨어 렌더링이라 원래 느리다. 자동화 브라우저는 확인용 busy가 없으면 단계를 바꾸지 않아 다른 검사가 흔들리지 않는다
 test("자동화 브라우저는 느려도 확인용 busy가 없으면 6초가 지나도 전체에 머문다", async ({ page }) => {
   await page.goto("/journey?debug=stats");
@@ -903,6 +955,317 @@ test.describe("움직임 줄이기", () => {
     await expect(dialog).toBeVisible();
     expect(await dialog.evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
   });
+});
+
+// ── 접근성(2-4c, 스펙 1절 2-4c 완료 조건, 8절) ───────────────────
+
+/** axe(WCAG 2.1 A·AA 규칙)가 찾은 위반: "규칙: 요소들" 한 줄씩. 캔버스 위 글처럼 배경을 알 수 없는 것은 위반이 아니라 확인 필요로 빠진다 */
+async function axeViolations(page: Page): Promise<string[]> {
+  const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  return result.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`);
+}
+
+test.describe("접근성(axe, WCAG 2.1 A·AA)", () => {
+  test("3D 화면에 위반이 없다", async ({ page }) => {
+    await page.goto("/journey");
+    await waitReady(page);
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test("2D 화면에 위반이 없다", async ({ page }) => {
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test("상세가 열린 상태에 위반이 없다", async ({ page }) => {
+    await page.goto("/journey#pfplay");
+    await expect(page.getByRole("dialog", { name: "PFPlay" })).toBeVisible();
+    expect(await axeViolations(page)).toEqual([]);
+  });
+});
+
+test("페이지 언어가 한국어다(lang=\"ko\")", async ({ page }) => {
+  await page.goto("/journey");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ko");
+});
+
+test("2D에서 Shift+Tab으로 간 링크가 막 탭 밑에 걸쳐 있으면 헤더·막 탭 아래로 옮겨 보인다", async ({ page }) => {
+  await page.goto("/journey?debug=stats&tier=2d");
+  await expectFlat(page, "tier");
+  const previous = page.locator("#stop-tix2u a[data-journey-detail]");
+  await page.locator("#stop-pfplay a[data-journey-detail]").focus();
+  // 앞 링크(Tix2U)를 막 탭 밑(위 70px)에 둔다. 화면 안이라 브라우저는 스크롤하지 않고, 위 여백이 없으면 막 탭에 가린다.
+  // 화면 밖의 링크는 브라우저가 화면 가운데로 옮겨 가리지 않는다
+  await previous.evaluate((link) => window.scrollBy({ top: link.getBoundingClientRect().top - 70, behavior: "instant" }));
+  await page.keyboard.press("Shift+Tab");
+  await expect(previous).toBeFocused();
+  await expect.poll(async () => Math.round((await previous.boundingBox())?.y ?? -1)).toBeGreaterThanOrEqual(104);
+});
+
+test("3D 진행 막대의 2D 버튼은 누르는 자리가 24×24px 이상이다", async ({ page }) => {
+  await page.goto("/journey");
+  const box = await page.getByRole("button", { name: "2D로 보기" }).boundingBox();
+  if (!box) throw new Error("2D 버튼이 없습니다");
+  expect(box.width).toBeGreaterThanOrEqual(24);
+  expect(box.height).toBeGreaterThanOrEqual(24);
+});
+
+test("상세가 열린 동안 자동으로 2D가 되면 알림은 상세를 닫은 뒤에 6초 뜬다", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto("/journey");
+  await waitReady(page);
+  await settleAt(page, middleOf("tix2u"));
+  await page.locator("#stop-tix2u a[data-journey-detail]").click();
+  await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+  await loseContext(page);
+  await expectFlat(page, "context-lost");
+  await expect(page.getByRole("status")).toHaveText("");
+  await page.waitForTimeout(6500);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("status")).toHaveText(NOTICE);
+  await expect(page.getByRole("status")).toHaveText("", { timeout: 8000 });
+});
+
+// ── 포커스 복귀·좁은 헤더·상세를 열 때 밀림(2-4c, 스펙 4·5절) ───────────────────
+
+// 상세 닫기는 뒤로 가기(history.back)라 브라우저가 연 때의 스크롤 위치로 되돌린다. 포커스가 돌아온 링크를 따라가는 고정 카드 스크롤이
+// 같은 프레임에 되돌려져, 마우스·터치로 열면 보던 자리에, 키보드로 열면(Tab이 이미 그 카드로 옮겨 둔) 링크의 카드 자리에 돌아온다
+test("세로 화면에서 옆 저장소 홀로그램을 눌러 연 상세를 닫으면 보던 자리에 머문다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await settleAt(page, at("pickcare", 0.3));
+  await expect(page.locator('[data-journey-card="pickcare/biz"]')).toHaveAttribute("data-active", "");
+  const before = await page.evaluate(() => window.scrollY);
+  const point = await hologramCenter(page, "pickcare/studio");
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('#stop-pickcare a[data-journey-detail][href$="#pickcare/studio"]')).toBeFocused();
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await expect(page.locator('[data-journey-card="pickcare/biz"]')).toHaveAttribute("data-active", "");
+});
+
+test("세로 화면에서 키보드로 연 상세를 닫으면 그 링크의 카드 자리에 있다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await settleAt(page, at("pickcare", 0.3));
+  const link = page.locator('#stop-pickcare a[data-journey-detail][href$="#pickcare/studio"]');
+  await link.focus();
+  await expect(page.locator('[data-journey-card="pickcare/studio"]')).toHaveAttribute("data-active", "");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(link).toBeFocused();
+  await page.waitForTimeout(500);
+  await expect(page.locator('[data-journey-card="pickcare/studio"]')).toHaveAttribute("data-active", "");
+});
+
+test("좁은 휴대폰(360·375px)에서 헤더 메뉴가 한 줄에 다 들고 GitHub 링크 이름은 그대로다", async ({ page }) => {
+  for (const width of [360, 375, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/journey");
+    const nav = page.locator("[data-site-header] nav");
+    expect(await nav.evaluate((element) => element.scrollWidth - element.clientWidth), `${width}px`).toBeLessThanOrEqual(0);
+    await expect(nav.getByRole("link", { name: "GitHub", exact: true }), `${width}px`).toBeVisible();
+  }
+  await expect(page.locator("[data-site-header] nav").getByText("GitHub", { exact: true })).toBeVisible();
+});
+
+test("헤더 메뉴의 첫 링크와 끝 링크에 포커스해도 테두리 자리가 메뉴 안에 남는다", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/journey");
+  const nav = await page.locator("[data-site-header] nav").boundingBox();
+  if (!nav) throw new Error("헤더 메뉴가 없습니다");
+  for (const name of ["블로그", "GitHub"]) {
+    const link = await page.locator("[data-site-header] nav").getByRole("link", { name, exact: true }).boundingBox();
+    if (!link) throw new Error(`${name} 링크가 없습니다`);
+    // 포커스 테두리(바깥 2px)가 넘치는 메뉴(overflow)에 잘리지 않으려면 링크 둘레에 2px 넘는 여유가 있어야 한다
+    expect(link.y - nav.y, name).toBeGreaterThanOrEqual(2);
+    expect(nav.y + nav.height - (link.y + link.height), name).toBeGreaterThanOrEqual(2);
+    expect(link.x - nav.x, name).toBeGreaterThanOrEqual(2);
+    expect(nav.x + nav.width - (link.x + link.width), name).toBeGreaterThanOrEqual(2);
+  }
+});
+
+test("좁은 휴대폰(360px) 헤더의 GitHub 아이콘 링크에도 접근성 위반이 없다", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/journey");
+  await waitReady(page);
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+// 막대가 15px 자리를 차지하는 데스크톱(Windows 등)에서는 상세가 스크롤을 잠글 때(Lenis의 overflow: clip) 막대가 사라져 본문이 밀렸다.
+// 이 맥의 창 없는 Chromium은 막대를 숨기거나 겹쳐 그려 폭이 0이고, ::-webkit-scrollbar로 그린 막대에는 scrollbar-gutter가 걸리지 않아
+// 밀림 자체를 잴 수 없다. 그래서 잠긴 동안 <html>이 막대 자리를 남기는 스크롤 컨테이너(overflow: hidden, scrollbar-gutter: stable)인지 본다
+test("상세가 스크롤을 잠가도 스크롤 막대 자리를 남긴다", async ({ page }) => {
+  await page.goto("/journey");
+  await page.locator("#stop-todo-app a[data-journey-detail]").evaluate((link: HTMLAnchorElement) => link.click());
+  await expect(page.getByRole("dialog", { name: "Todo App" })).toBeVisible();
+  await expect(page.locator("html")).toHaveClass(/lenis-stopped/);
+  expect(await page.evaluate(() => [getComputedStyle(document.documentElement).overflow, getComputedStyle(document.documentElement).scrollbarGutter])).toEqual([
+    "hidden",
+    "stable",
+  ]);
+});
+
+// ── 넘긴 동작 결함(2-4c) ───────────────────
+
+test("세로 화면에서 앱이 해시를 바꾸면(홀로그램으로 상세 열기) 고정 카드가 곧바로 그 저장소 카드로 바뀐다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/journey?debug=stats");
+  await waitReady(page);
+  await settleAt(page, at("pickcare", 0.3));
+  await expect(page.locator('[data-journey-card="pickcare/biz"]')).toHaveAttribute("data-active", "");
+  const point = await hologramCenter(page, "pickcare/studio");
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  // 상세는 pushHash로 해시를 바꿔 브라우저의 hashchange가 오지 않는다. 앞줄은 해시를 따르므로 고정 카드도 스크롤 없이 따라야 한다
+  await expect(page.locator('[data-journey-card="pickcare/studio"]')).toHaveAttribute("data-active", "", { timeout: 2000 });
+});
+
+test("기기 단계 2D 기기가 하이드레이션 전에 스크롤했어도 2D에서 보던 정류장 카드에 있다", async ({ page }) => {
+  const release = await holdScripts(page);
+  await page.goto("/journey?debug=stats&tier=2d", { waitUntil: "commit" });
+  await page.locator("[data-journey-page]").waitFor({ state: "attached" });
+  await scrollToProgress(page, middleOf("tix2u"));
+  release();
+  await expectFlat(page, "tier");
+  await expectFlatAnchor(page, "tix2u");
+});
+
+test("2D를 기억한 방문자가 블로그에서 헤더로 들어와도 첫 그림부터 2D다", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("journey-view", "2d");
+    const w = window as Window & { __flash3d?: boolean };
+    // 여정 본문이 문서에 들어온 작업이 끝난 직후(마이크로태스크, 그리기 전)에 2D 표지가 있는지 본다. effect로 걸면 그리기 뒤에 돌아 아직 없고,
+    // layout effect면 같은 작업 안에서 걸려 있다. 클라이언트 이동은 같은 문서라 이 관찰이 이어진다
+    new MutationObserver(() => {
+      if (w.__flash3d === undefined && document.querySelector("[data-journey-page]")) w.__flash3d = document.documentElement.dataset.journeyMode !== "2d";
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto("/blog");
+  await page.locator("[data-site-header]").getByRole("link", { name: "Journey", exact: true }).click();
+  await expect(page).toHaveURL(/\/journey$/);
+  await expectFlat(page, "manual");
+  expect(await page.evaluate(() => (window as Window & { __flash3d?: boolean }).__flash3d ?? false)).toBe(false);
+});
+
+// ── 짧은 가로 화면(2-4c, 스펙 5절 "짧은 가로 화면") ───────────────────
+
+test.describe("짧은 가로 화면(터치, 750×340)", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 750, height: 340 } });
+
+  test("2D(이유: 화면)로 열리고 알림과 3D로 보기가 없으며, 세로로 돌리면 3D로 돌아와 보던 막에 있다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await expectFlat(page, "screen");
+    const tabs = page.getByRole("navigation", { name: "여정 막" });
+    await expect(tabs).toBeVisible();
+    await expect(page.getByRole("button", { name: "3D로 보기" })).toHaveCount(0);
+    await expect(page.getByRole("status")).toHaveText("");
+    await tabs.getByRole("button", { name: "2막 협업으로 이동" }).click();
+    await expectFlatAnchor(page, "act-2");
+    await page.setViewportSize({ width: 340, height: 750 });
+    await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
+    await waitReady(page);
+    const range = rangeOf("act-2");
+    await expect.poll(async () => (await readStats(page)).progress).toBeGreaterThanOrEqual(range.start);
+    expect((await readStats(page)).progress).toBeLessThanOrEqual(range.end);
+  });
+
+  test("세로 3D에서 가로로 돌리면 2D가 되고 보던 카드가 막 탭 아래에 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.goto("/journey");
+    await waitReady(page);
+    await settleAt(page, middleOf("tix2u"));
+    await page.setViewportSize({ width: 750, height: 340 });
+    await expectFlat(page, "screen");
+    await expectFlatAnchor(page, "tix2u");
+  });
+
+  test("상세가 열린 채 가로로 돌려도 상세는 그대로이고, 닫으면 2D에서 그 정류장 카드가 막 탭 아래에 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.goto("/journey");
+    await waitReady(page);
+    await settleAt(page, middleOf("tix2u"));
+    await page.locator("#stop-tix2u a[data-journey-detail]").click();
+    await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+    await page.setViewportSize({ width: 750, height: 340 });
+    await expectFlat(page, "screen");
+    await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expectFlatAnchor(page, "tix2u");
+  });
+
+  // 잠긴 동안의 스크롤 위치는 앞 배치의 값이라, 그것으로 보던 카드를 다시 구하면 엉뚱한 카드(대개 엔딩)가 된다(2-4c 최종 리뷰)
+  test("상세가 열린 채 가로로 돌렸다가 다시 세로로 돌리고 닫아도 그 정류장 카드에 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.goto("/journey");
+    await waitReady(page);
+    await settleAt(page, middleOf("tix2u"));
+    await page.locator("#stop-tix2u a[data-journey-detail]").click();
+    await expect(page.getByRole("dialog", { name: "Tix2U" })).toBeVisible();
+    await page.setViewportSize({ width: 750, height: 340 });
+    await expectFlat(page, "screen");
+    await page.setViewportSize({ width: 340, height: 750 });
+    await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
+    await waitReady(page);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    const tix2u = page.locator('[data-journey-card="tix2u"]');
+    await expect(tix2u).toHaveAttribute("data-active", "");
+    await page.waitForTimeout(500);
+    await expect(tix2u).toHaveAttribute("data-active", "");
+  });
+
+  test("2D를 기억한 방문자는 가로로 들었다가 세로로 돌려도 2D(이유: 수동)다", async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem("journey-view", "2d"));
+    await page.goto("/journey");
+    await expectFlat(page, "manual");
+    await page.setViewportSize({ width: 340, height: 750 });
+    await page.waitForTimeout(500);
+    await expectFlat(page, "manual");
+  });
+
+  test("저장소가 막힌 브라우저에서도 짧은 가로 화면은 처음부터 2D이고 오류가 없다", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        get() {
+          throw new DOMException("저장소가 막혀 있습니다", "SecurityError");
+        },
+      });
+    });
+    const errors = collectErrors(page);
+    const release = await holdScripts(page);
+    await page.goto("/journey", { waitUntil: "commit" });
+    await page.locator("[data-journey-page]").waitFor({ state: "attached" });
+    await expect(page.locator("html")).toHaveAttribute("data-journey-mode", "2d");
+    release();
+    await expectFlat(page, "screen");
+    expect(errors).toEqual([]);
+  });
+
+  test("하이드레이션 전(서버가 그린 화면)부터 2D 배치다", async ({ page }) => {
+    const release = await holdScripts(page);
+    await page.goto("/journey", { waitUntil: "commit" });
+    await page.locator("[data-journey-page]").waitFor({ state: "attached" });
+    await expect(page.locator("html")).toHaveAttribute("data-journey-mode", "2d");
+    release();
+    await expectFlat(page, "screen");
+  });
+});
+
+test("터치가 아니면 낮은 가로 창(1280×450)도 3D다", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 450 });
+  await page.goto("/journey");
+  await waitReady(page);
+  await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
 });
 
 test.describe("터치 기기", () => {
@@ -1286,6 +1649,8 @@ async function expectHoverUnder(page: Page, point: { x: number; y: number }, lab
 }
 
 test("포인터를 두고 스크롤해도 호버는 포인터를 덮는 가장 가까운 홀로그램이고, 누르면 그 상세가 열린다", async ({ page }, testInfo) => {
+  // 장면 준비와 여러 자리의 기다림으로 원래 25~28초가 걸려 기본 한도(30초)에 붙어 있었다. 기계가 바쁘면 넘쳤다(2-4c)
+  test.setTimeout(60_000);
   test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   const start = await pointAtPickcareBiz(page);
   let decided = 0;
@@ -1306,6 +1671,8 @@ test("포인터를 두고 스크롤해도 호버는 포인터를 덮는 가장 �
 });
 
 test("마우스 휠로 스크롤해도 호버는 포인터를 덮는 가장 가까운 홀로그램을 따른다", async ({ page }, testInfo) => {
+  // 장면 준비와 여러 자리의 기다림으로 원래 25~28초가 걸려 기본 한도(30초)에 붙어 있었다. 기계가 바쁘면 넘쳤다(2-4c)
+  test.setTimeout(60_000);
   test.skip(testInfo.project.name === "mobile", HOVER_SKIP);
   const start = await pointAtPickcareBiz(page);
   await expect.poll(async () => (await readStats(page)).holograms?.hovered).toBe("pickcare/biz");
@@ -1461,14 +1828,27 @@ test.describe("세로 화면(390×844)", () => {
     }
   });
 
-  test("화면을 가로로 돌리면 가로 렌즈로, 다시 세우면 세로 렌즈로 바뀐다", async ({ page }) => {
+  test("화면을 가로로 돌리면 가로 렌즈·스크롤 카드로, 다시 세우면 세로 렌즈·고정 카드로 돌아오고 그 정류장의 구도가 그대로다", async ({ page }) => {
     await page.goto("/journey?debug=stats");
     await waitReady(page);
+    await settleAt(page, middleOf("stock2u"));
+    const cards = page.locator("[data-journey-page]");
     await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 58, center: 0.29 });
+    await expect(cards).toHaveAttribute("data-journey-cards", "fixed");
     await page.setViewportSize({ width: 844, height: 390 });
     await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 50, center: 0.5 });
+    await expect(cards).not.toHaveAttribute("data-journey-cards", "fixed");
     await page.setViewportSize({ width: 390, height: 844 });
     await expect.poll(async () => (await readStats(page)).lens).toEqual({ fov: 58, center: 0.29 });
+    await expect(cards).toHaveAttribute("data-journey-cards", "fixed");
+    await expect(page.locator('[data-journey-card="stock2u"]')).toHaveAttribute("data-active", "");
+    // 돌린 뒤에도 정류장 홀로그램이 헤더 아래·화면 위 60% 안이다(같은 진행률이면 같은 구도)
+    await expect
+      .poll(async () => {
+        const screen = (await readStats(page)).holograms?.screens.find((item) => item.id === "stock2u");
+        return screen ? screen.rect[1] > 80 / 844 && screen.rect[3] < 0.6 && screen.rect[0] > 0 && screen.rect[2] < 1 : false;
+      })
+      .toBe(true);
   });
 });
 
@@ -1795,6 +2175,8 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
   });
 
   test("PiCKCARE에서는 저장소 카드가 늘 홀로그램 앞줄과 같은 저장소다", async ({ page }) => {
+    // 장면 준비와 여러 자리의 기다림으로 원래 25~28초가 걸려 기본 한도(30초)에 붙어 있었다. 기계가 바쁘면 넘쳤다(2-4c)
+    test.setTimeout(60_000);
     await page.goto("/journey?debug=stats");
     await waitReady(page);
     for (let within = 0.2; within <= 0.96; within += 0.05) {
@@ -1838,6 +2220,8 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
   });
 
   test("Tab·Shift+Tab으로 상세 링크를 차례로 지나면 포커스한 링크의 카드가 보이고, 그 뒤 포커스와 스크롤이 움직이지 않는다", async ({ page }) => {
+    // 장면 준비와 여러 자리의 기다림으로 원래 25~28초가 걸려 기본 한도(30초)에 붙어 있었다. 기계가 바쁘면 넘쳤다(2-4c)
+    test.setTimeout(60_000);
     await page.goto("/journey");
     await waitReady(page);
     await page.locator("#stop-todo-app a[data-journey-detail]").focus();

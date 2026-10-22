@@ -17,11 +17,11 @@ const EMAIL = "one31798883@gmail.com";
 const GALAXY_CREDIT_URL = "https://svs.gsfc.nasa.gov/4851";
 const GITHUB_URL = "https://github.com/Ash8382";
 
-// 막 제목과 기간은 스펙 2절 "세 막" 표를 따른다. 설명 문장은 넣지 않는다(사용자 결정).
-const ACTS = {
-  1: { title: "1막 · 시작", period: "2023.04 ~ 2023.10" },
-  2: { title: "2막 · 협업", period: "2023.09 ~ 2025.02" },
-  3: { title: "3막 · 현재", period: "2025.09 ~" },
+// 막 기간은 스펙 2절 "세 막" 표를 따른다. 막 이름("1막 · 시작")과 설명 문장은 보이지 않는다(사용자 결정, 병합 뒤)
+const ACT_PERIODS = {
+  1: "2023.04 ~ 2023.10",
+  2: "2023.09 ~ 2025.02",
+  3: "2025.09 ~",
 } as const;
 
 // 움직이는 캔버스 위에서 backdrop-filter(흐림)는 매 프레임 GPU 재합성을 일으켜 스크롤을 끊는다. 반투명 단색만 쓴다.
@@ -76,24 +76,27 @@ function StackChips({ stack }: { stack: string[] }) {
  */
 function IntroStop() {
   return (
-    <div data-journey-card="intro" className="container flex h-full items-center portrait:items-end portrait:pb-[calc(5svh+3.5rem)]">
-      <div className={`${PANEL} max-w-xl`}>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A Journey Through Code</h1>
-        <p aria-hidden className="mt-6 text-2xl text-zinc-400">
-          ↓
-        </p>
-      </div>
+    <div data-journey-card="intro" className="container flex h-full items-end justify-center pb-[calc(2.5rem+3.5rem)] portrait:pb-[calc(5svh+3.5rem)]">
+      {/* 보이는 제목은 두지 않는다(사용자 결정, 병합 뒤). 화면 낭독기가 제목으로 찾아올 수 있게 이름만 둔다(헤더 메뉴와 같은 글자).
+          남는 스크롤 안내(↓)는 첫 화면 아래 가운데에 패널과 같은 색의 작은 원으로 둔다(도로 중앙선 위에서도 보이게). 2D에서는 감춘다 */}
+      <h1 className="sr-only">Journey</h1>
+      <p
+        aria-hidden
+        data-journey-hint
+        className="flex size-10 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 text-lg text-zinc-300"
+      >
+        ↓
+      </p>
     </div>
   );
 }
 
+/** 막이 시작하는 자리: 그 막의 기간만 보인다. 본문 제목 구조(h1 → 막 → 프로젝트)를 지키려고 기간을 h2로 둔다 */
 function ActStop({ act }: { act: 1 | 2 | 3 }) {
-  const info = ACTS[act];
   return (
     <div data-journey-card={`act-${act}`} className="container flex h-full items-center justify-center">
       <div className={`${PANEL} text-center`}>
-        <p className="font-mono text-xs tracking-[0.2em] text-zinc-400">{info.period}</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h2>
+        <h2 className="font-mono text-xl font-medium tracking-[0.15em] sm:text-2xl">{ACT_PERIODS[act]}</h2>
       </div>
     </div>
   );

@@ -345,6 +345,11 @@ html[data-journey-mode="2d"] [data-journey-tabs] {
   display: block;
 }
 
+/* 입구의 스크롤 안내(↓)는 3D 첫 화면용이다. 2D는 막 탭과 타임라인이 바로 보여 감춘다(병합 뒤) */
+html[data-journey-mode="2d"] [data-journey-hint] {
+  display: none;
+}
+
 /*
  * 짧은 가로 화면에서는 쓸 3D 배치가 없어 막 탭 끝의 "3D로 보기"를 감춘다(스펙 5절 "짧은 가로 화면", 2-4c). 서버는 화면을 모르므로
  * CSS로 감춰 하이드레이션 전부터 보이지 않게 한다. 조건은 screen.ts의 SHORT_LANDSCAPE_QUERY와 같다(2-4c 최종 리뷰)

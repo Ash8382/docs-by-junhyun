@@ -5,9 +5,9 @@ import { JourneyStage } from "@/components/journey/JourneyStage";
 import { VIEW_KEY } from "@/lib/journey/journeyMode";
 import { SHORT_LANDSCAPE_QUERY } from "@/lib/journey/screen";
 
+// 영어 설명 문구는 두지 않는다(사용자 결정, 병합 뒤). 설명은 사이트 기본값을 쓴다
 export const metadata: Metadata = {
   title: "Journey - 이준현",
-  description: "A Journey Through Code",
 };
 
 /**

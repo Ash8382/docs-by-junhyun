@@ -12,9 +12,9 @@ import { atPageEnd, flatReadingLine, switchView } from "./modeSwitch";
 // align: 엔딩은 연락처가 섹션 아래쪽에 있어 섹션 끝을 화면 끝에 맞춘다. 그래서 점도 도착하는 자리(구간 끝)에 둔다.
 const MARKS = (
   [
-    { id: "act-1", label: "1막", name: "1막으로 이동", align: "start" },
-    { id: "act-2", label: "2막", name: "2막으로 이동", align: "start" },
-    { id: "act-3", label: "3막", name: "3막으로 이동", align: "start" },
+    { id: "act-1", label: "2023", name: "2023년 프로젝트로 이동", align: "start" },
+    { id: "act-2", label: "2023–25", name: "2023~2025년 프로젝트로 이동", align: "start" },
+    { id: "act-3", label: "2025~", name: "2025년 이후 프로젝트로 이동", align: "start" },
     { id: "ending", label: "연락처", name: "연락처로 이동", align: "end" },
   ] as const
 ).map((mark) => {
@@ -22,11 +22,11 @@ const MARKS = (
   return { ...mark, top: `${(mark.align === "end" ? range.end : range.start) * 100}%` };
 });
 
-// 2D 막 탭(2-4b). 보이는 글은 짧게 두고, 이름은 그 글을 품은 채 막 번호를 더한다.
+// 2D 막 탭(2-4b). 막 이름 대신 시기(연도)를 보이고, 이름은 그 연도를 품는다(사용자 결정, 병합 뒤). 진행 막대 점과 같은 이름이다.
 const TABS = [
-  { id: "act-1", label: "시작", name: "1막 시작으로 이동" },
-  { id: "act-2", label: "협업", name: "2막 협업으로 이동" },
-  { id: "act-3", label: "현재", name: "3막 현재로 이동" },
+  { id: "act-1", label: "2023", name: "2023년 프로젝트로 이동" },
+  { id: "act-2", label: "2023–25", name: "2023~2025년 프로젝트로 이동" },
+  { id: "act-3", label: "2025~", name: "2025년 이후 프로젝트로 이동" },
   { id: "ending", label: "연락처", name: "연락처로 이동" },
 ] as const;
 
@@ -75,7 +75,7 @@ function subscribeNothing() {
  * 2막·3막의 밝은 장면 위에서도 보이도록 반투명 어두운 바탕 위에 그린다(흐림 없이 단색).
  * 가로 화면은 오른쪽 가운데의 세로 막대, 세로 화면은 헤더 바로 아래의 화면 폭 가로 막대(높이 24px)다(2-4a, 스펙 2절 "진행 표시").
  * 세로 막대는 세로 화면에서 3D 위쪽 영역(차와 홀로그램)의 가장자리에 걸렸다.
- * 2-4b: 막대 끝에 수동 전환 버튼("2D로 보기")을 붙이고, 2D에서는 헤더 아래 막 탭(시작·협업·현재·연락처)과 "3D로 보기"로 바뀐다.
+ * 2-4b: 막대 끝에 수동 전환 버튼("2D로 보기")을 붙이고, 2D에서는 헤더 아래 막 탭(2023·2023–25·2025~·연락처)과 "3D로 보기"로 바뀐다.
  * 서버는 둘 다 그리고 <html>의 2D 표지로 하나만 보인다(2D를 기억한 방문자도 처음 그릴 때부터 막 탭). 지금 읽는 막은 aria-current로
  * React 렌더 없이 고친다. 자동으로 2D가 되면 막 탭 아래에 알림을 6초 띄운다(화면 낭독기에는 한 번). WebGL2가 없으면 버튼을 두지 않는다.
  */

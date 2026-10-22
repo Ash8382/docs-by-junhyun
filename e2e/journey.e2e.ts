@@ -541,6 +541,14 @@ test("디코더를 받지 못해도 빛 실루엣으로 대신한다", async ({ 
 
 // ── 기기 단계와 3D 경량(2-4a, 스펙 5절) ───────────────────
 
+// GPU 없이 소프트웨어(SwiftShader 등)로만 그리는 브라우저(가상 머신·원격 데스크톱·VDI)는 장면이 준비된 직후 메인 스레드가 4초 안팎 멈췄다.
+// e2e의 헤드리스도 소프트웨어 GL이지만 자동화 브라우저라 예외(3D)다. 자동화 표시를 지우면 실제 방문자와 같다(병합 뒤)
+test("GPU 없이 소프트웨어로만 그리는 브라우저는 처음부터 2D(이유: 기기)다", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }));
+  await page.goto("/journey");
+  await expectFlat(page, "tier");
+});
+
 test.describe("해상도 배율 2 화면", () => {
   test.use({ deviceScaleFactor: 2 });
 

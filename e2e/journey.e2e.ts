@@ -87,9 +87,52 @@ test("페이지를 끝까지 지나가도 콘솔 에러가 없다", async ({ pag
   expect(errors).toEqual([]);
 });
 
+// 영어 제목·막 이름(1막 · 시작)은 두지 않는다(사용자 결정, 병합 뒤). 화면 낭독기가 찾아올 제목만 보이지 않게 둔다
+test("입구에는 보이는 제목 없이 스크롤 화살표만 있고, 화면 낭독기에는 제목 Journey가 있다", async ({ page }) => {
+  await page.goto("/journey");
+  await expect(page.getByText("A Journey Through Code")).toHaveCount(0);
+  const heading = page.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveText("Journey");
+  expect(await heading.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
+  await expect(page.locator('[data-journey-card="intro"] [data-journey-hint]')).toHaveText("↓");
+  expect(await page.locator('meta[name="description"]').getAttribute("content")).not.toBe("A Journey Through Code");
+});
+
+test("소개 페이지에 영어 여정 문구가 없다", async ({ page }) => {
+  await page.goto("/about");
+  await expect(page.getByText("A Journey Through Code")).toHaveCount(0);
+});
+
+test("막 카드에는 막 이름 없이 기간만 제목으로 있다", async ({ page }) => {
+  await page.goto("/journey");
+  for (const [act, period] of [
+    ["act-1", "2023.04 ~ 2023.10"],
+    ["act-2", "2023.09 ~ 2025.02"],
+    ["act-3", "2025.09 ~"],
+  ] as const) {
+    const card = page.locator(`[data-journey-card="${act}"]`);
+    await expect(card.getByRole("heading", { level: 2 })).toHaveText(period);
+    await expect(card).not.toContainText("막");
+  }
+});
+
+test("2D 막 탭과 진행 막대 점은 막 이름 대신 연도다", async ({ page }) => {
+  await page.goto("/journey?debug=stats&tier=2d");
+  await expectFlat(page, "tier");
+  await expect(page.getByRole("navigation", { name: "여정 막" }).locator("[data-tab]")).toHaveText(["2023", "2023–25", "2025~", "연락처"]);
+  // 입구의 스크롤 안내는 3D 첫 화면용이라 2D에서는 감춘다
+  await expect(page.locator("[data-journey-hint]")).toBeHidden();
+  await page.goto("/journey");
+  const rail = page.getByRole("navigation", { name: "여정 진행" });
+  for (const name of ["2023년 프로젝트로 이동", "2023~2025년 프로젝트로 이동", "2025년 이후 프로젝트로 이동", "연락처로 이동"]) {
+    await expect(rail.getByRole("button", { name, exact: true })).toHaveCount(1);
+  }
+  await expect(rail).not.toContainText("막");
+});
+
 test("진행 막대로 3막과 연락처에 바로 간다", async ({ page }) => {
   await page.goto("/journey");
-  await page.getByRole("button", { name: "3막으로 이동" }).click();
+  await page.getByRole("button", { name: "2025년 이후 프로젝트로 이동" }).click();
   await expect(page.locator("#stop-act-3")).toBeInViewport();
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
@@ -683,7 +726,7 @@ test("글자 크기를 키운 브라우저(20px)에서도 2D 막 탭은 이동�
   await page.goto("/journey?debug=stats");
   await expectFlat(page, "manual");
   await page.addStyleTag({ content: "html { font-size: 20px; }" });
-  const tab = page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "2막 협업으로 이동" });
+  const tab = page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "2023~2025년 프로젝트로 이동" });
   await tab.click();
   await expect.poll(async () => Math.round((await page.locator('[data-journey-card="act-2"]').boundingBox())?.y ?? -1)).toBe(130);
   await expect(tab).toHaveAttribute("aria-current", "true");
@@ -763,10 +806,10 @@ test("2D 막 탭을 누르면 그 막으로 가고 지금 읽는 막에 aria-cur
   const tabs = page.getByRole("navigation", { name: "여정 막" });
   await expect(tabs).toBeVisible();
   await expect(page.getByRole("navigation", { name: "여정 진행" })).toBeHidden();
-  await tabs.getByRole("button", { name: "2막 협업으로 이동" }).click();
+  await tabs.getByRole("button", { name: "2023~2025년 프로젝트로 이동" }).click();
   await expect(page.locator("#stop-act-2")).toBeInViewport();
-  await expect(tabs.getByRole("button", { name: "2막 협업으로 이동" })).toHaveAttribute("aria-current", "true");
-  await expect(tabs.getByRole("button", { name: "1막 시작으로 이동" })).not.toHaveAttribute("aria-current", /.*/);
+  await expect(tabs.getByRole("button", { name: "2023~2025년 프로젝트로 이동" })).toHaveAttribute("aria-current", "true");
+  await expect(tabs.getByRole("button", { name: "2023년 프로젝트로 이동" })).not.toHaveAttribute("aria-current", /.*/);
   await tabs.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
   await expect(tabs.getByRole("button", { name: "연락처로 이동" })).toHaveAttribute("aria-current", "true");
@@ -1183,7 +1226,7 @@ test.describe("짧은 가로 화면(터치, 750×340)", () => {
     await expect(tabs).toBeVisible();
     await expect(page.getByRole("button", { name: "3D로 보기" })).toHaveCount(0);
     await expect(page.getByRole("status")).toHaveText("");
-    await tabs.getByRole("button", { name: "2막 협업으로 이동" }).click();
+    await tabs.getByRole("button", { name: "2023~2025년 프로젝트로 이동" }).click();
     await expectFlatAnchor(page, "act-2");
     await page.setViewportSize({ width: 340, height: 750 });
     await expect(page.locator("html")).not.toHaveAttribute("data-journey-mode", /.*/);
@@ -1295,7 +1338,7 @@ test.describe("짧은 가로 화면(터치, 750×340)", () => {
     await page.getByRole("button", { name: "2D로 보기" }).focus();
     await page.setViewportSize({ width: 750, height: 340 });
     await expectFlat(page, "screen");
-    await expect(page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "1막 시작으로 이동" })).toBeFocused();
+    await expect(page.getByRole("navigation", { name: "여정 막" }).getByRole("button", { name: "2023년 프로젝트로 이동" })).toBeFocused();
   });
 
   // 모드는 페이지를 떠나도 남아, 그동안 돌린 화면을 모른 채 첫 그림을 그렸다(2-4c 최종 리뷰)
@@ -1960,7 +2003,7 @@ test.describe("세로 화면 진행 막대(390×844)", () => {
     expect(Math.abs(rail.y - (header.y + header.height))).toBeLessThanOrEqual(1);
     expect(rail.width).toBeGreaterThan(380);
     expect(rail.height).toBeLessThanOrEqual(24);
-    await page.getByRole("button", { name: "3막으로 이동" }).click();
+    await page.getByRole("button", { name: "2025년 이후 프로젝트로 이동" }).click();
     await expect(page.locator("#stop-act-3")).toBeInViewport();
     await page.getByRole("button", { name: "연락처로 이동" }).click();
     await expect(page.getByText(EMAIL)).toBeInViewport();
@@ -2128,11 +2171,11 @@ test("오래 돌리기는 왕복하며 1분마다 프레임 시간을 묶어 낸
 
 // ── 세로 화면 아래 고정 카드(2-4a, 스펙 3절 "세로 화면") ───────────────────
 
-/** 보이는 카드(data-active): 이름, 패널의 화면 비율 위·아래, 불투명도, 배치 */
+/** 보이는 카드(data-active): 이름, 패널의 화면 비율 위·아래, 불투명도, 배치. 입구는 상자 없이 스크롤 화살표만 있어 그것을 잰다 */
 async function activeCards(page: Page) {
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[data-journey-card][data-active]")].map((card) => {
-      const panel = card.querySelector(".shadow-2xl")?.getBoundingClientRect();
+      const panel = card.querySelector(".shadow-2xl, [data-journey-hint]")?.getBoundingClientRect();
       return {
         id: card.dataset.journeyCard ?? "",
         top: (panel?.top ?? 0) / innerHeight,
@@ -2196,7 +2239,7 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
     // 앱 스크립트를 붙잡아 하이드레이션 전(서버가 그린 배치)에 입구 패널을 재고, 풀어 준 뒤 고정 자리로 들어가면 다시 잰다
     const release = await holdScripts(page);
     await page.goto("/journey", { waitUntil: "commit" });
-    const panel = page.locator('[data-journey-card="intro"] .pointer-events-auto');
+    const panel = page.locator('[data-journey-card="intro"] [data-journey-hint]');
     await panel.waitFor({ state: "attached" });
     const before = await panel.boundingBox();
     release();
@@ -2217,7 +2260,7 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
     const bar = page.locator('[data-journey-loading="loading"] > span');
     await expect(bar).toBeVisible();
     const line = await bar.boundingBox();
-    const panel = await page.locator('[data-journey-card="intro"] .pointer-events-auto').boundingBox();
+    const panel = await page.locator('[data-journey-card="intro"] [data-journey-hint]').boundingBox();
     const rail = await page.getByRole("navigation", { name: "여정 진행" }).boundingBox();
     if (!line || !panel || !rail) throw new Error("로딩 줄·입구 패널·진행 막대가 없습니다");
     expect(line.y).toBeGreaterThanOrEqual(rail.y + rail.height);

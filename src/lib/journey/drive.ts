@@ -377,10 +377,34 @@ function dampVec(current: Vec3, target: Vec3, lambda: number, dt: number): Vec3 
 }
 
 /**
+ * 차 기준 좌표의 자리를 차 몸통 가운데 둘레의 방위각(차 뒤 0, 오른쪽 +, 라디안)·수평 거리·높이로 바꾼다. 목표 자세의 방위각은
+ * −134°~134°라 차 앞(±180°)을 지나지 않는다
+ */
+function toOrbit(local: Vec3): Vec3 {
+  const x = local[0];
+  const z = local[2] - CAR_BODY_CENTER.forward;
+  return [Math.atan2(x, -z), Math.hypot(x, z), local[1] - CAR_BODY_CENTER.up];
+}
+
+function fromOrbit([azimuth, reach, height]: Vec3): Vec3 {
+  return [Math.sin(azimuth) * reach, height + CAR_BODY_CENTER.up, CAR_BODY_CENTER.forward - Math.cos(azimuth) * reach];
+}
+
+/**
+ * 카메라 자리를 차 둘레의 방위각·수평 거리·높이로 감쇠한다(세로 화면 followPortrait와 같은 생각). 차 기준 직교 좌표로 감쇠하면
+ * 주행 자리(차 뒤)와 정류장 자리(차 앞옆) 사이를 곧게 가로질러, 빠른 스크롤에서 차가 화면을 두 배 넘게 채우고 몇 프레임 화면 밖으로
+ * 나갔다(병합 뒤). 둘레를 돌면 거리가 유지되고, 왼쪽 정류장에서 오른쪽 정류장으로 건너뛰어도 차 뒤로 돈다
+ */
+function dampOrbit(current: Vec3, target: Vec3, lambda: number, dt: number): Vec3 {
+  return fromOrbit(dampVec(toOrbit(current), toOrbit(target), lambda, dt));
+}
+
+/**
  * 카메라 한 프레임(scene/CameraRig). 목표 자세(driveAt의 camera)를 차 기준 좌표로 바꿔 감쇠하고, 지금 차 자세로 월드 자세를 다시 만든다.
  * 차 자체의 움직임은 그대로 따라가므로 앞으로든 거꾸로든 아무리 빨리 스크롤해도 주행 중 카메라는 차 뒤에 있고,
  * 주행·정류장·엔딩 시점 사이의 전환만 감쇠한다. 월드 좌표로 감쇠하면 거꾸로 스크롤할 때 뒤처짐이 차 쪽을 향해 카메라가 차 앞으로 넘어간다.
- * 감쇠한 자리는 keepClear로 차 둘레 밖·노면 위로 민다. follow가 null이면(첫 프레임) 목표 자세에 바로 놓는다.
+ * 자리는 차 둘레의 방위각·거리·높이로(dampOrbit), 시선은 차 기준 좌표로 감쇠한다. 감쇠한 자리는 안전망으로 keepClear가 차 둘레 밖·노면
+ * 위로 민다. follow가 null이면(첫 프레임) 목표 자세에 바로 놓는다.
  */
 export function followCamera(
   follow: CameraFollow | null,
@@ -393,7 +417,7 @@ export function followCamera(
   };
   const next = follow
     ? {
-        position: dampVec(follow.position, goal.position, CAMERA_DAMPING.position, dt),
+        position: dampOrbit(follow.position, goal.position, CAMERA_DAMPING.position, dt),
         target: dampVec(follow.target, goal.target, CAMERA_DAMPING.target, dt),
       }
     : goal;

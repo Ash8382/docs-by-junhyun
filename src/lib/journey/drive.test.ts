@@ -286,6 +286,50 @@ describe("카메라", () => {
     }
   });
 
+  // 차 기준 직교 좌표로 감쇠하면 주행 자리(차 뒤)와 정류장 자리(차 앞옆) 사이를 곧게 가로질러, 빠른 스크롤에서 차가 화면을 두 배 넘게
+  // 채우고 몇 프레임 화면 밖으로 나갔다(밀어내기가 71프레임). 병합 뒤 차 둘레의 방위각·수평 거리·높이로 감쇠한다
+  it("휠을 세게 굴리거나 진행 막대로 건너뛰어도 차는 화면 안에 천천히 볼 때의 크기로 있고 밀어낼 일이 없다(60·120Hz)", () => {
+    const aspect = 16 / 10;
+    const carHeight = (state: DriveState, pose: CameraPose) => {
+      const center = carCenter(state.car);
+      const top = screenPosition(pose, [center[0] + state.car.up[0] * 0.7, center[1] + state.car.up[1] * 0.7, center[2] + state.car.up[2] * 0.7], aspect);
+      const bottom = screenPosition(pose, [center[0] - state.car.up[0] * 0.7, center[1] - state.car.up[1] * 0.7, center[2] - state.car.up[2] * 0.7], aspect);
+      return Math.abs(bottom[1] - top[1]);
+    };
+    const slow = Math.max(...simulate(0, 1, 0.8, 60).map((frame) => carHeight(frame.state, frame.pose)));
+    // 휠 한 번(약 3화면): Lenis가 목표로 지수로 다가간다(60Hz에서 프레임마다 0.1). 진행 막대·탭: Lenis scrollTo 1.2초(expo out)
+    const flick = (from: number, by: number) => (time: number) => from + by * (1 - Math.exp(-6.3 * time));
+    const jump = (from: number, to: number) => (time: number) => from + (to - from) * (time >= 1.2 ? 1 : 1 - 2 ** ((-10 * time) / 1.2));
+    const middle = (id: string) => (rangeOf(id).start + rangeOf(id).end) / 2;
+    const scenarios: [string, (time: number) => number][] = [
+      ...STOP_RANGES.filter((range) => range.stop.kind !== "ending").flatMap((range): [string, (time: number) => number][] => [
+        [`${range.stop.id} 앞으로`, flick(middle(range.stop.id), 0.17)],
+        [`${range.stop.id} 뒤로`, flick(middle(range.stop.id), -0.17)],
+      ]),
+      ["1막 → 3막", jump(rangeOf("act-1").start, rangeOf("act-3").start)],
+      ["3막 → 1막", jump(rangeOf("act-3").start, rangeOf("act-1").start)],
+      ["입구 → 엔딩", jump(0, 1)],
+    ];
+    for (const hz of [60, 120]) {
+      for (const [name, progressAt] of scenarios) {
+        let follow: CameraFollow | null = null;
+        for (let frame = 0; frame <= 3 * hz; frame++) {
+          const state = driveAt(Math.min(1, Math.max(0, progressAt(frame / hz))));
+          const next = followCamera(follow, state, 1 / hz);
+          follow = next.follow;
+          const label = `${hz}Hz ${name} 프레임 ${frame}`;
+          const [x, y] = screenPosition(next.pose, carCenter(state.car), aspect);
+          expect(x, label).toBeGreaterThanOrEqual(0);
+          expect(x, label).toBeLessThanOrEqual(1);
+          expect(y, label).toBeGreaterThanOrEqual(0);
+          expect(y, label).toBeLessThanOrEqual(1);
+          expect(carHeight(state, next.pose), label).toBeLessThanOrEqual(slow + 0.01);
+          expect(distance(next.pose.position, carCenter(state.car)), label).toBeGreaterThan(CAMERA_CLEARANCE.radius + 1);
+        }
+      }
+    }
+  });
+
   it("한 화면을 즉시 되돌려도(PageUp) 카메라는 차 뒤에 남아 차를 본다", () => {
     const from = (rangeOf("todo-app").start + rangeOf("todo-app").end) / 2;
     let follow: CameraFollow | null = null;

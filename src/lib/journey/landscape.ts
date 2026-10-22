@@ -132,14 +132,23 @@ export function roadDistance(x: number, z: number, samples: readonly [number, nu
   return best;
 }
 
-/** 도로 끝 연장선 양옆 corridor(m) 안인가(도로 끝보다 앞쪽만). 나중에 길이 이어질 자리다 */
+/** 도로 끝의 수평 자리와 앞쪽(단위). 상수라 처음 한 번만 구한다 */
+let endLine: { x: number; z: number; tx: number; tz: number } | null = null;
+
+/**
+ * 도로 끝 연장선 양옆 corridor(m) 안인가(도로 끝보다 앞쪽만). 나중에 길이 이어질 자리다.
+ * 배치가 암석·건물의 정점마다 부르므로 도로 끝 자세(roadFrame)를 매번 다시 구하지 않는다. 다시 구하면 휴대폰에서 풍경 배치를
+ * 만드는 시간의 절반쯤이 이 계산이었다(병합 뒤, 이 맥 첫 호출 약 50ms 중 약 28ms)
+ */
 export function inEndCorridor(x: number, z: number): boolean {
-  const end = roadFrame(ROAD_END);
-  const length = Math.hypot(end.tangent[0], end.tangent[2]);
-  const tx = end.tangent[0] / length;
-  const tz = end.tangent[2] / length;
-  const dx = x - end.position[0];
-  const dz = z - end.position[2];
+  if (endLine === null) {
+    const end = roadFrame(ROAD_END);
+    const length = Math.hypot(end.tangent[0], end.tangent[2]);
+    endLine = { x: end.position[0], z: end.position[2], tx: end.tangent[0] / length, tz: end.tangent[2] / length };
+  }
+  const { tx, tz } = endLine;
+  const dx = x - endLine.x;
+  const dz = z - endLine.z;
   const along = dx * tx + dz * tz;
   const lateral = Math.abs(dx * tz - dz * tx);
   return along > 0 && lateral < RULES.corridor;

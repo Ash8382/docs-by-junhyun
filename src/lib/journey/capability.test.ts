@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEVEL_QUALITY, galaxyFor, resolveTier, tierOf, tierOverride, type DeviceSignals } from "./capability";
+import { LEVEL_QUALITY, galaxyFor, isSoftwareRenderer, resolveTier, tierOf, tierOverride, type DeviceSignals } from "./capability";
 
 const DESKTOP: DeviceSignals = { webgl2: true, coarsePointer: false, deviceMemory: 8, saveData: false };
 const PHONE: DeviceSignals = { webgl2: true, coarsePointer: true, deviceMemory: 4, saveData: false };
@@ -18,6 +18,31 @@ describe("기기 단계(스펙 5절)", () => {
     expect(tierOf({ ...PHONE, deviceMemory: 1 })).toBe("2d");
     expect(tierOf({ ...DESKTOP, saveData: true })).toBe("2d");
     expect(tierOf({ ...PHONE, deviceMemory: 3 })).toBe("lite");
+  });
+
+  // GPU 없이 소프트웨어(SwiftShader 등)로만 그리는 브라우저는 장면이 준비된 직후 메인 스레드가 4초 안팎 멈췄다(가상 머신·원격 데스크톱·VDI)
+  it("WebGL2를 소프트웨어로만 그릴 수 있으면(GPU 없음) 2D다", () => {
+    expect(tierOf({ ...DESKTOP, softwareGL: true })).toBe("2d");
+    expect(tierOf({ ...PHONE, softwareGL: true })).toBe("2d");
+    expect(tierOf({ ...DESKTOP, softwareGL: false })).toBe("full");
+    expect(resolveTier({ ...DESKTOP, softwareGL: true }, null)).toBe("2d");
+    // 확인용 덮어쓰기는 그대로 앞선다(e2e·캡처가 3D를 볼 수 있다)
+    expect(resolveTier({ ...DESKTOP, softwareGL: true }, "full")).toBe("full");
+  });
+
+  // "느린 소프트웨어면 실패"(failIfMajorPerformanceCaveat)는 GPU가 없어 떨어진 경우만 잡고, 소프트웨어를 일부러 고른 환경은 놓친다
+  it("렌더러 이름으로 소프트웨어 렌더러(SwiftShader·llvmpipe·Microsoft Basic Render)를 알아본다", () => {
+    for (const name of [
+      "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "llvmpipe (LLVM 15.0.7, 256 bits)",
+      "ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "Google SwiftShader",
+    ]) {
+      expect(isSoftwareRenderer(name), name).toBe(true);
+    }
+    for (const name of ["ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)", "Adreno (TM) 740", "Apple GPU", "Mali-G78", ""]) {
+      expect(isSoftwareRenderer(name), name).toBe(false);
+    }
   });
 
   it("Safari처럼 deviceMemory·connection 값이 없으면 판정에 쓰지 않는다(2D로 보내지 않는다)", () => {

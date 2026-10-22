@@ -1,13 +1,13 @@
 import type { QualityLevel } from "./journeyMode";
 import { GALAXY_LITE_URL, GALAXY_URL } from "./space";
-import { hasWebGL2 } from "./webgl";
+import { hasWebGL2, webgl2Renderer } from "./webgl";
 
 /**
  * 기기 단계(스펙 5절 "기기 대응"). 페이지를 열 때 한 번 정한다. 실행 중에 품질을 내리는 것은 따로 있는 "실행 중 강등"이다(2-4b).
  * - 3D 전체: WebGL2가 되고 포인터가 정밀한 기기(데스크톱·노트북)
  * - 3D 경량: WebGL2가 되고 포인터가 굵은 기기(휴대폰·태블릿)
- * - 2D: WebGL2가 없거나, 메모리가 2GB 이하이거나, 데이터 절약이 켜져 있다. Safari에는 deviceMemory·connection이 없어
- *   값이 없으면 판정에 쓰지 않는다(2D로 보내지 않는다)
+ * - 2D: WebGL2가 없거나, WebGL2를 소프트웨어로만 그릴 수 있거나(GPU 없음, 병합 뒤), 메모리가 2GB 이하이거나, 데이터 절약이 켜져 있다.
+ *   Safari에는 deviceMemory·connection이 없어 값이 없으면 판정에 쓰지 않는다(2D로 보내지 않는다)
  * 판정(tierOf)은 순수 함수이고, 브라우저 값을 읽는 일은 detectTier가 한다.
  */
 export type Tier = "full" | "lite" | "2d";
@@ -20,15 +20,25 @@ export interface DeviceSignals {
   deviceMemory?: number;
   /** navigator.connection.saveData. Safari에는 없다 */
   saveData?: boolean;
+  /** WebGL2를 소프트웨어로만 그릴 수 있다(GPU 없음). 장면이 준비된 직후 메인 스레드가 4초 안팎 멈췄다 */
+  softwareGL?: boolean;
 }
 
 const TIERS: readonly Tier[] = ["full", "lite", "2d"];
 
 export function tierOf(signals: DeviceSignals): Tier {
   if (!signals.webgl2) return "2d";
+  if (signals.softwareGL === true) return "2d";
   if (signals.deviceMemory !== undefined && signals.deviceMemory <= 2) return "2d";
   if (signals.saveData === true) return "2d";
   return signals.coarsePointer ? "lite" : "full";
+}
+
+/** 소프트웨어 렌더러(GPU 없이 CPU로 그린다)의 이름: Chrome·Edge의 SwiftShader, Linux의 llvmpipe·softpipe, Windows의 Microsoft Basic Render(WARP) */
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software rasterizer|microsoft basic render|\bwarp\b/i;
+
+export function isSoftwareRenderer(name: string): boolean {
+  return SOFTWARE_RENDERER.test(name);
 }
 
 /** 확인용 덮어쓰기: 주소가 ?debug=stats(또는 perf)&tier=full|lite|2d면 그 단계 */
@@ -72,6 +82,11 @@ export function galaxyFor(tier: Tier): string {
 
 let detected: Tier | null = null;
 
+function softwareWebGL2(): boolean {
+  const { renderer, caveat } = webgl2Renderer();
+  return caveat || isSoftwareRenderer(renderer);
+}
+
 /** 이 페이지의 기기 단계(한 번 읽고 기억한다). 브라우저에서만 부른다 */
 export function detectTier(): Tier {
   if (detected === null) {
@@ -82,6 +97,8 @@ export function detectTier(): Tier {
         coarsePointer: window.matchMedia("(pointer: coarse)").matches,
         deviceMemory: info.deviceMemory,
         saveData: info.connection?.saveData,
+        // 자동화 브라우저(e2e·캡처의 헤드리스는 소프트웨어 GL)는 3D를 검사해야 하므로 예외다. 실행 중 강등을 하지 않는 것과 같은 이유다(2-4b)
+        softwareGL: !navigator.webdriver && softwareWebGL2(),
       },
       tierOverride(window.location.search),
     );

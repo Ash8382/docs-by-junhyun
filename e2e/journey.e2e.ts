@@ -216,6 +216,24 @@ test("PiCKCARE 공유 주소는 해당 탭을 열고, 탭을 바꾸면 주소가
   await expect(page.getByRole("tabpanel")).toContainText("pickcare-studio");
 });
 
+// CRM 배포 주소(2026-10-23): 카드의 Tab 차례는 상세 링크뿐이라 카드에서는 글자로만 보이고, 상세 패널에서 누른다
+test("PiCKCARE biz 카드는 배포 주소를 글자로만 보이고 링크는 상세 링크 하나다", async ({ page }) => {
+  await page.goto("/journey");
+  const card = page.locator('[data-journey-card="pickcare/biz"]');
+  await expect(card).toContainText("crm.pickcare.co.kr에 배포되어 있습니다.");
+  await expect(card.locator("a")).toHaveCount(1);
+  await expect(card.locator("a[data-journey-detail]")).toHaveCount(1);
+});
+
+test("PiCKCARE biz 상세의 배포 주소는 밑줄 친 새 탭 링크이고 접근성 위반이 없다", async ({ page }) => {
+  await page.goto("/journey#pickcare/biz");
+  const link = page.getByRole("tabpanel").getByRole("link", { name: "crm.pickcare.co.kr" });
+  await expect(link).toHaveAttribute("href", "https://crm.pickcare.co.kr/");
+  await expect(link).toHaveAttribute("target", "_blank");
+  expect(await link.evaluate((anchor) => getComputedStyle(anchor).textDecorationLine)).toBe("underline");
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 test("PiCKCARE app 탭은 App Store 화면 세 장을 한 줄에 보인다", async ({ page }) => {
   await page.goto("/journey#pickcare/app");
   const screens = page.getByRole("tabpanel").getByRole("region", { name: "제품 화면" }).getByRole("img");

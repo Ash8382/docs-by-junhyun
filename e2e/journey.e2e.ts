@@ -37,6 +37,14 @@ const STOP_IDS = [
 ];
 const EMAIL = "one31798883@gmail.com";
 
+/**
+ * End로 끝까지 가서 연락처 메일이 보인다. e2e의 헤드리스는 소프트웨어 GL이라 엔딩을 처음 그릴 때 메인 스레드가 0.3초 안팎 멈추고, 기계가
+ * 메모리 압박이면 그 멈춤이 몇 배로 늘어 기본 5초 판정을 넘겼다(실제 GPU에서는 멈춤이 없다, 병합 뒤 End 키 흔들림 조사). 15초를 준다
+ */
+async function expectEndingInView(page: Page) {
+  await expect(page.getByText(EMAIL)).toBeInViewport({ timeout: 15_000 });
+}
+
 function collectErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (message) => {
@@ -57,7 +65,7 @@ test("정류장 12개가 순서대로 있다", async ({ page }) => {
 test("End 키로 엔딩에 닿고 연락처와 최근 글 3개가 보인다", async ({ page }) => {
   await page.goto("/journey");
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
   await expect(page.locator("#stop-ending li")).toHaveCount(3);
 });
 
@@ -83,7 +91,7 @@ test("페이지를 끝까지 지나가도 콘솔 에러가 없다", async ({ pag
   const errors = collectErrors(page);
   await page.goto("/journey");
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
   expect(errors).toEqual([]);
 });
 
@@ -142,7 +150,7 @@ test("창 크기가 바뀌어도 끝까지 스크롤된다", async ({ page }) =>
   await page.goto("/journey");
   await page.setViewportSize({ width: 900, height: 640 });
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 test("캔버스는 여정 장면 하나뿐이다(사이트 별 배경이 꺼진다)", async ({ page }) => {
@@ -377,7 +385,7 @@ test("3D 장면이 셰이더를 미리 컴파일하고 드러나면 로딩 막�
   await expect(page.locator("[data-journey-loading] span")).toHaveCount(0);
   await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "model");
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
   expect(errors).toEqual([]);
 });
 
@@ -441,10 +449,12 @@ test("은하 이미지를 받지 못해도 본문과 진행 막대가 동작한�
   await expect(page.getByText(EMAIL)).toBeInViewport();
 });
 
+// 출처는 연락처 패널 끝에 있다. 세로 화면 3D는 패널이 아래쪽 52svh라 패널 안에서 스크롤해 닿는다(병합 뒤 새 엔딩)
 test("엔딩에 배경 은하의 출처가 있다", async ({ page }) => {
   await page.goto("/journey");
   await page.keyboard.press("End");
   const credit = page.locator("#stop-ending a[href='https://svs.gsfc.nasa.gov/4851']");
+  await credit.scrollIntoViewIfNeeded();
   await expect(credit).toBeInViewport();
   await expect(page.locator("#stop-ending")).toContainText("Gaia DR2: ESA/Gaia/DPAC");
 });
@@ -452,9 +462,9 @@ test("엔딩에 배경 은하의 출처가 있다", async ({ page }) => {
 test("엔딩에 차 모델의 출처와 라이선스가 있다", async ({ page }) => {
   await page.goto("/journey");
   await page.keyboard.press("End");
-  await expect(
-    page.locator("#stop-ending a[href='https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept']"),
-  ).toBeInViewport();
+  const credit = page.locator("#stop-ending a[href='https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept']");
+  await credit.scrollIntoViewIfNeeded();
+  await expect(credit).toBeInViewport();
   await expect(page.locator("#stop-ending a[href='https://creativecommons.org/licenses/by/4.0/']")).toHaveText("CC BY 4.0");
 });
 
@@ -529,7 +539,7 @@ test("차 모델을 받지 못하면 빛 실루엣으로 대신하고 장면은 
   await waitReady(page);
   await expect(page.locator("[data-journey-scene]")).toHaveAttribute("data-car", "silhouette");
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 test("디코더를 받지 못해도 빛 실루엣으로 대신한다", async ({ page }) => {
@@ -579,7 +589,7 @@ test("?tier=2d면 3D 장면·은하·차를 내려받지 않고 본문과 썸네
   expect(requests.filter((url) => url.includes("/journey/galaxy") || url.includes("/journey/car/"))).toEqual([]);
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 // ── 모드와 2D 전환(2-4b, 스펙 5절 "모드 전환", "컨텍스트 손실과 장면 실패") ───────────────────
@@ -655,7 +665,7 @@ test.describe("2D 휴대폰(412×839)", () => {
     await expect(far).toHaveAttribute("data-revealed", "");
     await expect.poll(() => far.evaluate((card) => getComputedStyle(card).opacity)).toBe("1");
     await page.keyboard.press("End");
-    await expect(page.getByText(EMAIL)).toBeInViewport();
+    await expectEndingInView(page);
     const panel = await page.getByRole("heading", { name: "연락처" }).locator("..").evaluate((element) => element.scrollHeight - element.clientHeight);
     expect(panel).toBe(0);
   });
@@ -1222,6 +1232,81 @@ test("2D를 기억한 방문자가 블로그에서 헤더로 들어와도 첫 �
   expect(await page.evaluate(() => (window as Window & { __flash3d?: boolean }).__flash3d)).toBe(false);
 });
 
+// ── 엔딩: 여정이 하나의 빛이 되다(병합 뒤, 사용자 결정) ───────────────────
+
+type StageWindow = Window & { __stages?: [string, number][] };
+
+/** 엔딩 이름 틀의 단계(data-stage)가 바뀔 때마다 그 시각을 남긴다 */
+async function recordStages(page: Page) {
+  await page.evaluate(() => {
+    const w = window as StageWindow;
+    const title = document.querySelector("[data-journey-ending-title]");
+    if (!title) throw new Error("엔딩 이름 틀이 없습니다");
+    w.__stages = [];
+    new MutationObserver(() => w.__stages?.push([title.getAttribute("data-stage") ?? "", performance.now()])).observe(title, {
+      attributes: true,
+      attributeFilter: ["data-stage"],
+    });
+  });
+}
+
+async function stageTimes(page: Page): Promise<Record<string, number>> {
+  const stages = await page.evaluate(() => (window as StageWindow).__stages ?? []);
+  return Object.fromEntries(stages.map(([stage, time]) => [stage, time]));
+}
+
+test.describe("엔딩: 흰 점과 이름", () => {
+  test("끝에 닿으면 0.8초 정적 뒤 이름이, 0.5초 뒤 직무가 나타나고, 위로 올리면 바로 사라진다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    const title = page.locator("[data-journey-ending-title]");
+    await expect(title).toHaveAttribute("data-stage", "hidden");
+    await expect(title.getByText("이준현")).toBeHidden();
+    await recordStages(page);
+    await scrollToProgress(page, 1);
+    await expect(title).toHaveAttribute("data-stage", "role", { timeout: 10_000 });
+    await expect(title.getByText("이준현")).toBeVisible();
+    await expect(title.getByText("Frontend Developer")).toBeVisible();
+    const times = await stageTimes(page);
+    // 타이머는 늦을 수는 있어도 이르지는 않다
+    expect(times.name - times.still).toBeGreaterThanOrEqual(750);
+    expect(times.role - times.name).toBeGreaterThanOrEqual(450);
+    await scrollToProgress(page, at("ending", 0.6));
+    await expect(title).toHaveAttribute("data-stage", "hidden", { timeout: 1000 });
+    await expect(title.getByText("이준현")).toBeHidden();
+  });
+
+  test("끝에 머무는 동안 이름은 그대로 있고 다시 시작하지 않는다", async ({ page }) => {
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    const title = page.locator("[data-journey-ending-title]");
+    await scrollToProgress(page, 1);
+    await expect(title).toHaveAttribute("data-stage", "role", { timeout: 10_000 });
+    await recordStages(page);
+    await page.waitForTimeout(2000);
+    expect(await stageTimes(page)).toEqual({});
+  });
+
+  test("움직임 줄이기면 끝에 닿자마자 정적 없이 이름과 직무가 함께 보인다", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/journey?debug=stats");
+    await waitReady(page);
+    const title = page.locator("[data-journey-ending-title]");
+    await recordStages(page);
+    await scrollToProgress(page, 1);
+    await expect(title).toHaveAttribute("data-stage", "role", { timeout: 2000 });
+    const times = await stageTimes(page);
+    expect(times.still).toBeUndefined();
+    await expect(title.getByText("이준현")).toBeVisible();
+  });
+
+  test("2D에는 엔딩 이름이 없다", async ({ page }) => {
+    await page.goto("/journey?debug=stats&tier=2d");
+    await expectFlat(page, "tier");
+    await expect(page.locator("[data-journey-ending-title]")).toHaveCount(0);
+  });
+});
+
 // ── 짧은 가로 화면(2-4c, 스펙 5절 "짧은 가로 화면") ───────────────────
 
 test.describe("짧은 가로 화면(터치, 750×340)", () => {
@@ -1535,7 +1620,7 @@ test("홀로그램 이미지 한 장을 받지 못하면 그 홀로그램만 빠
   expect(shown).toHaveLength(10);
   expect(shown).not.toContain("stock2u");
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 test("홀로그램 이미지를 모두 받지 못하면 홀로그램 없이 장면이 이어진다", async ({ page }) => {
@@ -1544,7 +1629,7 @@ test("홀로그램 이미지를 모두 받지 못하면 홀로그램 없이 장�
   await waitReady(page);
   expect(await shownHolograms(page)).toEqual([]);
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 test("텍스처 배열을 올리지 못하면(GPU 업로드 오류) 홀로그램 없이 장면이 이어진다", async ({ page }) => {
@@ -1572,7 +1657,7 @@ test("텍스처 배열을 올리지 못하면(GPU 업로드 오류) 홀로그램
   expect(await shownHolograms(page)).toEqual([]);
   expect(warnings.some((message) => message.includes("올리지 못해"))).toBe(true);
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 function at(id: string, within: number): number {
@@ -1923,7 +2008,7 @@ test("실행 중 장면이 실패하면(컨텍스트 손실) 2D로 바뀌어 2�
   await expectFlat(page, "context-lost");
   for (const slug of EXHIBITS) await expectThumbnail(page, slug, false);
   await page.keyboard.press("End");
-  await expect(page.getByText(EMAIL)).toBeInViewport();
+  await expectEndingInView(page);
 });
 
 // ── 세로 화면 카메라(2-4a, 스펙 3절 "세로 화면") ───────────────────
@@ -2054,13 +2139,22 @@ async function chromeBottom(page: Page): Promise<number> {
   return Math.max(header.y + header.height, rail.width > rail.height ? rail.y + rail.height : 0);
 }
 
-/** 엔딩 패널이 넘치면(패널 안 스크롤) 위끝이 위쪽 요소보다 0.5rem(8px) 아래에 맞춰져 있다(2절 "엔딩") */
+/**
+ * 엔딩 패널이 넘치면(패널 안 스크롤) 위끝이 위쪽 요소보다 0.5rem(8px) 아래에 맞춰져 있다(2절 "엔딩"). 세로 화면 3D는 흰 점과 이름이
+ * 위쪽에 서도록 패널이 아래쪽 52svh만 쓴다(아래 여백 5svh라 위끝이 화면 높이의 43%, 병합 뒤 새 엔딩)
+ */
 async function expectEndingPanelFits(page: Page, top: number) {
   const panel = await page.getByRole("heading", { name: "연락처" }).locator("..").evaluate((element) => ({
     top: element.getBoundingClientRect().top,
     overflows: element.scrollHeight > element.clientHeight,
+    portrait3d: innerHeight > innerWidth && document.documentElement.dataset.journeyMode !== "2d",
+    height: innerHeight,
   }));
-  if (panel.overflows) expect(Math.abs(panel.top - (top + 8))).toBeLessThanOrEqual(1.5);
+  if (!panel.overflows) return;
+  if (panel.portrait3d) {
+    expect(Math.abs(panel.top - panel.height * 0.43)).toBeLessThanOrEqual(1.5);
+    expect(panel.top).toBeGreaterThanOrEqual(top);
+  } else expect(Math.abs(panel.top - (top + 8))).toBeLessThanOrEqual(1.5);
 }
 
 test("짧은 데스크톱 창(1280×500)에서 넘친 엔딩 패널은 헤더 0.5rem 아래까지 쓰고, 패널 위에서 휠을 굴리면 출처까지 닿는다", async ({ page }, testInfo) => {
@@ -2332,7 +2426,7 @@ test.describe("세로 화면 아래 고정 카드(390×844)", () => {
     await page.goto("/journey");
     await waitReady(page);
     await page.keyboard.press("End");
-    await expect(page.getByText(EMAIL)).toBeInViewport();
+    await expectEndingInView(page);
     await expect(page.locator("[data-journey-page]")).toHaveAttribute("data-journey-cards", "fixed");
     await expect.poll(async () => (await activeCards(page)).length).toBe(0);
     expect(await page.locator("#stop-ending .shadow-2xl").evaluate((panel) => getComputedStyle(panel.parentElement as Element).position)).not.toBe("fixed");

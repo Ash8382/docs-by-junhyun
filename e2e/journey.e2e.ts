@@ -1273,6 +1273,23 @@ async function stageTimes(page: Page): Promise<Record<string, number>> {
   return Object.fromEntries(stages.map(([stage, time]) => [stage, time]));
 }
 
+/** 엔딩 이름 틀의 전환 길이와 지연(초, 속성 여럿이면 첫 값). 바뀌는 단어는 shift 단계에서 읽는다 */
+async function endingTransitions(page: Page) {
+  return page.evaluate(() => {
+    const seconds = (value: string) => parseFloat(value.split(",")[0]);
+    const timing = (selector: string) => {
+      const style = getComputedStyle(document.querySelector(`[data-journey-ending-title] ${selector}`) as Element);
+      return { duration: seconds(style.transitionDuration), delay: seconds(style.transitionDelay) };
+    };
+    return {
+      name: timing('[data-part="name"]'),
+      role: timing('[data-part="role"]'),
+      firstWord: timing("[data-swap] [data-to]"),
+      secondWord: timing("[data-swap] ~ [data-swap] [data-to]"),
+    };
+  });
+}
+
 /** 엔딩 직무 줄의 한 단어(Frontend Developer에서 Product Engineer로 단어마다 바뀐다) */
 function roleWord(page: Page) {
   const role = page.locator('[data-journey-ending-title] [data-part="role"]');
@@ -1280,7 +1297,7 @@ function roleWord(page: Page) {
 }
 
 test.describe("엔딩: 흰 점과 이름", () => {
-  test("끝에 닿으면 0.8초 정적 뒤 이름이, 0.5초 뒤 Frontend Developer가, 2.2초 뒤 단어마다 Product Engineer로 바뀌고, 위로 올리면 바로 사라진다", async ({
+  test("끝에 닿으면 0.8초 정적 뒤 이름이, 0.3초 뒤 Frontend Developer가, 1.6초 뒤 단어마다 Product Engineer로 바뀌고, 위로 올리면 바로 사라진다", async ({
     page,
   }) => {
     await page.goto("/journey?debug=stats");
@@ -1302,11 +1319,18 @@ test.describe("엔딩: 흰 점과 이름", () => {
     await expect(word("Engineer")).toBeVisible();
     await expect(word("Frontend")).toBeHidden();
     await expect(word("Developer")).toBeHidden();
+    // 사용자 결정(2026-10-23, 처음보다 빠르게): 직무는 이름(0.9초)보다 빨리 드러나고(0.6초), 단어는 0.8초에 걸쳐 0.25초 간격으로 바뀐다
+    expect(await endingTransitions(page)).toEqual({
+      name: { duration: 0.9, delay: 0 },
+      role: { duration: 0.6, delay: 0 },
+      firstWord: { duration: 0.8, delay: 0 },
+      secondWord: { duration: 0.8, delay: 0.25 },
+    });
     const times = await stageTimes(page);
     // 타이머는 늦을 수는 있어도 이르지는 않다
     expect(times.name - times.still).toBeGreaterThanOrEqual(750);
-    expect(times.role - times.name).toBeGreaterThanOrEqual(450);
-    expect(times.shift - times.role).toBeGreaterThanOrEqual(2150);
+    expect(times.role - times.name).toBeGreaterThanOrEqual(250);
+    expect(times.shift - times.role).toBeGreaterThanOrEqual(1550);
     await scrollToProgress(page, at("ending", 0.6));
     await expect(title).toHaveAttribute("data-stage", "hidden", { timeout: 1000 });
     await expect(title.getByText("이준현")).toBeHidden();

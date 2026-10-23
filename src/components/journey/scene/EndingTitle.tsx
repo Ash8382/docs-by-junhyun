@@ -5,11 +5,11 @@ import { getEndingArrived, subscribeEndingArrived } from "@/lib/journey/endingSt
 import { prefersReducedMotion } from "@/lib/journey/motion";
 import { setEndingAnchorElement } from "./endingAnchor";
 
-/** 흰 점에 닿은 뒤 이름까지의 정적, 이름 뒤 직무까지, 직무가 나타난 뒤 Product Engineer로 바뀌기까지(ms). 사용자 결정(병합 뒤) */
+/** 흰 점에 닿은 뒤 이름까지의 정적, 이름 뒤 직무까지, 직무가 나타난 뒤 Product Engineer로 바뀌기까지(ms). 사용자 결정(병합 뒤, 2026-10-23 더 빠르게) */
 export const ENDING_STILL_MS = 800;
-export const ENDING_ROLE_MS = 500;
-/** 직무가 0.9초에 걸쳐 드러난 뒤 1.3초쯤 읽힐 시간 */
-export const ENDING_SHIFT_MS = 2200;
+export const ENDING_ROLE_MS = 300;
+/** 직무가 0.6초에 걸쳐 드러난 뒤 1초쯤 읽힐 시간 */
+export const ENDING_SHIFT_MS = 1600;
 
 type Stage = "hidden" | "still" | "name" | "role" | "shift";
 

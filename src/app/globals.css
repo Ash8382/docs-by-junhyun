@@ -413,8 +413,8 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
 
 /*
  * 엔딩의 이름과 직무(병합 뒤 새 엔딩 "여정이 하나의 빛이 되다", scene/EndingTitle). 단계(data-stage)에 따라 이름, 그 뒤 직무가 나타나고,
- * shift에서 직무가 단어마다 같은 자리에서 녹아들어 Frontend Developer가 Product Engineer가 된다(뒤 단어는 0.4초 늦게).
- * 나타날 때만 천천히 드러나고, 목표 상태를 벗어나면(위로 스크롤) 곧바로 사라진다(사용자 결정). 바뀌는 단어도 visibility를 함께 넘겨
+ * shift에서 직무가 단어마다 같은 자리에서 녹아들어 Frontend Developer가 Product Engineer가 된다(0.8초, 뒤 단어는 0.25초 늦게).
+ * 이름은 0.9초, 직무는 그보다 빠른 0.6초에 드러난다(2026-10-23 사용자 결정: 처음보다 빠르게). 나타날 때만 천천히 드러나고, 목표 상태를 벗어나면(위로 스크롤) 곧바로 사라진다(사용자 결정). 바뀌는 단어도 visibility를 함께 넘겨
  * 사라진 단어가 화면에 남지 않는다(visibility는 사라질 때 전환이 끝나야 hidden이 된다)
  */
 [data-journey-ending-title] [data-part] {
@@ -431,6 +431,10 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
   transition:
     opacity 0.9s ease-out,
     transform 0.9s ease-out;
+}
+
+[data-journey-ending-title]:is([data-stage="role"], [data-stage="shift"]) [data-part="role"] {
+  transition-duration: 0.6s;
 }
 
 [data-journey-ending-title] [data-to] {
@@ -450,12 +454,12 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
 
 [data-journey-ending-title][data-stage="shift"] :is([data-from], [data-to]) {
   transition:
-    opacity 1.2s ease-in-out,
-    visibility 1.2s;
+    opacity 0.8s ease-in-out,
+    visibility 0.8s;
 }
 
 [data-journey-ending-title][data-stage="shift"] [data-swap] ~ [data-swap] > * {
-  transition-delay: 0.4s;
+  transition-delay: 0.25s;
 }
 
 @media (prefers-reduced-motion: reduce) {

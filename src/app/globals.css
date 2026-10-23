@@ -412,8 +412,10 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
 }
 
 /*
- * 엔딩의 이름과 직무(병합 뒤 새 엔딩 "여정이 하나의 빛이 되다", scene/EndingTitle). 단계(data-stage)에 따라 이름, 그 뒤 직무가 나타난다.
- * 나타날 때만 천천히 드러나고, 목표 상태를 벗어나면(위로 스크롤) 곧바로 사라진다(사용자 결정)
+ * 엔딩의 이름과 직무(병합 뒤 새 엔딩 "여정이 하나의 빛이 되다", scene/EndingTitle). 단계(data-stage)에 따라 이름, 그 뒤 직무가 나타나고,
+ * shift에서 직무가 단어마다 같은 자리에서 녹아들어 Frontend Developer가 Product Engineer가 된다(뒤 단어는 0.4초 늦게).
+ * 나타날 때만 천천히 드러나고, 목표 상태를 벗어나면(위로 스크롤) 곧바로 사라진다(사용자 결정). 바뀌는 단어도 visibility를 함께 넘겨
+ * 사라진 단어가 화면에 남지 않는다(visibility는 사라질 때 전환이 끝나야 hidden이 된다)
  */
 [data-journey-ending-title] [data-part] {
   opacity: 0;
@@ -421,8 +423,8 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
   transform: translateY(6px);
 }
 
-[data-journey-ending-title]:is([data-stage="name"], [data-stage="role"]) [data-part="name"],
-[data-journey-ending-title][data-stage="role"] [data-part="role"] {
+[data-journey-ending-title]:is([data-stage="name"], [data-stage="role"], [data-stage="shift"]) [data-part="name"],
+[data-journey-ending-title]:is([data-stage="role"], [data-stage="shift"]) [data-part="role"] {
   opacity: 1;
   visibility: visible;
   transform: none;
@@ -431,14 +433,44 @@ html.lenis.lenis-stopped:has([data-journey-page]) {
     transform 0.9s ease-out;
 }
 
+[data-journey-ending-title] [data-to] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+[data-journey-ending-title][data-stage="shift"] [data-from] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+[data-journey-ending-title][data-stage="shift"] [data-to] {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-journey-ending-title][data-stage="shift"] :is([data-from], [data-to]) {
+  transition:
+    opacity 1.2s ease-in-out,
+    visibility 1.2s;
+}
+
+[data-journey-ending-title][data-stage="shift"] [data-swap] ~ [data-swap] > * {
+  transition-delay: 0.4s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-journey-ending-title] [data-part] {
     transform: none;
   }
 
-  [data-journey-ending-title]:is([data-stage="name"], [data-stage="role"]) [data-part="name"],
-  [data-journey-ending-title][data-stage="role"] [data-part="role"] {
+  [data-journey-ending-title]:is([data-stage="name"], [data-stage="role"], [data-stage="shift"]) [data-part="name"],
+  [data-journey-ending-title]:is([data-stage="role"], [data-stage="shift"]) [data-part="role"] {
     transition: opacity 0.2s ease-out;
+  }
+
+  /* 움직임 줄이기는 곧바로 shift라 Frontend Developer를 거치지 않고 Product Engineer가 보인다 */
+  [data-journey-ending-title][data-stage="shift"] :is([data-from], [data-to]) {
+    transition: none;
   }
 }
 

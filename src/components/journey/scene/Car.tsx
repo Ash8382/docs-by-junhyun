@@ -8,6 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { BASIS_PATH, CAR_URL, DRACO_PATH } from "@/lib/journey/carAsset";
 import { setCarStatus } from "@/lib/journey/sceneStatus";
+import { endingPhases } from "@/lib/journey/timeline";
 import { applyCarLights, applyWheelTravel, placeCar, prepareCar } from "./carModel";
 import { CarSilhouette } from "./CarSilhouette";
 import { currentDrive } from "./driveFrame";
@@ -74,7 +75,11 @@ class CarBoundary extends Component<{ children: ReactNode }, { failed: boolean }
 export function Car() {
   const group = useRef<Group>(null);
   useFrame(() => {
-    if (group.current) placeCar(group.current, currentDrive());
+    if (!group.current) return;
+    const drive = currentDrive();
+    placeCar(group.current, drive);
+    // 엔딩(병합 뒤): 카메라가 올라가 차가 몇 화소가 됐을 때 감춘다. 차가 있던 길 끝으로 빛이 모여 흰 점이 된다
+    group.current.visible = endingPhases(drive.progress).fade < 0.5;
   });
   return (
     <group ref={group} name="journey-car">

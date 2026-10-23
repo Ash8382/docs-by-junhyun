@@ -1,4 +1,5 @@
 import { MeshStandardMaterial, type WebGLProgramParametersWithUniforms } from "three";
+import { ROAD_END, ROAD_START } from "@/lib/journey/drive";
 import { REVEAL_EDGE } from "@/lib/journey/trail";
 import { NOISE_GLSL, glslFloat, replaceOnce } from "./shaderChunks";
 import { TRAIL_GLSL, trailUniforms } from "./trailShader";
@@ -9,6 +10,8 @@ import { TRAIL_GLSL, trailUniforms } from "./trailShader";
  *   - 열린 끝(uRevealS) 너머는 그리지 않고(discard), 경계에는 도로 좌표의 노이즈를 따라 빛나는 선이 흐른다.
  *   - 색은 journeyTrailColor(s), 세기는 journeyGlow(s, uCarS, uEnding)다(trailShader.ts, TypeScript와 같은 식).
  *   - 윗면은 어두운 메탈 노면 위에 가장자리 선과 차선을, 옆면은 빛나는 띠를 그린다.
+ *   - 엔딩(병합 뒤 "여정이 하나의 빛이 되다"): 길이 가운데 한 줄의 빛으로 좁아지고(uLine), 빛이 출발점부터 길 끝으로 흘러 짧아진다(uTail).
+ *     남은 빛 안에 주황·보라·파랑을 모두 눌러 담아 끝점에서 겹친다.
  * 진행에 따라 바뀌는 값은 모두 uniform이라 스크롤 중에 셰이더를 다시 컴파일하지 않는다.
  */
 
@@ -18,10 +21,16 @@ export const roadUniforms = {
   uRevealS: { value: 0 },
   uCarS: { value: 0 },
   uEnding: { value: 0 },
+  /** 엔딩: 한 줄의 빛으로 좁아진 정도(0~1) */
+  uLine: { value: 0 },
+  /** 엔딩: 빛의 꼬리가 있는 도로 s(m). 출발점(ROAD_START)에서 길 끝(ROAD_END)으로 간다 */
+  uTail: { value: ROAD_START },
 };
 
 /** 발광 배율(선형 HDR). 블룸은 밝기 1을 넘는 빛에 걸린다 */
 const LIGHT = { fill: 0.4, line: 3.2, side: 2.2, under: 0.08, edge: 7 } as const;
+/** 엔딩의 한 줄 빛: 가운데에서 남기는 반폭(m)과 밝기(선형 HDR) */
+const LINE = { half: 0.35, light: 4.5 } as const;
 /** 노면 그림: 가장자리 선(가장자리에서 안쪽으로 inset, 폭 width), 차선 간격과 점선 주기(m) */
 const LINES = { inset: 0.35, width: 0.09, laneSpacing: 4, dash: 6 } as const;
 
@@ -46,11 +55,17 @@ const FRAGMENT_PARS = /* glsl */ `#include <common>
 #define LINE_WIDTH ${glslFloat(LINES.width)}
 #define LANE_SPACING ${glslFloat(LINES.laneSpacing)}
 #define LANE_DASH ${glslFloat(LINES.dash)}
+#define LINE_HALF ${glslFloat(LINE.half)}
+#define LINE_LIGHT ${glslFloat(LINE.light)}
+#define ROAD_START_S ${glslFloat(ROAD_START)}
+#define ROAD_END_S ${glslFloat(ROAD_END)}
 varying vec4 vJourneyRoad;
 uniform float uJourneyTime;
 uniform float uRevealS;
 uniform float uCarS;
 uniform float uEnding;
+uniform float uLine;
+uniform float uTail;
 ${NOISE_GLSL}
 ${TRAIL_GLSL}
 
@@ -73,6 +88,8 @@ float journeyEdgePixel = fwidth( journeyEdge );
 float journeyLateralPixel = fwidth( journeyLateral );
 float journeySPixel = fwidth( journeyS );
 if ( journeyEdge > 0.0 ) discard;
+// 엔딩: 가운데 한 줄만 남기고, 꼬리보다 뒤(지나간 빛)는 그리지 않는다. 옆면은 가장자리라 좁아지면 함께 사라진다
+if ( abs( journeyLateral ) > mix( journeyHalf + 1.0, LINE_HALF, uLine ) || journeyS < uTail ) discard;
 float journeyBoundary = 1.0 - smoothstep( 0.0, EDGE_GLOW_WIDTH + journeyEdgePixel, - journeyEdge );
 float journeyTop = 1.0 - step( 0.5, journeyFace );
 float journeyUnder = step( 2.5, journeyFace );
@@ -87,7 +104,10 @@ float journeyLines = max( journeyEdgeLine, journeyLaneLine );
 float journeyLight = journeyTop * ( LIGHT_FILL + LIGHT_LINE * journeyLines )
   + journeySide * LIGHT_SIDE * ( 1.0 - 0.7 * clamp( journeyFace - 1.0, 0.0, 1.0 ) )
   + journeyUnder * LIGHT_UNDER;
-vec3 journeyColor = journeyTrailColor( journeyS );
+// 엔딩: 차선 무늬 대신 고른 빛줄기. 남은 빛(꼬리 ~ 길 끝)에 출발점 ~ 길 끝의 색을 눌러 담아, 흐르는 동안 색이 함께 끝으로 간다
+journeyLight = mix( journeyLight, journeyTop * LINE_LIGHT, uLine );
+float journeyFlowS = mix( ROAD_START_S, ROAD_END_S, clamp( ( journeyS - uTail ) / max( ROAD_END_S - uTail, 1e-3 ), 0.0, 1.0 ) );
+vec3 journeyColor = journeyTrailColor( journeyFlowS );
 vec3 journeyRadiance = journeyColor * journeyGlow( journeyS, uCarS, uEnding ) * journeyLight
   + mix( journeyColor, vec3( 1.0 ), 0.55 ) * journeyBoundary * LIGHT_EDGE;
 diffuseColor.rgb *= 1.0 - 0.6 * journeySide;`;

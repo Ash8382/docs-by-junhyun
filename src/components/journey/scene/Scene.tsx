@@ -20,6 +20,8 @@ import { CameraRig } from "./CameraRig";
 import { Car } from "./Car";
 import { Dust } from "./Dust";
 import { Effects } from "./Effects";
+import { EndingPoint } from "./EndingPoint";
+import { EndingTitle } from "./EndingTitle";
 import { Holograms } from "./Holograms";
 import { Landscape } from "./Landscape";
 import { Road } from "./Road";
@@ -94,9 +96,11 @@ export default function Scene() {
         <Dust />
         <Landscape />
         <Holograms />
+        <EndingPoint />
         <Effects />
         <Warmup />
       </Canvas>
+      <EndingTitle />
     </SceneFrame>
   );
 }

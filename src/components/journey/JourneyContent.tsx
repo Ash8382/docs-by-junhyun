@@ -202,6 +202,7 @@ function EndingStop() {
   return (
     <div className="container flex h-full items-end pb-[10svh] portrait:pb-[5svh]">
       <div
+        data-journey-ending-panel
         className={`${PANEL} max-h-[calc(90svh-4rem)] w-full overflow-y-auto sm:ml-auto sm:max-w-md portrait:max-h-[calc(95svh-5.5rem)]`}
       >
         <h2 className="text-3xl font-bold tracking-tight">연락처</h2>

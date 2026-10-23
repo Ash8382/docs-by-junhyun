@@ -127,6 +127,8 @@ ${LANDSCAPE_GLSL}
 uniform float uRevealS;
 uniform float uCarS;
 uniform float uEnding;
+/** 엔딩(병합 뒤): 풍경이 완전히 사라지는 정도(엔딩 fade 단계) */
+uniform float uVanish;
 uniform vec3 uKey;
 varying float vS;
 varying float vActStart;
@@ -197,7 +199,7 @@ void main() {
   float dim = mix( 1.0, ENDING_LIGHT, uEnding );
   vec3 rim = trail * landscapeRim( dot( trail, luminanceWeights ) ) * line * min( vGlow, 1.0 ) * on * dim * ( 1.0 - 0.6 * haze ) * ( 1.0 - vDissolve * sink );
   // 엔딩에서는 반쯤 투명해져 물러난다. 도시·첨탑의 도로 아래는 투명하게 사라진다
-  float alpha = mix( 1.0, ENDING_OPACITY, uEnding ) * appear * ( 1.0 - vDissolve * sink );
+  float alpha = mix( 1.0, ENDING_OPACITY, uEnding ) * appear * ( 1.0 - vDissolve * sink ) * ( 1.0 - uVanish );
   if ( alpha < 0.02 ) discard;
   gl_FragColor = vec4( ( mix( base, hazeColor, haze ) + rim ) * landscapeBrightness( vActStart, uCarS ), alpha );
   #include <colorspace_fragment>
@@ -210,6 +212,7 @@ export function createLandscapeMaterial(): ShaderMaterial {
       uRevealS: { value: 0 },
       uCarS: { value: 0 },
       uEnding: { value: 0 },
+      uVanish: { value: 0 },
       uKey: { value: new Vector3(...LANDSCAPE_SHADE.key) },
     },
     vertexShader: VERTEX,

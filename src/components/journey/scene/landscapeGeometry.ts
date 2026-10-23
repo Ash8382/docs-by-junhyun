@@ -1,6 +1,7 @@
 import { BufferAttribute, BufferGeometry, Mesh, Raycaster, Vector3, type Camera, type Material, type ShaderMaterial } from "three";
 import type { DriveState } from "@/lib/journey/drive";
 import { appearLevel } from "@/lib/journey/landscape";
+import { endingPhases } from "@/lib/journey/timeline";
 import { SCALAR_ATTRIBUTES, type LandscapePiece } from "@/lib/journey/landscapeBuild";
 import type { Vec3 } from "@/lib/journey/timeline";
 import type { LandscapeStats } from "./frameStats";
@@ -68,7 +69,10 @@ export function writeLandscape(meshes: readonly Mesh[], material: ShaderMaterial
   material.uniforms.uRevealS.value = drive.revealS;
   material.uniforms.uCarS.value = drive.carS;
   material.uniforms.uEnding.value = drive.ending;
-  for (const mesh of meshes) mesh.visible = appearLevel(mesh.userData.appearFrom as number, drive.carS) > 0;
+  // 엔딩(병합 뒤): 은하 속 흰 점 하나만 남기려고 풍경은 완전히 사라진다. 다 사라지면 그리지 않는다
+  const vanish = endingPhases(drive.progress).fade;
+  material.uniforms.uVanish.value = vanish;
+  for (const mesh of meshes) mesh.visible = vanish < 1 && appearLevel(mesh.userData.appearFrom as number, drive.carS) > 0;
 }
 
 /** 메시마다 그린 횟수를 센다(?debug=stats). takeLandscapeStats가 읽고 비운다 */

@@ -410,3 +410,44 @@ html:has([data-journey-page]) {
 html.lenis.lenis-stopped:has([data-journey-page]) {
   overflow: hidden;
 }
+
+/*
+ * 엔딩의 이름과 직무(병합 뒤 새 엔딩 "여정이 하나의 빛이 되다", scene/EndingTitle). 단계(data-stage)에 따라 이름, 그 뒤 직무가 나타난다.
+ * 나타날 때만 천천히 드러나고, 목표 상태를 벗어나면(위로 스크롤) 곧바로 사라진다(사용자 결정)
+ */
+[data-journey-ending-title] [data-part] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+}
+
+[data-journey-ending-title]:is([data-stage="name"], [data-stage="role"]) [data-part="name"],
+[data-journey-ending-title][data-stage="role"] [data-part="role"] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.9s ease-out,
+    transform 0.9s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-journey-ending-title] [data-part] {
+    transform: none;
+  }
+
+  [data-journey-ending-title]:is([data-stage="name"], [data-stage="role"]) [data-part="name"],
+  [data-journey-ending-title][data-stage="role"] [data-part="role"] {
+    transition: opacity 0.2s ease-out;
+  }
+}
+
+/*
+ * 세로 화면 3D 엔딩(병합 뒤): 흰 점과 이름이 위쪽에 서도록 연락처 패널은 아래쪽 52svh만 쓰고, 넘치면 패널 안에서 스크롤한다.
+ * 연락처 제목·이메일·GitHub은 패널 맨 위라 그대로 보인다. 2D는 문서라 그대로 둔다
+ */
+@media (orientation: portrait) {
+  html:not([data-journey-mode="2d"]) [data-journey-ending-panel] {
+    max-height: 52svh;
+  }
+}

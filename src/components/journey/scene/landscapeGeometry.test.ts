@@ -4,7 +4,7 @@ import { driveAt } from "@/lib/journey/drive";
 import { appearLevel } from "@/lib/journey/landscape";
 import { SCALAR_ATTRIBUTES, landscapePieces } from "@/lib/journey/landscapeBuild";
 import { segmentBlocked } from "@/lib/journey/landscapeOcclusion";
-import { CAMERA_FOV, rangeOf, type Vec3 } from "@/lib/journey/timeline";
+import { CAMERA_FOV, endingPhases, rangeOf, type Vec3 } from "@/lib/journey/timeline";
 import { countDraws, createLandscapeMeshes, landscapeBlocked, takeLandscapeStats, writeLandscape } from "./landscapeGeometry";
 import { createLandscapeMaterial } from "./landscapeMaterial";
 
@@ -88,8 +88,10 @@ describe("풍경 한 프레임", () => {
     expect(meshes.map((mesh) => mesh.visible)).toEqual([true, true, false, false]);
     writeLandscape(meshes, material, driveAt(at("tix2u", 0.5)));
     expect(meshes.map((mesh) => mesh.visible)).toEqual([true, true, true, true]);
+    // 엔딩(병합 뒤 새 엔딩): 풍경은 완전히 사라지고 그리지 않는다
     writeLandscape(meshes, material, driveAt(1));
-    expect(meshes.map((mesh) => mesh.visible)).toEqual([true, true, true, true]);
+    expect(material.uniforms.uVanish.value).toBe(1);
+    expect(meshes.map((mesh) => mesh.visible)).toEqual([false, false, false, false]);
   });
 
   it("막 경계를 건너뛰며 오가도 감춤과 uniform은 늘 그 자리의 값이다", () => {
@@ -98,7 +100,8 @@ describe("풍경 한 프레임", () => {
       writeLandscape(meshes, material, drive);
       expect(material.uniforms.uCarS.value, `p=${progress}`).toBe(drive.carS);
       meshes.forEach((mesh, index) => {
-        expect(mesh.visible, `p=${progress} ${mesh.name}`).toBe(appearLevel(pieces[index].scalars.aAppearFrom[0], drive.carS) > 0);
+        const shown = endingPhases(progress).fade < 1 && appearLevel(pieces[index].scalars.aAppearFrom[0], drive.carS) > 0;
+        expect(mesh.visible, `p=${progress} ${mesh.name}`).toBe(shown);
       });
     }
   });

@@ -1,12 +1,14 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PerspectiveCamera } from "three";
 import { followCamera, type CameraFollow, type CameraPose } from "@/lib/journey/drive";
+import { setEndingArrived } from "@/lib/journey/endingState";
 import { isPortrait, lensFor } from "@/lib/journey/lens";
 import { prefersReducedMotion } from "@/lib/journey/motion";
 import { followPortrait, portraitCamera, type PortraitView } from "@/lib/journey/portrait";
+import { endingPhases } from "@/lib/journey/timeline";
 import { currentDrive } from "./driveFrame";
 import { recordCameraLag, statsEnabled } from "./frameStats";
 
@@ -18,12 +20,17 @@ import { recordCameraLag, statsEnabled } from "./frameStats";
  * 화면을 돌려 가로·세로가 바뀌면 새 카메라는 첫 프레임처럼 목표에 바로 놓인다.
  * 움직임 줄이기면 감쇠를 끈다(프레임 간격을 무한대로 넘겨 목표에 바로 놓는다). 카메라는 스크롤한 만큼만 움직이고 뒤따라 흘러가지 않는다(2-4b).
  * ?debug=stats면 감쇠한 자세와 목표 자세의 거리(카메라 뒤처짐)를 통계에 남긴다.
+ * 엔딩(병합 뒤): 진행률이 목표 상태이고 카메라가 흰 점을 담는 자리에 실제로 닿으면(ENDING_SETTLED 안) 엔딩 도달을 알린다(이름 틀이 듣는다).
  */
+/** 엔딩 도달로 볼 카메라와 목표 자세의 거리(m) */
+const ENDING_SETTLED = 0.5;
+
 export function CameraRig() {
   const follow = useRef<CameraFollow | null>(null);
   const portraitFollow = useRef<PortraitView | null>(null);
   const lensKey = useRef("");
   const [stats] = useState(statsEnabled);
+  useEffect(() => () => setEndingArrived(false), []);
 
   useFrame((state, delta) => {
     const camera = state.camera as PerspectiveCamera;
@@ -56,6 +63,12 @@ export function CameraRig() {
       if (stats) goal = followCamera(null, drive, dt).pose;
     }
     if (goal) recordCameraLag(Math.hypot(...pose.position.map((value, axis) => value - (goal as CameraPose).position[axis])));
+    const phases = endingPhases(drive.progress);
+    if (phases.arrived) {
+      const target = isPortrait(width, height) ? portraitCamera(drive, window.location.hash) : drive.camera;
+      const lag = Math.hypot(...pose.position.map((value, axis) => value - target.position[axis]));
+      setEndingArrived(lag < ENDING_SETTLED);
+    } else setEndingArrived(false);
     camera.position.set(...pose.position);
     camera.lookAt(...pose.target);
   });

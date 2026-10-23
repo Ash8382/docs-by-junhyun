@@ -3,7 +3,9 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { BufferAttribute, BufferGeometry } from "three";
+import { ROAD_END, ROAD_START } from "@/lib/journey/drive";
 import { roadMesh } from "@/lib/journey/road";
+import { endingPhases } from "@/lib/journey/timeline";
 import { currentDrive } from "./driveFrame";
 import { createRoadMaterial, roadUniforms } from "./roadMaterial";
 
@@ -41,6 +43,10 @@ export function Road() {
     roadUniforms.uRevealS.value = drive.revealS;
     roadUniforms.uCarS.value = drive.carS;
     roadUniforms.uEnding.value = drive.ending;
+    // 엔딩(병합 뒤): 한 줄의 빛으로 좁아지고, 빛이 출발점부터 길 끝으로 흐른다
+    const phases = endingPhases(drive.progress);
+    roadUniforms.uLine.value = phases.line;
+    roadUniforms.uTail.value = ROAD_START + (ROAD_END - ROAD_START) * phases.flow;
   });
 
   return <mesh geometry={geometry} material={material} />;

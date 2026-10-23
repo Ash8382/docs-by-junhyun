@@ -24,8 +24,9 @@ const VIEWS: [string, number][] = [
   ["pickcare", 0.5],
   ["pickcare", 0.7],
   ["pickcare", 0.94],
-  ["ending", 0.5],
-  ["ending", 1],
+  // 엔딩은 풍경이 아직 보이는 앞부분만 본다. 구간 35%까지 풍경이 사라지고 끝에서는 길도 흰 점으로 모인다(병합 뒤 새 엔딩)
+  ["ending", 0.15],
+  ["ending", 0.3],
 ];
 
 function at(id: string, within: number): number {
@@ -86,7 +87,8 @@ describe("가림 판정", () => {
         if (hit) blocked.push(`${id} ${within} ${target.label} ← ${hit.piece} #${hit.item}`);
       }
     }
-    expect(roads).toBeGreaterThan(300);
+    // 표본이 충분한지 보는 하한. 엔딩 끝 두 자리를 앞부분으로 옮겨(새 엔딩, 병합 뒤) 300 언저리로 줄었다
+    expect(roads).toBeGreaterThan(280);
     expect(blocked).toEqual([]);
   });
 

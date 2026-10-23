@@ -205,10 +205,11 @@ describe("홀로그램 자리", () => {
     for (const axis of [basis.right, basis.up, basis.normal]) for (const value of axis) expect(Number.isFinite(value)).toBe(true);
   });
 
-  it("엔딩에서는 모든 홀로그램이 원반 속으로 내려가 사라지고 원반은 남는다", () => {
+  // 병합 뒤 엔딩은 은하 속 흰 점 하나만 남긴다(사용자 결정 "여정이 하나의 빛이 되다"). 원반도 차·풍경과 함께 사라진다
+  it("엔딩에서는 모든 홀로그램이 원반 속으로 내려가 사라지고 원반도 사라진다", () => {
     for (const placement of hologramsAt(1, 4)) {
       expect(placement.presence, placement.id).toBe(0);
-      expect(placement.discOpacity, placement.id).toBe(1);
+      expect(placement.discOpacity, placement.id).toBe(0);
       // 화면 가운데가 원반 위 DISC_LIFT까지 내려와 있다(1·2막은 도로의 위 방향, 3막은 수직)
       expect(distance(placement.center, placement.disc), placement.id).toBeCloseTo(DISC_LIFT, 6);
     }

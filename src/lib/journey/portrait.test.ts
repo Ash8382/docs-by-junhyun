@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ROAD_END, ROAD_START, driveAt, roadFrame, roadPoint, stopScreenSide, toCarFrame, type CameraPose } from "./drive";
+import { ROAD_END, ROAD_START, driveAt, endingPoint, roadFrame, roadPoint, stopScreenSide, toCarFrame, type CameraPose } from "./drive";
 import { HOLOGRAMS, hologramsAt, imageCorners, pickcareFront } from "./holograms";
 import { PORTRAIT_LENS, WIDE_LENS, lensFor, projectThrough } from "./lens";
 import { CARDS, activeCard, cardProgress, followPortrait, portraitCamera, portraitViewWeight, stopFocus, type PortraitView } from "./portrait";
-import { SCROLL_LENGTH, STOP_RANGES, rangeOf, stopAt, viewWeight, type Vec3 } from "./timeline";
+import { OVERVIEW_ARRIVAL, SCROLL_LENGTH, STOP_RANGES, rangeOf, stopAt, viewWeight, type Vec3 } from "./timeline";
 
 /** 세로 화면 네 크기(스펙 3절 "세로 화면") */
 const SIZES = [
@@ -109,8 +109,9 @@ describe("세로 화면 카메라 목표 자세", () => {
     }
   });
 
-  it("엔딩에서 길 전체가 헤더 아래부터 화면 위 60% 안(y 0.10~0.57, x 0.03~0.97)에 든다", () => {
-    const pose = portraitCamera(driveAt(1));
+  it("엔딩 내려다보기에서 길 전체가 헤더 아래부터 화면 위 60% 안(y 0.10~0.57, x 0.03~0.97)에 든다", () => {
+    // 내려다보기는 상승이 끝나는 자리다. 그 뒤 카메라는 흰 점으로 다가간다(병합 뒤)
+    const pose = portraitCamera(driveAt(at("ending", OVERVIEW_ARRIVAL)));
     const road: Vec3[] = [];
     for (let s = ROAD_START; s <= ROAD_END; s += 2) {
       const half = roadFrame(s).width / 2;
@@ -123,6 +124,19 @@ describe("세로 화면 카메라 목표 자세", () => {
       expect(all.right, name).toBeLessThan(0.97);
       expect(all.top, name).toBeGreaterThan(0.1);
       expect(all.bottom, name).toBeLessThan(0.57);
+    }
+  });
+
+  // 엔딩 끝(병합 뒤): 세로 화면은 연락처 패널이 아래쪽이라 흰 점을 위쪽 가운데(헤더·진행 막대 아래)에 둔다
+  it("엔딩 끝에서 흰 점은 위쪽 가운데(x 0.4~0.6, y 0.15~0.35)에 있다", () => {
+    const pose = portraitCamera(driveAt(1));
+    for (const [width, height] of SIZES) {
+      const point = projectThrough(pose, endingPoint(), width / height, lensFor(width, height));
+      const name = `${width}x${height} → (${point.x.toFixed(3)}, ${point.y.toFixed(3)})`;
+      expect(point.x, name).toBeGreaterThan(0.4);
+      expect(point.x, name).toBeLessThan(0.6);
+      expect(point.y, name).toBeGreaterThan(Math.max(0.15, TOP_PX / height));
+      expect(point.y, name).toBeLessThan(0.35);
     }
   });
 

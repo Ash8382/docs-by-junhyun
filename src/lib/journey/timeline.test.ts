@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { projects } from "@/data/projects";
 import {
+  ENDING_ARRIVAL,
   HALL_REPO_END,
   HALL_REPO_START,
   OVERVIEW_ARRIVAL,
@@ -11,6 +12,7 @@ import {
   TOTAL_LENGTH,
   UNITS_PER_SCREEN,
   dwellWeight,
+  endingPhases,
   hallRepoProgress,
   objectSide,
   overviewWeight,
@@ -159,6 +161,28 @@ describe("진행 거리", () => {
     expect(overviewWeight(ending.start)).toBe(0);
     expect(overviewWeight(ending.start + (ending.end - ending.start) * OVERVIEW_ARRIVAL)).toBe(1);
     expect(overviewWeight(rangeOf("pickcare").end - 1e-9)).toBe(0);
+  });
+
+  // 엔딩(병합 뒤, 사용자 결정 "여정이 하나의 빛이 되다"): 상승하며 차·풍경이 사라지고 길이 한 줄의 빛이 된 뒤, 빛이 길 끝으로 흘러
+  // 흰 점이 된다. 모두 진행률을 따르고(되감으면 거꾸로), 목표 상태에 닿은 뒤에만 이름이 시간으로 나타난다
+  it("엔딩 단계는 상승·사라짐·한 줄의 빛·흐름·흰 점 차례로 0 → 1이고, 목표 상태는 구간 끝부분에서만이다", () => {
+    const ending = rangeOf("ending");
+    const at = (t: number) => ending.start + (ending.end - ending.start) * t;
+    expect(endingPhases(rangeOf("pickcare").end - 1e-9)).toEqual({ rise: 0, fade: 0, line: 0, flow: 0, point: 0, arrived: false });
+    expect(endingPhases(1)).toEqual({ rise: 1, fade: 1, line: 1, flow: 1, point: 1, arrived: true });
+    expect(endingPhases(at(OVERVIEW_ARRIVAL))).toMatchObject({ rise: 1, fade: 1, line: 1, flow: 0, point: 0 });
+    expect(endingPhases(at(0.85))).toMatchObject({ flow: 1, point: 1, arrived: false });
+    expect(ENDING_ARRIVAL).toBeGreaterThan(0.85);
+    expect(endingPhases(at(ENDING_ARRIVAL)).arrived).toBe(true);
+    expect(endingPhases(at(ENDING_ARRIVAL) - 1e-6).arrived).toBe(false);
+    let last = endingPhases(at(0));
+    for (let t = 0; t <= 1; t += 0.005) {
+      const now = endingPhases(at(t));
+      for (const key of ["rise", "fade", "line", "flow", "point"] as const) expect(now[key], `${key} t=${t.toFixed(3)}`).toBeGreaterThanOrEqual(last[key]);
+      last = now;
+    }
+    // 내려다보기(카메라·분위기)는 상승과 같다
+    expect(endingPhases(at(0.3)).rise).toBe(overviewWeight(at(0.3)));
   });
 
   it("정류장이 경로에서 차지하는 거리 구간을 준다", () => {

@@ -11,6 +11,7 @@ import {
   carCenter,
   carSAt,
   driveAt,
+  endingPoint,
   followCamera,
   fromCarFrame,
   keepClear,
@@ -24,7 +25,7 @@ import {
   type CameraPose,
   type DriveState,
 } from "./drive";
-import { CAMERA_FOV, SCROLL_LENGTH, STOP_RANGES, dwellWeight, overviewWeight, rangeOf, type Vec3 } from "./timeline";
+import { CAMERA_FOV, OVERVIEW_ARRIVAL, SCROLL_LENGTH, STOP_RANGES, dwellWeight, overviewWeight, rangeOf, type Vec3 } from "./timeline";
 
 const STEPS = 4000;
 const progresses = Array.from({ length: STEPS + 1 }, (_, index) => index / STEPS);
@@ -388,8 +389,10 @@ describe("카메라", () => {
   // 넓은 화면(sm 이상)은 연락처 패널이 오른쪽에 좁게 있어 길을 그 왼쪽에 둔다. 휴대폰 세로는 패널이
   // 전체 폭이라, 내려다보기가 끝나는 순간(엔딩 구간 OVERVIEW_ARRIVAL) 패널이 아직 화면 아래 10% 밖에 있다.
   it("엔딩 내려다보기는 헤더와 연락처 패널을 피해 길 전체를 보인다", () => {
-    const pose = driveAt(1).camera;
-    expect(overviewWeight(1)).toBe(1);
+    // 내려다보기는 상승이 끝나는 자리(엔딩 구간 OVERVIEW_ARRIVAL)다. 그 뒤 카메라는 흰 점으로 다가간다(병합 뒤)
+    const risen = at("ending", OVERVIEW_ARRIVAL);
+    const pose = driveAt(risen).camera;
+    expect(overviewWeight(risen)).toBe(1);
     const points: Vec3[] = [roadPoint(CAR_END, 0, 1.5)];
     for (let s = ROAD_START; s <= ROAD_END; s += 2) {
       const half = roadFrame(s).width / 2;
@@ -410,6 +413,35 @@ describe("카메라", () => {
         expect(y, label).toBeGreaterThan(area.top);
         expect(y, label).toBeLessThan(area.bottom);
       }
+    }
+  });
+});
+
+describe("엔딩: 여정이 하나의 빛이 되다(병합 뒤)", () => {
+  // 빛이 길 끝으로 모여 흰 점이 되고, 카메라는 그 점으로 다가간다. 넓은 화면에서 연락처 패널은 오른쪽이라 점은 그 왼쪽, 헤더 아래다
+  it("엔딩 끝에서 카메라는 길 끝(흰 점)을 연락처 패널 왼쪽 화면 안에 담는다", () => {
+    const pose = driveAt(1).camera;
+    const point = endingPoint();
+    expect(distance(point, roadPoint(ROAD_END, 0, 0))).toBeLessThan(1);
+    for (const aspect of [16 / 9, 16 / 10, 4 / 3]) {
+      const [x, y] = screenPosition(pose, point, aspect);
+      const label = `${aspect.toFixed(2)} → (${x.toFixed(3)}, ${y.toFixed(3)})`;
+      expect(x, label).toBeGreaterThan(0.2);
+      expect(x, label).toBeLessThan(0.45);
+      expect(y, label).toBeGreaterThan(0.3);
+      expect(y, label).toBeLessThan(0.55);
+    }
+    // 다가가도 점과 은하를 함께 담는 거리다
+    expect(distance(pose.position, point)).toBeGreaterThan(50);
+  });
+
+  it("흐르는 동안 카메라는 내려다보기 자리에서 점을 담는 자리로 끊기지 않게 옮겨 간다", () => {
+    const ending = rangeOf("ending");
+    let last = driveAt(ending.start).camera;
+    for (let t = 0; t <= 1; t += 0.002) {
+      const pose = driveAt(ending.start + (ending.end - ending.start) * t).camera;
+      expect(distance(pose.position, last.position), `t=${t.toFixed(3)}`).toBeLessThan(8);
+      last = pose;
     }
   });
 });

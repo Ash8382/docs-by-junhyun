@@ -202,3 +202,46 @@ export function overviewWeight(progress: number): number {
   const { range, t } = stopAt(progress);
   return range.stop.kind === "ending" ? smoothstep(0, OVERVIEW_ARRIVAL, t) : 0;
 }
+
+/** 엔딩 구간에서 목표 상태(흰 점으로 다가간 자리)에 닿는 곳. 그 뒤로 장면은 바뀌지 않고, 이름과 직무가 시간으로 나타난다 */
+export const ENDING_ARRIVAL = 0.9;
+
+/**
+ * 엔딩 단계(병합 뒤, 사용자 결정 "여정이 하나의 빛이 되다"). 엔딩 구간 안 위치 t에서 모두 0 → 1이고 진행률에 대해 줄지 않는다(되감으면 거꾸로).
+ * - rise: 카메라가 올라가 길 전체를 내려다본다(overviewWeight와 같다). 분위기·길 전체 발광도 이 값이다
+ * - fade: 차·풍경·홀로그램 원반이 사라진다
+ * - line: 길이 차선 무늬 없는 가는 빛줄기 하나로 좁아진다
+ * - flow: 빛이 출발점부터 길 끝으로 흘러 짧아지고, 카메라는 길 끝으로 다가간다
+ * - point: 길 끝에 작고 밝은 흰 점이 생긴다
+ * - arrived: 목표 상태(ENDING_ARRIVAL 이후)
+ */
+export interface EndingPhases {
+  rise: number;
+  fade: number;
+  line: number;
+  flow: number;
+  point: number;
+  arrived: boolean;
+}
+
+/** 단계마다 엔딩 구간 안의 시작·끝(t) */
+export const ENDING_WINDOWS = {
+  fade: [0.05, 0.35],
+  line: [0.2, OVERVIEW_ARRIVAL],
+  flow: [OVERVIEW_ARRIVAL, 0.8],
+  point: [0.72, 0.85],
+} as const;
+
+export function endingPhases(progress: number): EndingPhases {
+  const { range, t } = stopAt(progress);
+  if (range.stop.kind !== "ending") return { rise: 0, fade: 0, line: 0, flow: 0, point: 0, arrived: false };
+  const phase = ([from, to]: readonly [number, number]) => smoothstep(from, to, t);
+  return {
+    rise: smoothstep(0, OVERVIEW_ARRIVAL, t),
+    fade: phase(ENDING_WINDOWS.fade),
+    line: phase(ENDING_WINDOWS.line),
+    flow: phase(ENDING_WINDOWS.flow),
+    point: phase(ENDING_WINDOWS.point),
+    arrived: t >= ENDING_ARRIVAL,
+  };
+}

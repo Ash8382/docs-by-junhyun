@@ -1,7 +1,7 @@
 import { damp } from "./damp";
 import { CAMERA_DAMPING, carCenter, driveAt, fromCarFrame, toCarFrame, type CameraPose, type DriveState, type RoadFrame } from "./drive";
 import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT, hologramsAt, pickcareFront } from "./holograms";
-import { HALL_REPO_END, HALL_REPO_START, STOPS, overviewWeight, rangeOf, smoothstep, stopAt, viewWeight, type Vec3 } from "./timeline";
+import { HALL_REPO_END, HALL_REPO_START, STOPS, endingPhases, overviewWeight, rangeOf, smoothstep, stopAt, viewWeight, type Vec3 } from "./timeline";
 
 /**
  * 세로 화면(스펙 3절 "세로 화면 (2-4a)"). 세계 속 차·홀로그램·풍경의 자리와 가로 화면 카메라(driveAt의 camera)는 그대로 두고,
@@ -26,6 +26,11 @@ export const PORTRAIT = {
    * 카메라 먼 끝 600m 안)와 시선을 맞췄다. 길이 앞뒤로 긴 모양이라 세로로 길게 보인다(390×844에서 x 0.375~0.625)
    */
   overview: { position: [27.4, 392.6, 94.3] as Vec3, target: [12.5, 14.4, -116.3] as Vec3 },
+  /**
+   * 엔딩 끝에서 흰 점으로 다가간 자리(병합 뒤). 내려다보기와 같은 시선 방향으로 흰 점에서 110m 떨어져 점 뒤에 은하가 그대로 있고,
+   * 흰 점이 위쪽 가운데(화면 (0.50, 0.25))에 오도록 맞췄다. 연락처 패널은 아래쪽이다(portrait.test.ts가 세로 화면 네 크기로 확인)
+   */
+  focus: { position: [12.9, 109, -175.6] as Vec3, target: [9.5, 12.9, -223.6] as Vec3 },
 } as const;
 
 function add(a: Vec3, b: Vec3): Vec3 {
@@ -119,6 +124,8 @@ export interface PortraitView {
   stopAngle: number;
   target: Vec3;
   overview: number;
+  /** 엔딩에서 흰 점으로 다가간 정도(병합 뒤) */
+  focus: number;
 }
 
 /** 정류장 시점으로 돈 정도(0~1): 방위각이 정류장 방위각까지 간 비율. 반대쪽이거나 정류장이 없으면 0(주행 구도를 통째로 돌린 것) */
@@ -137,6 +144,7 @@ export function portraitGoal(state: DriveState, hash = "", previous: PortraitVie
     stopAngle: view?.angle ?? previous?.stopAngle ?? 0,
     target: view?.target ?? previous?.target ?? chaseTarget(state.car, 0),
     overview: overviewWeight(state.progress),
+    focus: endingPhases(state.progress).flow,
   };
 }
 
@@ -151,9 +159,14 @@ export function portraitPose(car: RoadFrame, view: PortraitView): CameraPose {
   );
   const target = fromCarFrame(car, lerp3(chaseTarget(car, view.angle), view.target, Math.pow(weight, PORTRAIT.stop.targetEase)));
   if (view.overview === 0) return { position, target };
-  return {
+  const overview = {
     position: lerp3(position, PORTRAIT.overview.position, view.overview),
     target: lerp3(target, PORTRAIT.overview.target, view.overview),
+  };
+  if (view.focus === 0) return overview;
+  return {
+    position: lerp3(overview.position, PORTRAIT.focus.position, view.focus),
+    target: lerp3(overview.target, PORTRAIT.focus.target, view.focus),
   };
 }
 
@@ -193,6 +206,7 @@ export function followPortrait(follow: PortraitView | null, state: DriveState, d
           damp(follow.target[2], goal.target[2], CAMERA_DAMPING.target, dt),
         ],
         overview: damp(follow.overview, goal.overview, CAMERA_DAMPING.position, dt),
+        focus: damp(follow.focus, goal.focus, CAMERA_DAMPING.position, dt),
       }
     : goal;
   return { follow: next, pose: portraitPose(state.car, next) };

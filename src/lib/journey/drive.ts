@@ -4,6 +4,7 @@ import {
   SCROLL_LENGTH,
   STOP_RANGES,
   UNITS_PER_SCREEN,
+  endingPhases,
   objectSide,
   overviewWeight,
   pathParamAt,
@@ -296,6 +297,18 @@ export function stopScreenSide(stop: Stop): -1 | 1 {
  */
 export const OVERVIEW: CameraPose = { position: [45, 255, 50], target: [35, 0, -92] };
 
+/** 엔딩의 흰 점 자리: 길 끝, 노면 위 0.6m. 빛이 출발점부터 여기로 흘러 모인다(병합 뒤, 사용자 결정 "여정이 하나의 빛이 되다") */
+export function endingPoint(): Vec3 {
+  return roadPoint(ROAD_END, 0, 0.6);
+}
+
+/**
+ * 엔딩 끝에서 흰 점으로 다가간 자리. 내려다보기(OVERVIEW)와 같은 시선 방향으로 흰 점에서 90m 떨어져, 점 뒤에 내려다보던 은하가 그대로
+ * 있다(길을 따라 앞을 보면 별만 드문 하늘이었다). 흰 점이 넓은 화면의 오른쪽 연락처 패널 왼쪽(16:9에서 화면 (0.33, 0.42), 16:10에서
+ * 0.31, 4:3에서 0.27)에 오도록 시선을 옮겼다(drive.test.ts가 화면 비율 셋으로 확인)
+ */
+export const ENDING_FOCUS: CameraPose = { position: [12.2, 91.5, -185.3], target: [26.9, 12.9, -211] };
+
 function orbit(car: RoadFrame, angle: number, radius: number, height: number, side: number): Vec3 {
   const back = scale(car.tangent, -radius * Math.cos(angle));
   const aside = scale(car.right, side * radius * Math.sin(angle));
@@ -322,7 +335,11 @@ function cameraFor(carS: number, car: RoadFrame, progress: number): CameraPose {
   const pose = { position: orbit(car, angle, radius, height, side), target: lerp3(chaseTarget, stopTarget, weight) };
   const k = overviewWeight(progress);
   if (k === 0) return pose;
-  return { position: lerp3(pose.position, OVERVIEW.position, k), target: lerp3(pose.target, OVERVIEW.target, k) };
+  const overview = { position: lerp3(pose.position, OVERVIEW.position, k), target: lerp3(pose.target, OVERVIEW.target, k) };
+  // 빛이 길 끝으로 흐르는 동안 내려다보기 자리에서 흰 점으로 다가간 자리로 옮긴다
+  const flow = endingPhases(progress).flow;
+  if (flow === 0) return overview;
+  return { position: lerp3(overview.position, ENDING_FOCUS.position, flow), target: lerp3(overview.target, ENDING_FOCUS.target, flow) };
 }
 
 /** 차 몸통의 가운데 */

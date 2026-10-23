@@ -2,7 +2,7 @@ import { projects } from "@/data/projects";
 import type { Project, RepoId, Screen } from "@/data/projects/types";
 import { carSAt, driveAt, roadFrame, roadPoint, stopScreenSide } from "./drive";
 import { DETAIL_SLUGS, activeRepo, journeyHash, parseJourneyHash } from "./hash";
-import { STOPS, hallRepoProgress, rangeOf, smoothstep, stopAt, viewWeight, type StopRange, type Vec3 } from "./timeline";
+import { STOPS, endingPhases, hallRepoProgress, rangeOf, smoothstep, stopAt, viewWeight, type StopRange, type Vec3 } from "./timeline";
 import type { LinearRgb } from "./trail";
 
 /**
@@ -320,12 +320,18 @@ function placeHall(
  */
 export function hologramsAt(progress: number, front: number): HologramPlacement[] {
   const state = driveAt(progress);
+  // 엔딩에서는 은하 속 흰 점 하나만 남긴다: 원반도 차·풍경과 함께 사라진다(병합 뒤, 사용자 결정 "여정이 하나의 빛이 되다")
+  const vanish = 1 - endingPhases(state.progress).fade;
   let repoIndex = 0;
   return HOLOGRAMS.map((hologram) => {
     const frame = STOP_FRAMES.get(hologram.stopId);
     if (!frame) throw new Error(`홀로그램 ${hologram.id}의 정류장이 없습니다`);
-    if (hologram.act === 3) return placeHall(hologram, repoIndex++, frame, front, state.progress, state.revealS, state.ending);
-    return placeRoadside(hologram, frame, state.progress, state.revealS, state.ending);
+    const placement =
+      hologram.act === 3
+        ? placeHall(hologram, repoIndex++, frame, front, state.progress, state.revealS, state.ending)
+        : placeRoadside(hologram, frame, state.progress, state.revealS, state.ending);
+    placement.discOpacity *= vanish;
+    return placement;
   });
 }
 

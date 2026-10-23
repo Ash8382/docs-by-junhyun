@@ -1366,7 +1366,7 @@ WebP로 저장한다. 기존 썸네일(`public/*-thumb.*`)은 블로그가 쓰�
 | EUTCHA | https://eutcha.vercel.app/ |
 | PFPlay | https://pfplay.xyz/ 공개 화면. 부족하면 사용자가 안쪽 화면을 추가 |
 | PiCKCARE frontend | https://pickcare.co.kr/ |
-| PiCKCARE biz (CRM) | https://www.biz.pickcare.co.kr/ |
+| PiCKCARE biz (CRM) | https://crm.pickcare.co.kr/ (PiCKYCHART). 2026-10-23에 www.biz.pickcare.co.kr에서 새로 배포해 다시 찍었다(`npm run capture:screens -- pickcare/biz/home` 뒤 `npm run build:holograms`). 소개 줄은 배포 주소만 알리고 판매·고객 여부는 말하지 않는다(사용자 결정). 여정 카드는 Tab 차례가 상세 링크뿐이라 주소를 글자로만 보이고(`plainLinks`), 상세 패널과 블로그 글에서 누른다 |
 | PiCKCARE studio | https://studio.pickcare.co.kr/ |
 | PiCKCARE app | App Store 소개 페이지(id6809377321)의 공식 스크린샷 3장(홈·라운지·피키랩, 2-3a). iTunes lookup으로 주소를 얻어 `645x1398bb.jpg` 크기로 한 번 받고, WebP로 `public/projects/pickcare/app/`에 둔다. 상세 패널과 홀로그램(홈)이 함께 쓴다 |
 | PiCKCARE cardnews | 배포 화면 없음. 사용자가 넣은 Figma 캡처 3장: 마스터 4종(1190×391), 완성 세트 2개(카드 5장 + 인스타 캡션, 1543×378 · 1554×362). 구현 때 `masters`, `set-1`, `set-2`로 이름을 바꾸고 WebP로 변환한다 |

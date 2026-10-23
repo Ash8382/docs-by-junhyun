@@ -53,6 +53,12 @@ describe("renderInline", () => {
     );
   });
 
+  it("plainLinks면 링크를 글자만 남긴다(탭 순서가 정해진 여정 카드)", () => {
+    expect(html("**CRM**은 [crm.pickcare.co.kr](https://crm.pickcare.co.kr/)에 있다", { plainLinks: true })).toBe(
+      "<strong>CRM</strong>은 crm.pickcare.co.kr에 있다",
+    );
+  });
+
   it("굵게와 링크가 한 문장에 섞여도 된다", () => {
     expect(html("**습관**은 [글](/blog/a)에 있다")).toBe(
       '<strong>습관</strong>은 <a href="/blog/a">글</a>에 있다',

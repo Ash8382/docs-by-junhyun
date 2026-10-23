@@ -305,7 +305,7 @@ function ReposDetail({ project, repoId }: { project: ReposProject; repoId?: Repo
       </div>
       <div role="tabpanel" id="journey-tabpanel" aria-labelledby={`journey-tab-${active.id}`} key={active.id} className="mt-4">
         <p className="font-mono text-sm text-zinc-400">{active.name}</p>
-        <p className="mt-1 text-zinc-200">{renderInline(active.tagline)}</p>
+        <p className="mt-1 text-zinc-200 [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-white">{renderInline(active.tagline)}</p>
         <ul className="mt-3 flex flex-wrap gap-1.5">
           {active.stack.map((tech) => (
             <li key={tech} className="rounded border border-white/10 px-2 py-0.5 font-mono text-xs text-zinc-400">

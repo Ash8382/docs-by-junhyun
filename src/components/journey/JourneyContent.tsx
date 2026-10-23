@@ -180,7 +180,8 @@ function HallStop({ stop }: { stop: Stop }) {
             <div className={`${PANEL} ml-auto max-w-sm`}>
               <p className="font-mono text-sm text-amber-300">{repo.id}</p>
               <p className="mt-1 font-mono text-xs text-zinc-400">{repo.name}</p>
-              <p className="mt-2 text-sm text-zinc-200">{renderInline(repo.tagline)}</p>
+              {/* 카드의 Tab 차례는 상세 링크뿐이다(카드 포커스 스크롤). 소개 줄의 링크는 상세 패널과 블로그 글에서 누른다 */}
+              <p className="mt-2 text-sm text-zinc-200">{renderInline(repo.tagline, { plainLinks: true })}</p>
               <DetailLink slug={project.slug} repo={repo.id} label={repo.name} />
             </div>
           </div>

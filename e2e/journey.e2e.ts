@@ -1255,25 +1255,44 @@ async function stageTimes(page: Page): Promise<Record<string, number>> {
   return Object.fromEntries(stages.map(([stage, time]) => [stage, time]));
 }
 
+/** 엔딩 직무 줄의 한 단어(Frontend Developer에서 Product Engineer로 단어마다 바뀐다) */
+function roleWord(page: Page) {
+  const role = page.locator('[data-journey-ending-title] [data-part="role"]');
+  return (text: string) => role.getByText(text, { exact: true });
+}
+
 test.describe("엔딩: 흰 점과 이름", () => {
-  test("끝에 닿으면 0.8초 정적 뒤 이름이, 0.5초 뒤 직무가 나타나고, 위로 올리면 바로 사라진다", async ({ page }) => {
+  test("끝에 닿으면 0.8초 정적 뒤 이름이, 0.5초 뒤 Frontend Developer가, 2.2초 뒤 단어마다 Product Engineer로 바뀌고, 위로 올리면 바로 사라진다", async ({
+    page,
+  }) => {
     await page.goto("/journey?debug=stats");
     await waitReady(page);
     const title = page.locator("[data-journey-ending-title]");
+    const word = roleWord(page);
     await expect(title).toHaveAttribute("data-stage", "hidden");
     await expect(title.getByText("이준현")).toBeHidden();
     await recordStages(page);
     await scrollToProgress(page, 1);
     await expect(title).toHaveAttribute("data-stage", "role", { timeout: 10_000 });
     await expect(title.getByText("이준현")).toBeVisible();
-    await expect(title.getByText("Frontend Developer")).toBeVisible();
+    await expect(word("Frontend")).toBeVisible();
+    await expect(word("Developer")).toBeVisible();
+    await expect(word("Product")).toBeHidden();
+    await expect(word("Engineer")).toBeHidden();
+    await expect(title).toHaveAttribute("data-stage", "shift", { timeout: 10_000 });
+    await expect(word("Product")).toBeVisible();
+    await expect(word("Engineer")).toBeVisible();
+    await expect(word("Frontend")).toBeHidden();
+    await expect(word("Developer")).toBeHidden();
     const times = await stageTimes(page);
     // 타이머는 늦을 수는 있어도 이르지는 않다
     expect(times.name - times.still).toBeGreaterThanOrEqual(750);
     expect(times.role - times.name).toBeGreaterThanOrEqual(450);
+    expect(times.shift - times.role).toBeGreaterThanOrEqual(2150);
     await scrollToProgress(page, at("ending", 0.6));
     await expect(title).toHaveAttribute("data-stage", "hidden", { timeout: 1000 });
     await expect(title.getByText("이준현")).toBeHidden();
+    await expect(word("Engineer")).toBeHidden();
   });
 
   test("끝에 머무는 동안 이름은 그대로 있고 다시 시작하지 않는다", async ({ page }) => {
@@ -1281,23 +1300,29 @@ test.describe("엔딩: 흰 점과 이름", () => {
     await waitReady(page);
     const title = page.locator("[data-journey-ending-title]");
     await scrollToProgress(page, 1);
-    await expect(title).toHaveAttribute("data-stage", "role", { timeout: 10_000 });
+    await expect(title).toHaveAttribute("data-stage", "shift", { timeout: 15_000 });
     await recordStages(page);
     await page.waitForTimeout(2000);
     expect(await stageTimes(page)).toEqual({});
   });
 
-  test("움직임 줄이기면 끝에 닿자마자 정적 없이 이름과 직무가 함께 보인다", async ({ page }) => {
+  test("움직임 줄이기면 끝에 닿자마자 정적 없이 이름과 Product Engineer가 함께 보인다", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/journey?debug=stats");
     await waitReady(page);
     const title = page.locator("[data-journey-ending-title]");
+    const word = roleWord(page);
     await recordStages(page);
     await scrollToProgress(page, 1);
-    await expect(title).toHaveAttribute("data-stage", "role", { timeout: 2000 });
+    await expect(title).toHaveAttribute("data-stage", "shift", { timeout: 2000 });
     const times = await stageTimes(page);
     expect(times.still).toBeUndefined();
+    expect(times.role).toBeUndefined();
     await expect(title.getByText("이준현")).toBeVisible();
+    await expect(word("Product")).toBeVisible();
+    await expect(word("Engineer")).toBeVisible();
+    await expect(word("Frontend")).toBeHidden();
+    await expect(word("Developer")).toBeHidden();
   });
 
   test("2D에는 엔딩 이름이 없다", async ({ page }) => {

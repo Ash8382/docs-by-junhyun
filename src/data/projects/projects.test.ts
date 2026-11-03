@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { projects } from "./index";
 import { isItemGroups, type Inline, type ItemGroup, type Project, type Screen } from "./types";
+import { wally } from "./wally";
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -49,6 +50,7 @@ function inlineStrings(project: Project): Inline[] {
     ...(project.roleIntro ? [project.roleIntro] : []),
     ...role.flatMap((entry) => (typeof entry === "string" ? [entry] : entry.items)),
     ...(project.extraSections ?? []).flatMap((section) => section.items),
+    ...(project.cases ?? []).flatMap((item) => [...item.problem, ...item.solution, ...item.result]),
     ...(project.achievements ?? []),
     ...(project.note ? [project.note.text] : []),
   ];
@@ -82,6 +84,8 @@ function renderedLists(project: Project): string[][] {
     ...role.flatMap((entry) => (typeof entry === "string" ? [] : [entry.items])),
     (project.extraSections ?? []).map((section) => section.title),
     ...(project.extraSections ?? []).map((section) => section.items),
+    (project.cases ?? []).map((item) => item.title),
+    ...(project.cases ?? []).flatMap((item) => [item.problem, item.solution, item.result]),
   ];
 }
 
@@ -134,7 +138,8 @@ describe("프로젝트 데이터", () => {
     expect(isItemGroups([])).toBe(false);
   });
 
-  for (const project of projects) {
+  // WALLY는 여정 정류장이 아직 없어 projects 밖에 두고 블로그 글로만 싣는다.
+  for (const project of [...projects, wally]) {
     describe(project.slug, () => {
       it("헤더 필드가 비어 있지 않다", () => {
         expect(project.title).not.toBe("");

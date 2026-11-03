@@ -21,6 +21,16 @@ export const posts: Post[] = [
     image: "/posts/eslint-oxlint-thumb.png",
   },
   {
+    slug: "wally",
+    title: "WALLY",
+    description:
+      "워킹홀리데이 참가자를 위한 영수증 기반 예산 관리 iOS 앱. 프론트엔드 리드이자 PM으로 API 설계 제안, 서버 연동, TestFlight 배포, 코드 리뷰를 맡은 기록",
+    date: "2026.09 ~ 2026.10",
+    category: "project",
+    tags: ["React Native", "Expo", "TypeScript"],
+    image: "/wally-thumb.webp",
+  },
+  {
     slug: "safari-scroll-jank-web-animations",
     title: "Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글",
     description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",

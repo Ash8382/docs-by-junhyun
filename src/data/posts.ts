@@ -12,6 +12,15 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "eslint-oxlint-oxfmt-review",
+    title: "ESLint를 oxlint로 바꾸려다 꺼져 있던 CI 린트부터 살린 이야기",
+    description: "픽케어 메인 서비스에서 ESLint를 oxlint·oxfmt로 바꿀지 검토한 기록. CI에서 빠져 있던 린트를 먼저 살리고, 18.1초 대 0.31초 속도와 규칙 111개 중 104개 이식, 규칙별 탐지 일치 여부를 메인 레포에서 직접 쟀다.",
+    date: "2026.11.03",
+    category: "post",
+    tags: ["ESLint", "oxlint", "oxfmt", "CI", "개발도구"],
+    image: "/posts/eslint-oxlint-thumb.png",
+  },
+  {
     slug: "safari-scroll-jank-web-animations",
     title: "Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글",
     description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",

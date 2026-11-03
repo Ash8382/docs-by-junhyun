@@ -50,6 +50,8 @@ export interface StandardProject extends ProjectBase {
   role?: Inline[] | ItemGroup[];
   /** EUTCHA의 "기술 스택 및 규칙" 같은 추가 섹션 */
   extraSections?: ItemGroup[];
+  /** WALLY처럼 담당 역할 아래 문제·해결·결과 케이스를 붙인 글 */
+  cases?: Case[];
   achievements?: Inline[];
   note?: { title: string; text: Inline };
 }

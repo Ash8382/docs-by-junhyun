@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CaseCard } from "@/components/CaseCard";
 import { pickcare } from "@/data/projects/pickcare";
 import { renderInline } from "@/lib/inline";
 
@@ -7,67 +8,6 @@ export const metadata = {
   description:
     "반려동물 스타트업 픽케어에서 프론트엔드를 단독으로 맡아 메인 서비스·B2B CRM·스튜디오·네이티브 앱·사내 자동화 도구까지 다섯 개 저장소를 구축한 기록.",
 };
-
-type Block = { label: string; items: string[] };
-
-function Case({
-  title,
-  problem,
-  solution,
-  result,
-}: {
-  title: string;
-  problem: string[];
-  solution: string[];
-  result: string[];
-}) {
-  const blocks: Block[] = [
-    { label: "PROBLEM", items: problem },
-    { label: "SOLUTION", items: solution },
-    { label: "RESULT", items: result },
-  ];
-  return (
-    <div className="not-prose rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-border bg-muted/40">
-        <h4 className="font-semibold text-[15px] leading-snug text-zinc-900 dark:text-zinc-100">{title}</h4>
-      </div>
-      <div className="p-5 space-y-5">
-        {blocks.map((block) => (
-          <div key={block.label}>
-            <p className="font-mono text-[11px] tracking-[0.12em] text-muted-foreground mb-2.5">
-              ## {block.label}
-            </p>
-            <ul className="space-y-1.5">
-              {block.items.map((item) => (
-                <li key={item} className="flex gap-2.5 text-sm leading-relaxed">
-                  <span
-                    aria-hidden
-                    className={
-                      block.label === "RESULT"
-                        ? "font-mono text-emerald-600 dark:text-emerald-400 shrink-0"
-                        : "font-mono text-muted-foreground shrink-0"
-                    }
-                  >
-                    {block.label === "RESULT" ? "+" : "-"}
-                  </span>
-                  <span
-                    className={
-                      block.label === "RESULT"
-                        ? "text-emerald-800 dark:text-emerald-200"
-                        : "text-zinc-800 dark:text-zinc-200"
-                    }
-                  >
-                    {renderInline(item)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function Repo({
   name,
@@ -135,13 +75,7 @@ export default function PickcarePage() {
         {pickcare.repos.map((repo) => (
           <Repo key={repo.name} name={repo.name} tagline={repo.tagline} stack={repo.stack}>
             {repo.cases.map((item) => (
-              <Case
-                key={item.title}
-                title={item.title}
-                problem={item.problem}
-                solution={item.solution}
-                result={item.result}
-              />
+              <CaseCard key={item.title} {...item} />
             ))}
           </Repo>
         ))}

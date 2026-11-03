@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* 사이트는 <html class="dark">로 어두운 화면을 고정한다. Tailwind 4의 dark:는 기본이 OS 색상 설정이라,
+   OS가 라이트인 방문자에게는 dark: 글자색이 빠져 어두운 배경에 묻혔다. 같은 클래스를 따르게 한다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #09090b; /* zinc-950 */

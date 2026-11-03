@@ -14,7 +14,12 @@ const SLUGS = [
   "tix2u",
   "pfplay",
   "pickcare",
+  "wally",
 ] as const;
+
+// 기준 이미지는 dark로 찍었다. OS가 라이트인 방문자도 같은 화면을 봐야 하므로 light로 비교한다.
+// globals.css의 @custom-variant dark가 빠지면 dark: 글자색이 사라져 여기서 깨진다.
+test.use({ colorScheme: "light" });
 
 // 아주 긴 페이지는 한 장으로 찍으면 브라우저 한계에 걸릴 수 있어 4000px씩 나눠 찍는다.
 const CHUNK = 4000;

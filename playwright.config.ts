@@ -14,8 +14,9 @@ export default defineConfig({
   use: {
     // 서버는 이 맥 안(127.0.0.1)에만 연다. 0.0.0.0으로 열면 공인 주소에 바로 붙은 맥에서는 테스트하는 동안 인터넷에 열린다(2-4b)
     baseURL: `http://127.0.0.1:${PORT}`,
-    // 사이트는 <html class="dark">로 어두운 배경을 고정하지만, 글의 `dark:` 클래스는 브라우저의
-    // 색상 설정을 따른다. 기본값(light)으로 찍으면 text-zinc-950 제목·본문이 어두운 배경에 묻힌다.
+    // 사이트는 <html class="dark">로 어두운 배경을 고정하고, `dark:` 변형도 같은 클래스를 따른다
+    // (globals.css의 @custom-variant). 그래서 색상 설정과 상관없이 같은 화면이다.
+    // 블로그 글 비교(blog-projects.e2e.ts)는 일부러 light로 찍어 이 고정이 풀리지 않는지 본다.
     colorScheme: "dark",
   },
   projects: [

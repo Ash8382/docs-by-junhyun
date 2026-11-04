@@ -245,6 +245,28 @@ body:has([data-journey-page]) [data-site-footer] {
   pointer-events: auto;
 }
 
+/*
+ * 고정 카드가 화면 아래 40% 안에 들도록 정류장 카드의 요약은 2줄로 자르고, 기술이 많은 카드(data-chips="row")는 칩을 한 줄 가로 스크롤로
+ * 둔다(3단계 WALLY: 요약 4줄 + 칩 3줄이라 390×844에서 카드 위끝이 0.56이었다, 사용자 결정 2026-11-04). 전문과 기술 전체는 상세에 있다
+ */
+[data-journey-cards="fixed"] [data-journey-card] [data-card-summary] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+[data-journey-cards="fixed"] [data-journey-card] [data-chips="row"] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* 한 줄 칩의 폭이 패널(가로 배치의 항목)의 최소 폭이 되어 카드가 화면 밖으로 늘어나지 않게 한다. 칩 목록이 패널 안에서 스크롤된다 */
+[data-journey-cards="fixed"] [data-journey-card] .pointer-events-auto {
+  min-width: 0;
+}
+
 /* 홀로그램 이미지를 받지 못해 2막 썸네일이 보이면, 카드가 위쪽 3D를 덮지 않게 썸네일 높이를 줄인다 */
 [data-journey-cards="fixed"] [data-journey-card] img {
   max-height: 18svh;

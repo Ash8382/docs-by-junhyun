@@ -52,6 +52,8 @@ export interface StandardProject extends ProjectBase {
   extraSections?: ItemGroup[];
   /** WALLY처럼 담당 역할 아래 문제·해결·결과 케이스를 붙인 글 */
   cases?: Case[];
+  /** 제품 화면 아래 크레딧(WALLY: 앱 화면은 디자인팀 작업). 블로그 글과 여정 상세가 같은 문구를 쓴다 */
+  screensCredit?: Inline;
   achievements?: Inline[];
   note?: { title: string; text: Inline };
 }

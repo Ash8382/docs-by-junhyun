@@ -58,11 +58,19 @@ function DetailLink({ slug, repo, label }: { slug: string; repo?: RepoId; label:
   );
 }
 
+/**
+ * 기술이 이만큼 이상이면 세로 고정 카드에서 칩을 한 줄 가로 스크롤로 둔다(globals.css, 3단계 WALLY). 2막 카드(6~7개)는 두 줄 안에 들어
+ * 그대로이고, 8개인 WALLY는 세 줄이라 카드가 화면 아래 40%를 넘었다
+ */
+const CHIP_ROW_FROM = 8;
+
 function StackChips({ stack }: { stack: string[] }) {
+  // 한 줄 가로 스크롤이 되는 목록은 키보드로도 스크롤할 수 있게 포커스를 받고 이름을 단다(axe scrollable-region-focusable)
+  const row = stack.length >= CHIP_ROW_FROM;
   return (
-    <ul className="mt-3 flex flex-wrap gap-1.5">
+    <ul className="mt-3 flex flex-wrap gap-1.5" {...(row ? { "data-chips": "row", tabIndex: 0, "aria-label": "기술" } : {})}>
       {stack.map((tech) => (
-        <li key={tech} className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-zinc-200">
+        <li key={tech} className="shrink-0 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-zinc-200">
           {tech}
         </li>
       ))}
@@ -128,7 +136,9 @@ function ExhibitStop({ stop }: { stop: Stop }) {
           {project.period} · {project.team}
         </p>
         <h3 className="mt-1 text-2xl font-semibold">{project.title}</h3>
-        <p className="mt-2 text-zinc-300">{renderInline(project.summary)}</p>
+        <p data-card-summary className="mt-2 text-zinc-300">
+          {renderInline(project.summary)}
+        </p>
         <StackChips stack={project.stack} />
         {thumbnail && (
           // 썸네일이 작은 글(Stock2U·Tix2U는 폭 약 720px)도 레티나에서 선명하도록 원본 폭의 절반까지만 키운다.

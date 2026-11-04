@@ -82,7 +82,7 @@ export default function WallyPage() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            화면 디자인은 WALLY 디자인팀의 작업입니다. 목 데이터로 찍은 iOS 화면입니다.
+            {wally.screensCredit}
           </p>
         </section>
 

@@ -15,6 +15,7 @@ import {
   type Screen,
   type StandardProject,
 } from "@/data/projects/types";
+import { CaseCard } from "@/components/CaseCard";
 import { renderInline } from "@/lib/inline";
 import { lockScroll, unlockScroll } from "@/lib/journey/engine";
 import { activeRepo, journeyHash, parseJourneyHash } from "@/lib/journey/hash";
@@ -193,25 +194,44 @@ function DetailHeader({ project }: { project: Project }) {
 
 /**
  * 원본 폭의 절반까지만 키워 레티나에서도 선명하게 보인다(썸네일이 작은 Stock2U·Tix2U 포함).
- * 세로로 긴 휴대폰 화면(PiCKCARE app)은 한 줄에 나란히 둔다. 위아래로 쌓으면 패널 몇 화면을 차지한다.
+ * 세로로 긴 휴대폰 화면(PiCKCARE app, WALLY)은 한 줄에 셋씩 나란히 둔다. 위아래로 쌓으면 패널 몇 화면을 차지한다.
+ * 가로 화면과 섞여 있으면(WALLY: 썸네일 + 휴대폰 다섯) 가로 화면을 먼저 쌓고 휴대폰 격자를 그 아래에 둔다. 크레딧은 화면 아래에 둔다.
  */
-function Screens({ screens }: { screens: Screen[] }) {
+function Screens({ screens, credit }: { screens: Screen[]; credit?: Inline }) {
   if (screens.length === 0) return null;
-  const phone = screens.every((screen) => screen.height > screen.width);
+  const isPhone = (screen: Screen) => screen.height > screen.width;
+  const wide = screens.filter((screen) => !isPhone(screen));
+  const phones = screens.filter(isPhone);
   return (
-    <section className={phone ? "mt-6 grid grid-cols-3 gap-3" : "mt-6 space-y-3"} aria-label="제품 화면">
-      {screens.map((screen) => (
+    <section className="mt-6 space-y-3" aria-label="제품 화면">
+      {wide.map((screen) => (
         <Image
           key={screen.src}
           src={screen.src}
           alt={screen.alt}
           width={screen.width}
           height={screen.height}
-          sizes={phone ? "(min-width: 640px) 170px, 33vw" : "(min-width: 640px) 512px, 100vw"}
+          sizes="(min-width: 640px) 512px, 100vw"
           className="h-auto w-full rounded-lg border border-white/10"
-          style={phone ? undefined : { maxWidth: screen.width / 2 }}
+          style={{ maxWidth: screen.width / 2 }}
         />
       ))}
+      {phones.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {phones.map((screen) => (
+            <Image
+              key={screen.src}
+              src={screen.src}
+              alt={screen.alt}
+              width={screen.width}
+              height={screen.height}
+              sizes="(min-width: 640px) 170px, 33vw"
+              className="h-auto w-full rounded-lg border border-white/10"
+            />
+          ))}
+        </div>
+      )}
+      {credit && <p className="text-xs text-zinc-400">{renderInline(credit)}</p>}
     </section>
   );
 }
@@ -252,7 +272,7 @@ function RoleList({ role }: { role: Inline[] | ItemGroup[] }) {
 function StandardDetail({ project, light }: { project: StandardProject; light: boolean }) {
   return (
     <>
-      <Screens screens={project.screens} />
+      <Screens screens={project.screens} credit={project.screensCredit} />
       {light ? (
         <Section title="개요">
           {project.overview.map((paragraph) => (
@@ -265,6 +285,15 @@ function StandardDetail({ project, light }: { project: StandardProject; light: b
             <Section title="담당 역할">
               {project.roleIntro && <p>{renderInline(project.roleIntro)}</p>}
               <RoleList role={project.role} />
+            </Section>
+          )}
+          {project.cases && (
+            <Section title="주요 작업">
+              <div className="space-y-4">
+                {project.cases.map((item) => (
+                  <CaseCard key={item.title} {...item} />
+                ))}
+              </div>
             </Section>
           )}
           {project.achievements && (

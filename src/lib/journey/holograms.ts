@@ -22,21 +22,42 @@ export interface PixelRect {
   height: number;
 }
 
+/**
+ * 자리를 정하는 방식: act1은 길가에 서서 지나치고, act2는 원반에서 떠오르며, phone은 act2처럼 떠오르는 세로 휴대폰(WALLY, 3단계),
+ * hall은 PiCKCARE 저장소 줄이다. 막 번호로 고르지 않는다(3막에 PiCKCARE 줄과 WALLY 휴대폰이 함께 있다)
+ */
+export type HologramPlacementKind = "act1" | "act2" | "phone" | "hall";
+
+/** 홀로그램의 한 쪽(텍스처 배열의 층 하나): 원본 이미지와 크기, 잘라 쓸 영역, 층 이미지 */
+export interface HologramPage {
+  src: string;
+  width: number;
+  height: number;
+  crop?: PixelRect;
+  /** 층 이미지(public 기준). scripts/build-holograms.ts가 만든다 */
+  layerFile: string;
+  /** 층 안에 90° 돌려 넣었는가(세로 휴대폰 화면의 긴 변을 층의 긴 변에 맞춘다, 3단계) */
+  rotated: boolean;
+}
+
 export interface Hologram {
   /** 프로젝트 slug, PiCKCARE는 "pickcare/<저장소>". 짝인 상세 해시의 본문과 같다 */
   id: string;
   /** 정류장 id(timeline STOPS) */
   stopId: string;
   act: 1 | 2 | 3;
+  placement: HologramPlacementKind;
   repo?: RepoId;
-  /** 원본 이미지(public 기준)와 크기 */
+  /** 첫 쪽의 원본 이미지(public 기준)와 크기. 쪽들은 크기가 같다(그림 영역을 이것으로 정한다) */
   src: string;
   width: number;
   height: number;
   /** 잘라 쓸 영역(원본 화소). 없으면 원본 전체 */
   crop?: PixelRect;
-  /** 층 이미지(public 기준). scripts/build-holograms.ts가 만든다 */
-  layerFile: string;
+  /** 쪽들(대부분 하나, WALLY는 다섯). 스크롤에 따라 넘긴다(pageAt) */
+  pages: readonly HologramPage[];
+  /** 첫 쪽의 층 번호(텍스처 배열 HOLOGRAM_LAYERS 안) */
+  layer: number;
   /** 짝인 상세 링크의 해시. 상세가 없는 코코아톡은 null이라 누를 수 없다 */
   linkHash: string | null;
 }
@@ -44,6 +65,23 @@ export interface Hologram {
 /** 잘라 쓸 영역. 데이터는 3D 정보를 담지 않으므로(스펙 6절) 여기에 둔다. Todo App은 그라데이션 가운데의 카드만 쓴다 */
 const CROPS: Record<string, PixelRect> = {
   "todo-app": { x: 1053, y: 467, width: 774, height: 867 },
+};
+
+/** 세로 휴대폰으로 띄우는 프로젝트(스펙 3절 "WALLY 정류장 (3단계)") */
+const PHONE_SLUGS: readonly string[] = ["wally"];
+
+/**
+ * 층 안에 90° 돌려 넣는 홀로그램(시계 방향). 세로로 긴 휴대폰 화면(603×1311)을 그대로 넣으면 768×480 층에서 그림이 221×480화소라
+ * 흐리다. 돌리면 긴 변이 768화소(768×353)가 되어 약 1.6배 선명하다. 셰이더가 되돌려 읽는다(스펙 3절 "WALLY 정류장"의 "해상도")
+ */
+const ROTATED: ReadonlySet<string> = new Set(["wally"]);
+
+/** 휴대폰 홀로그램의 모서리 반지름: 그림 폭에 대한 비율(시안). 그림과 테두리 빛을 같은 곡선으로 자른다 */
+export const PHONE_CORNER = 0.12;
+
+/** 여러 쪽으로 넘기는 홀로그램의 화면 순서(public/projects/<slug>/<이름>.webp). WALLY는 블로그 글의 "화면" 순서와 같다 */
+const PAGES: Record<string, readonly string[]> = {
+  wally: ["entry", "home", "spending", "day", "budget"],
 };
 
 /** 첫 화면 대신 쓸 화면. cardnews의 첫 장은 빈 틀(마스터 4종)이라 완성된 세트를 쓴다 */
@@ -56,19 +94,54 @@ function representative(project: Project): Screen {
   return project.screens.find((screen) => screen.src === `/projects/${project.slug}/home.webp`) ?? project.screens[0];
 }
 
-function entry(id: string, stopId: string, act: 1 | 2 | 3, screen: Screen, link: string | null, repo?: RepoId): Hologram {
-  return {
-    id,
-    stopId,
-    act,
-    repo,
+/** 쪽들: 한 쪽이면 층 이미지가 `<id>.webp`, 여러 쪽이면 `<id>-<원본 이름>.webp` */
+function pagesOf(id: string, screens: readonly Screen[]): HologramPage[] {
+  const base = `/journey/holograms/${id.replace("/", "-")}`;
+  return screens.map((screen) => ({
     src: screen.src,
     width: screen.width,
     height: screen.height,
     crop: CROPS[id],
-    layerFile: `/journey/holograms/${id.replace("/", "-")}.webp`,
+    layerFile: screens.length === 1 ? `${base}.webp` : `${base}-${screen.src.split("/").pop()?.replace(/\.webp$/, "")}.webp`,
+    rotated: ROTATED.has(id),
+  }));
+}
+
+function entry(
+  id: string,
+  stopId: string,
+  act: 1 | 2 | 3,
+  placement: HologramPlacementKind,
+  screens: readonly Screen[],
+  link: string | null,
+  repo?: RepoId,
+): Hologram {
+  const pages = pagesOf(id, screens);
+  return {
+    id,
+    stopId,
+    act,
+    placement,
+    repo,
+    src: pages[0].src,
+    width: pages[0].width,
+    height: pages[0].height,
+    crop: pages[0].crop,
+    pages,
+    layer: 0,
     linkHash: link,
   };
+}
+
+/** 프로젝트의 쪽 화면들: 여러 쪽이면 PAGES 순서, 아니면 대표 화면 하나 */
+function screensOf(project: Project): Screen[] {
+  const names = PAGES[project.slug];
+  if (!names) return [representative(project)];
+  return names.map((name) => {
+    const screen = project.screens.find((item) => item.src === `/projects/${project.slug}/${name}.webp`);
+    if (!screen) throw new Error(`${project.slug}에 ${name} 화면이 없습니다`);
+    return screen;
+  });
 }
 
 function build(): Hologram[] {
@@ -84,24 +157,80 @@ function build(): Hologram[] {
         const screen = repo.screens.find((item) => item.src === SOURCES[id]) ?? repo.screens[0];
         if (!screen) throw new Error(`저장소 ${repo.id}에 화면이 없습니다`);
         const link = linked ? journeyHash({ slug: project.slug, repo: repo.id }) : null;
-        list.push(entry(id, stop.id, stop.act, screen, link, repo.id));
+        list.push(entry(id, stop.id, stop.act, "hall", [screen], link, repo.id));
       }
     } else {
       const link = linked ? journeyHash({ slug: project.slug }) : null;
-      list.push(entry(project.slug, stop.id, stop.act, representative(project), link));
+      const placement = stop.act === 1 ? "act1" : PHONE_SLUGS.includes(project.slug) ? "phone" : "act2";
+      list.push(entry(project.slug, stop.id, stop.act, placement, screensOf(project), link));
     }
+  }
+  // 층 번호: 홀로그램 순서대로 쪽을 펼친다
+  let layer = 0;
+  for (const hologram of list) {
+    hologram.layer = layer;
+    layer += hologram.pages.length;
   }
   return list;
 }
 
-/** 홀로그램 11개. 1막 셋, 2막 셋, PiCKCARE 저장소 다섯. 배열의 순서가 텍스처 배열의 층 번호다 */
+/** 홀로그램 12개. 1막 셋, 2막 셋, PiCKCARE 저장소 다섯, WALLY */
 export const HOLOGRAMS: readonly Hologram[] = build();
 
-/** 층에 넣을 그림의 크기(잘라 쓰면 잘라 낸 크기) */
-export function sourceSize(hologram: Hologram): { width: number; height: number } {
+/** 텍스처 배열의 층(16개): 홀로그램 순서대로 쪽을 펼친 목록. 배열의 순서가 층 번호다 */
+export const HOLOGRAM_LAYERS: readonly HologramPage[] = HOLOGRAMS.flatMap((hologram) => hologram.pages);
+
+/** 쪽이 넘어갈 때 교차 페이드가 한 쪽 구간에서 차지하는 비율(끝부분) */
+export const PAGE_FADE = 0.15;
+/** 멈추는 정류장에서 차가 서 있는 구간(정류장 안 위치, timeline의 dwell과 같다). 쪽은 이 구간에 고르게 나눈다 */
+const STANDING: readonly [number, number] = [0.25, 0.75];
+
+/** 보이는 쪽: 층 번호 from에서 to로 mix만큼 넘어간다 */
+export interface PageState {
+  from: number;
+  to: number;
+  mix: number;
+}
+
+/**
+ * 진행률 p에서 보이는 쪽(스펙 3절 "WALLY 정류장"의 "화면 넘김"). 같은 진행률이면 같은 쪽이고 되감으면 거꾸로 넘어간다.
+ * 쪽이 하나면 늘 그 층이다. 여럿이면 차가 서 있는 구간을 쪽 수로 나누고, 쪽마다 끝 PAGE_FADE에서 다음 쪽으로 교차한다.
+ * 떠오르는 동안(정류장 앞쪽)은 첫 쪽, 내려가는 동안(뒤쪽)은 마지막 쪽이다
+ */
+export function pageAt(hologram: Hologram, progress: number): PageState {
+  const count = hologram.pages.length;
+  if (count === 1) return { from: hologram.layer, to: hologram.layer, mix: 0 };
+  const range = rangeOf(hologram.stopId);
+  const t = Math.min(1, Math.max(0, (progress - range.start) / (range.end - range.start)));
+  const u = Math.min(1, Math.max(0, (t - STANDING[0]) / (STANDING[1] - STANDING[0]))) * count;
+  const index = Math.min(count - 1, Math.floor(u));
+  const last = index === count - 1;
+  return {
+    from: hologram.layer + index,
+    to: hologram.layer + (last ? index : index + 1),
+    mix: last ? 0 : smoothstep(1 - PAGE_FADE, 1, u - index),
+  };
+}
+
+/** 그 홀로그램의 쪽 층을 모두 받았는가. 하나라도 못 받으면 홀로그램 전체를 숨긴다(몇 쪽만 넘기면 스크롤 구간과 쪽이 어긋난다) */
+export function hologramLoaded(hologram: Hologram, layers: readonly unknown[]): boolean {
+  return hologram.pages.every((_, page) => layers[hologram.layer + page] != null);
+}
+
+/** PiCKCARE 저장소 줄(앞줄 번호 0~4의 순서) */
+export const REPO_HOLOGRAMS: readonly Hologram[] = HOLOGRAMS.filter((hologram) => hologram.placement === "hall");
+
+/** 층에 넣을 그림의 크기(잘라 쓰면 잘라 낸 크기). 홀로그램(첫 쪽)이나 쪽 하나에 쓴다 */
+export function sourceSize(hologram: Pick<HologramPage, "crop" | "width" | "height">): { width: number; height: number } {
   return hologram.crop
     ? { width: hologram.crop.width, height: hologram.crop.height }
     : { width: hologram.width, height: hologram.height };
+}
+
+/** 층 이미지 안에서 그림이 실제로 든 영역(정수 화소). 돌려 넣은 쪽은 가로세로를 바꿔 넣으므로 다르고, 아니면 그림 영역(layerRect)과 같다 */
+export function textureRect(page: HologramPage): PixelRect {
+  const size = sourceSize(page);
+  return page.rotated ? layerRect(size.height, size.width) : layerRect(size.width, size.height);
 }
 
 /** 그림이 층 안에서 차지하는 영역(정수 화소). 비율대로 가운데 넣고 남는 자리는 비운다. 스크립트와 장면이 같이 쓴다 */
@@ -146,7 +275,14 @@ export function frameLight(color: LinearRgb, line: number, halo: number, hover: 
 export const PLACEMENT = {
   act1: { along: 6, aside: 4.5, top: 3.4, box: [6, 3.75] as const, lookBack: 12, lookHeight: 1.6 },
   act2: { along: -8, aside: 5, top: 3.3, box: [7.5, 4.6875] as const },
-  act3: { along: -8, aside: 6, top: 3.8, backTop: 2.6, spacing: 6.5, back: 5, backPerStep: 1.5, backScale: 0.7, box: [6.4, 4] as const },
+  /**
+   * WALLY 세로 휴대폰(3단계): 2막 값에서 시작해, 길 오른쪽(사용자 결정)에서 왼쪽 카드와 겹치지 않게 정류장 가운데 13m 뒤로 옮겼다
+   * (8m면 그림 왼쪽이 화면 0.387로 카드 영역 0.41 안). 그러자 화면에서 2막 홀로그램보다 작아져(높이 0.21) 상자를 1.2배로 키웠다
+   * (사용자 결정 2026-11-04, 화면 높이 약 0.25). 아래끝 높이는 그대로 두고 위로 키운다: top = 3.3 + 0.2 × 4.6875 / 2.
+   * 세로 화면이 상자 높이를 다 써서 그림 높이가 5.625m다
+   */
+  phone: { along: -13, aside: 5, top: 3.76875, box: [9, 5.625] as const },
+  hall: { along: -8, aside: 6, top: 3.8, backTop: 2.6, spacing: 6.5, back: 5, backPerStep: 1.5, backScale: 0.7, box: [6.4, 4] as const },
 } as const;
 /** 떠오르기 전(빛 원반 위) 화면 가운데의 높이(m) */
 export const DISC_LIFT = 1;
@@ -222,8 +358,8 @@ const HALL_AXES = (() => {
 })();
 
 function hallBase(frame: StopFrame): Vec3 {
-  const s = frame.s0 + PLACEMENT.act3.along;
-  return roadPoint(s, frame.side * (roadFrame(s).width / 2 + PLACEMENT.act3.aside), 0);
+  const s = frame.s0 + PLACEMENT.hall.along;
+  return roadPoint(s, frame.side * (roadFrame(s).width / 2 + PLACEMENT.hall.aside), 0);
 }
 
 /** 열린 끝이 원반 자리 discS를 지나며 0 → 1 */
@@ -260,16 +396,17 @@ function placeRoadside(
   revealS: number,
   ending: number,
 ): HologramPlacement {
-  const act = hologram.act === 1 ? PLACEMENT.act1 : PLACEMENT.act2;
+  const first = hologram.placement === "act1";
+  const act = hologram.placement === "act1" ? PLACEMENT.act1 : hologram.placement === "phone" ? PLACEMENT.phone : PLACEMENT.act2;
   const discS = frame.s0 + act.along;
   const lateral = frame.side * (roadFrame(discS).width / 2 + act.aside);
   const reveal = revealed(discS, revealS);
   // 1막은 열린 끝과 함께 서 있어 원반도 그때 나타나고, 2막은 정류장에 들어서 떠오를 때 함께 나타난다
-  const stay = hologram.act === 1 ? 1 : viewAt(hologram.stopId, progress);
-  const arrival = hologram.act === 1 ? 1 : arrived(frame, progress);
+  const stay = first ? 1 : viewAt(hologram.stopId, progress);
+  const arrival = first ? 1 : arrived(frame, progress);
   const presence = reveal * stay * (1 - ending);
   const facing: Facing =
-    hologram.act === 1
+    first
       ? { kind: "point", point: roadPoint(frame.s0 - PLACEMENT.act1.lookBack, 0, PLACEMENT.act1.lookHeight) }
       : { kind: "camera" };
   return {
@@ -293,7 +430,7 @@ function placeHall(
   revealS: number,
   ending: number,
 ): HologramPlacement {
-  const hall = PLACEMENT.act3;
+  const hall = PLACEMENT.hall;
   const k = index - front;
   const step = Math.min(1, Math.abs(k));
   const reveal = revealed(frame.s0 + hall.along, revealS);
@@ -327,7 +464,7 @@ export function hologramsAt(progress: number, front: number): HologramPlacement[
     const frame = STOP_FRAMES.get(hologram.stopId);
     if (!frame) throw new Error(`홀로그램 ${hologram.id}의 정류장이 없습니다`);
     const placement =
-      hologram.act === 3
+      hologram.placement === "hall"
         ? placeHall(hologram, repoIndex++, frame, front, state.progress, state.revealS, state.ending)
         : placeRoadside(hologram, frame, state.progress, state.revealS, state.ending);
     placement.discOpacity *= vanish;

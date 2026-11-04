@@ -5,7 +5,7 @@ import { use, useEffect, useMemo, useRef } from "react";
 import { Vector3, type Camera, type DataArrayTexture, type WebGLRenderer } from "three";
 import { damp } from "@/lib/journey/damp";
 import { parseJourneyHash } from "@/lib/journey/hash";
-import { HOLOGRAMS, REPO_COUNT, hologramsAt, imageCorners, pickcareFront } from "@/lib/journey/holograms";
+import { HOLOGRAMS, REPO_COUNT, REPO_HOLOGRAMS, hologramLoaded, hologramsAt, imageCorners, pageAt, pickcareFront } from "@/lib/journey/holograms";
 import { getFocusedHologram, setShownHolograms } from "@/lib/journey/hologramStatus";
 import type { Vec3 } from "@/lib/journey/timeline";
 import { openHologramDetail } from "../hologramLinks";
@@ -38,7 +38,7 @@ function buildAtlas(gl: WebGLRenderer, layers: readonly LayerPixels[]): Atlas | 
   } else {
     try {
       const texture = createLayerTexture(layers);
-      if (uploadChecked(gl, texture)) atlas = { texture, loaded: layers.map((layer) => layer !== null) };
+      if (uploadChecked(gl, texture)) atlas = { texture, loaded: HOLOGRAMS.map((hologram) => hologramLoaded(hologram, layers)) };
       else texture.dispose();
     } catch (error) {
       console.warn("여정 홀로그램 텍스처 배열을 만들지 못해 홀로그램을 그리지 않습니다", error);
@@ -157,14 +157,15 @@ function HologramScene({ atlas }: { atlas: Atlas }) {
     cameraPosition[0] = state.camera.position.x;
     cameraPosition[1] = state.camera.position.y;
     cameraPosition[2] = state.camera.position.z;
-    writeHolograms(meshes, placements, cameraPosition, { loaded: atlas.loaded, glow: glow.current });
+    const pages = HOLOGRAMS.map((hologram) => pageAt(hologram, drive.progress));
+    writeHolograms(meshes, placements, cameraPosition, { loaded: atlas.loaded, glow: glow.current, pages });
     if (stats) {
       const repo = Math.min(REPO_COUNT - 1, Math.max(0, Math.round(front.current)));
       recordHolograms({
         shown: HOLOGRAMS.filter((_, index) => atlas.loaded[index]).map((hologram) => hologram.id),
         hovered: hovered.current === null ? null : HOLOGRAMS[hovered.current].id,
         glowing: HOLOGRAMS.filter((_, index) => glow.current[index] > 0.5).map((hologram) => hologram.id),
-        front: HOLOGRAMS.filter((hologram) => hologram.act === 3)[repo].id,
+        front: REPO_HOLOGRAMS[repo].id,
         screens: screenRects(placements, atlas.loaded, (index) => meshes.targets[meshes.order.indexOf(index)], state.camera),
       });
     }

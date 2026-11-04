@@ -6,6 +6,7 @@ import {
   HOLOGRAMS,
   PLACEMENT,
   REPO_COUNT,
+  REPO_HOLOGRAMS,
   REVEAL_FADE,
   hologramsAt,
   imageCorners,
@@ -175,7 +176,7 @@ describe("홀로그램 자리", () => {
   });
 
   it("3막 제목 자리에서는 PiCKCARE 원반이 보이지 않고, 1막 원반은 홀로그램과 함께 열린 끝을 따른다", () => {
-    for (const hologram of HOLOGRAMS.filter((item) => item.act === 3)) {
+    for (const hologram of REPO_HOLOGRAMS) {
       expect(placementOf(hologram.id, at("act-3", 0.5)).placement.discOpacity, hologram.id).toBe(0);
     }
     for (let p = 0; p < at("act-2", 0); p += 1e-3) {
@@ -252,8 +253,8 @@ describe("홀로그램 안전 영역(16:9·16:10)", () => {
     }
   });
 
-  it("2막은 머묾이 가장 클 때 헤더·요약 패널·차를 피해 화면 안에 든다", () => {
-    for (const id of ["stock2u", "tix2u", "pfplay"]) {
+  it("2막과 WALLY는 머묾이 가장 클 때 헤더·요약 패널·차를 피해 화면 안에 든다", () => {
+    for (const id of ["stock2u", "tix2u", "pfplay", "wally"]) {
       const side = objectSide(rangeOf(id).stop);
       const p = at(id, 0.5);
       const { placement, index } = placementOf(id, p);
@@ -281,7 +282,7 @@ describe("홀로그램 안전 영역(16:9·16:10)", () => {
     for (let front = 0; front < REPO_COUNT; front++) {
       const placements = hologramsAt(p, front);
       HOLOGRAMS.forEach((hologram, index) => {
-        if (hologram.act !== 3 || hologram.id === REPO_IDS[front]) return;
+        if (hologram.placement !== "hall" || hologram.id === REPO_IDS[front]) return;
         const placement = placements[index];
         for (const aspect of ASPECTS) {
           const rect = screenRect(pose, imageCorners(hologram, placement, pose.position), aspect);
@@ -297,7 +298,7 @@ describe("홀로그램 안전 영역(16:9·16:10)", () => {
 
 // ── PiCKCARE 저장소 패널과 앞줄(본문 배치 모형) ───────────────────
 
-const REPO_IDS = HOLOGRAMS.filter((hologram) => hologram.act === 3).map((hologram) => hologram.id);
+const REPO_IDS = REPO_HOLOGRAMS.map((hologram) => hologram.id);
 const HALL = rangeOf("pickcare");
 /** 패널 아래끝은 블록 아래끝에서 12svh 위다(JourneyContent HallStop의 pb-[12svh]) */
 const REPO_PANEL_PAD = 0.12;

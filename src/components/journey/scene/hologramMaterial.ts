@@ -31,14 +31,18 @@ export const DISC_LIGHT = 0.8;
 const LUMINANCE = /* glsl */ `vec3( 0.2126, 0.7152, 0.0722 )`;
 
 const SCREEN_VERTEX = /* glsl */ `
-attribute float aLayer;
+attribute vec3 aLayer;
 attribute vec4 aRect;
+attribute vec4 aTex;
+attribute vec2 aShape;
 attribute vec2 aBox;
 attribute vec3 aColor;
 attribute vec2 aState;
 varying vec2 vUv;
-varying float vLayer;
+varying vec3 vLayer;
 varying vec4 vRect;
+varying vec4 vTex;
+varying vec2 vShape;
 varying vec2 vBox;
 varying vec3 vColor;
 varying vec2 vState;
@@ -47,6 +51,8 @@ void main() {
   vUv = uv;
   vLayer = aLayer;
   vRect = aRect;
+  vTex = aTex;
+  vShape = aShape;
   vBox = aBox;
   vColor = aColor;
   vState = aState;
@@ -63,8 +69,10 @@ uniform float uBorder;
 uniform vec2 uLine;
 uniform vec2 uHalo;
 varying vec2 vUv;
-varying float vLayer;
+varying vec3 vLayer;
 varying vec4 vRect;
+varying vec4 vTex;
+varying vec2 vShape;
 varying vec2 vBox;
 varying vec3 vColor;
 varying vec2 vState;
@@ -79,15 +87,24 @@ void main() {
   vec2 layerUv = vec2( p.x / vBox.x + 0.5, 0.5 - p.y / vBox.y );
   vec3 color = vec3( 0.0 );
   float alpha = 0.0;
-  if ( all( greaterThanEqual( layerUv, vRect.xy ) ) && all( lessThanEqual( layerUv, vRect.xy + vRect.zw ) ) ) {
-    color = texture( uAtlas, vec3( layerUv, vLayer ) ).rgb;
-    alpha = 1.0;
-  }
-  // 테두리: 그림 영역을 둘러싼 둥근 사각형 선과 바깥 후광
   vec2 halfImage = 0.5 * vRect.zw * vBox;
   vec2 center = vec2( ( vRect.x + 0.5 * vRect.z - 0.5 ) * vBox.x, ( 0.5 - vRect.y - 0.5 * vRect.w ) * vBox.y );
-  vec2 d = abs( p - center ) - ( halfImage + 0.8 * margin );
-  float outside = length( max( d, 0.0 ) ) + min( max( d.x, d.y ), 0.0 );
+  // 휴대폰은 그림 폭의 vShape.y만큼 모서리를 둥글게 자른다(0이면 사각형). 그림과 테두리 선이 같은 곡선을 따른다
+  float radius = vShape.y * 2.0 * halfImage.x;
+  vec2 q = abs( p - center ) - ( halfImage - radius );
+  bool rounded = radius <= 0.0 || length( max( q, 0.0 ) ) + min( max( q.x, q.y ), 0.0 ) - radius <= 0.0;
+  if ( rounded && all( greaterThanEqual( layerUv, vRect.xy ) ) && all( lessThanEqual( layerUv, vRect.xy + vRect.zw ) ) ) {
+    // 그림 안 좌표(0~1). 돌려 넣은 층은 시계 방향으로 돌아 있어 되돌려 읽는다: (u, v) → (1 − v, u)
+    vec2 local = ( layerUv - vRect.xy ) / vRect.zw;
+    vec2 texUv = vTex.xy + ( vShape.x > 0.5 ? vec2( 1.0 - local.y, local.x ) : local ) * vTex.zw;
+    // 쪽: from 층에서 to 층으로 mix만큼(넘어가는 동안만 두 층을 읽는다)
+    color = texture( uAtlas, vec3( texUv, vLayer.x ) ).rgb;
+    if ( vLayer.z > 0.0 ) color = mix( color, texture( uAtlas, vec3( texUv, vLayer.y ) ).rgb, vLayer.z );
+    alpha = 1.0;
+  }
+  // 테두리: 그림 영역을 둘러싼 둥근 사각형 선과 바깥 후광(모서리 반지름이 0이면 그림 둘레에서 0.8 · 여백 바깥의 사각형)
+  vec2 d = abs( p - center ) - ( halfImage + 0.8 * margin - radius );
+  float outside = length( max( d, 0.0 ) ) + min( max( d.x, d.y ), 0.0 ) - radius;
   float line = 1.0 - smoothstep( 0.0, border, abs( outside ) );
   float halo = ( 1.0 - smoothstep( 0.0, 6.0 * border, max( outside, 0.0 ) ) ) * step( 0.0, outside );
   float glow = vState.y;

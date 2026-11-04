@@ -3,7 +3,7 @@ import { build } from "esbuild";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { HOLOGRAMS, layerRect, sourceSize } from "@/lib/journey/holograms";
+import { HOLOGRAMS, HOLOGRAM_LAYERS, layerRect, sourceSize, textureRect } from "@/lib/journey/holograms";
 import { rangeOf } from "@/lib/journey/timeline";
 
 /**
@@ -25,6 +25,11 @@ const VIEWPORT = { width: 1440, height: 900 };
 const READY_TIMEOUT = 30_000;
 const SETTLE_MS = 2500;
 const MATERIAL_LIMIT = 0.5;
+/**
+ * 돌려 넣은 쪽(WALLY)의 한도. 텍스처는 긴 변 768화소인데 이 검사는 그림을 층 상자 크기(높이 480화소)로 그려 줄여 읽으므로(밉맵)
+ * 화소까지 같을 수 없다. 되돌려 같은 크기로 줄인 참조와 평균 ΔE 2 미만이면 방향과 "발광 없음"을 함께 확인한 것으로 본다(3단계)
+ */
+const ROTATED_LIMIT = 2;
 const BLOOM_LIMIT = 2;
 /**
  * [정류장, 정류장 안의 위치]: 1막 주황(밝은 Todo, 어두운 EUTCHA), 2막 머묾, PiCKCARE 머묾.
@@ -38,6 +43,7 @@ const SPOTS: [string, number][] = [
   ["tix2u", 0.5],
   ["pfplay", 0.5],
   ["pickcare", 0.5],
+  ["wally", 0.5],
 ];
 
 type Pixels = { data: Buffer; width: number; height: number; channels: number };
@@ -103,8 +109,8 @@ async function checkMaterial(browser: Browser): Promise<boolean> {
     if (!state.uploaded || state.loaded?.some((ok) => !ok)) throw new Error(`층을 올리지 못했습니다: ${JSON.stringify(state)}`);
     let pass = true;
     console.log("① 화면 발광 없음(톤 매핑 없이 그린 화면 vs 층 이미지, 평균 ΔE 0.5 미만)");
-    for (const [index, hologram] of HOLOGRAMS.entries()) {
-      const origin = await page.evaluate((i) => window.hologramCheck?.show(i), index);
+    for (const [index, hologram] of HOLOGRAMS.entries()) for (const [pageIndex, layerPage] of hologram.pages.entries()) {
+      const origin = await page.evaluate(([i, p]) => window.hologramCheck?.show(i, p), [index, pageIndex] as const);
       if (!origin) throw new Error("검증 페이지가 준비되지 않았습니다");
       // 스크린샷은 디스플레이 색 공간으로 바뀔 수 있어(P3 화면) 캔버스의 화소를 그대로 읽는다
       const dataUrl = await page.evaluate(() => document.querySelector("canvas")?.toDataURL("image/png") ?? "");
@@ -112,10 +118,17 @@ async function checkMaterial(browser: Browser): Promise<boolean> {
       const size = sourceSize(hologram);
       const rect = layerRect(size.width, size.height);
       // 잘라 낸 층은 PNG(무손실)로 넘긴다. 형식을 정하지 않으면 원래 형식(손실 WebP)으로 다시 인코딩된다
-      const layer = await sharp(path.join("public", hologram.layerFile))
-        .extract({ left: rect.x, top: rect.y, width: rect.width, height: rect.height })
-        .png()
-        .toBuffer();
+      // 돌려 넣은 쪽은 텍스처 영역을 반시계로 되돌려 그림 영역 크기로 줄인 것이 참조다
+      const texture = textureRect(layerPage);
+      const extracted = sharp(path.join("public", layerPage.layerFile)).extract({
+        left: texture.x,
+        top: texture.y,
+        width: texture.width,
+        height: texture.height,
+      });
+      const layer = layerPage.rotated
+        ? await sharp(await extracted.rotate(270).png().toBuffer()).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer()
+        : await extracted.png().toBuffer();
       const expected = await pixels(
         await sharp({ create: { width: 1024, height: 640, channels: 3, background: "#000" } })
           .composite([{ input: layer, left: origin.left + rect.x, top: origin.top + rect.y }])
@@ -125,9 +138,10 @@ async function checkMaterial(browser: Browser): Promise<boolean> {
       // 그림 가장자리 한 화소는 테두리 경계와 맞닿아 뺀다
       const region = { left: origin.left + rect.x + 1, top: origin.top + rect.y + 1, width: rect.width - 2, height: rect.height - 2 };
       const result = deltaE(expected, shot, region);
-      const ok = result.mean < MATERIAL_LIMIT;
+      const ok = result.mean < (layerPage.rotated ? ROTATED_LIMIT : MATERIAL_LIMIT);
       pass &&= ok;
-      console.log(`  ${ok ? "통과" : "실패"} ${hologram.id}: 평균 ${result.mean.toFixed(3)}, 최대 ${result.max.toFixed(2)}`);
+      const name = hologram.pages.length > 1 ? `${hologram.id} ${pageIndex + 1}쪽` : hologram.id;
+      console.log(`  ${ok ? "통과" : "실패"} ${name}: 평균 ${result.mean.toFixed(3)}, 최대 ${result.max.toFixed(2)}`);
     }
     return pass;
   } finally {
@@ -195,9 +209,9 @@ async function shootSpots(browser: Browser, bloom: boolean): Promise<{ shots: Pi
 /** 층 이미지 파일 합계와 브라우저가 받은 양 */
 async function reportDownload(download: Download): Promise<void> {
   let files = 0;
-  for (const hologram of HOLOGRAMS) files += (await stat(path.join("public", hologram.layerFile))).size;
+  for (const page of HOLOGRAM_LAYERS) files += (await stat(path.join("public", page.layerFile))).size;
   console.log(
-    `내려받는 양: 층 이미지 ${HOLOGRAMS.length}장 파일 합계 ${files}바이트, ` +
+    `내려받는 양: 층 이미지 ${HOLOGRAM_LAYERS.length}장 파일 합계 ${files}바이트, ` +
       `받은 양 ${download.body + download.headers}바이트(본문 ${download.body} + 헤더 ${download.headers}, 요청 ${download.requests}개)`,
   );
 }

@@ -8,7 +8,7 @@ import { rangeOf, type Vec3 } from "./timeline";
 
 const pieces = landscapePieces();
 
-/** 대표 카메라(스펙 "가림 없음"): 1막은 지나가며, 2막과 PiCKCARE는 도는 중과 머묾, 엔딩은 오르는 중과 끝 */
+/** 대표 카메라(스펙 "가림 없음"): 1막은 지나가며, 2막·PiCKCARE·WALLY는 도는 중과 머묾, 엔딩은 오르는 중과 끝 */
 const VIEWS: [string, number][] = [
   ["kokoa-clone", 0.25],
   ["kokoa-clone", 0.75],
@@ -24,6 +24,10 @@ const VIEWS: [string, number][] = [
   ["pickcare", 0.5],
   ["pickcare", 0.7],
   ["pickcare", 0.94],
+  // 3단계: WALLY 휴대폰은 길 오른쪽이라 정류장 카메라가 지나온 3막 도시를 돌아본다(스펙 3절 "WALLY 정류장" 완료 조건)
+  ["wally", 0.15],
+  ["wally", 0.5],
+  ["wally", 0.85],
   // 엔딩은 풍경이 아직 보이는 앞부분만 본다. 구간 35%까지 풍경이 사라지고 끝에서는 길도 흰 점으로 모인다(병합 뒤 새 엔딩)
   ["ending", 0.15],
   ["ending", 0.3],

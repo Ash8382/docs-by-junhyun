@@ -25,7 +25,18 @@ import {
   type CameraPose,
   type DriveState,
 } from "./drive";
-import { CAMERA_FOV, OVERVIEW_ARRIVAL, SCROLL_LENGTH, STOP_RANGES, dwellWeight, overviewWeight, rangeOf, type Vec3 } from "./timeline";
+import {
+  CAMERA_FOV,
+  OVERVIEW_ARRIVAL,
+  SCROLL_LENGTH,
+  STOP_RANGES,
+  UNITS_PER_SCREEN,
+  dwellWeight,
+  overviewWeight,
+  pathParamAt,
+  rangeOf,
+  type Vec3,
+} from "./timeline";
 
 const STEPS = 4000;
 const progresses = Array.from({ length: STEPS + 1 }, (_, index) => index / STEPS);
@@ -162,12 +173,13 @@ describe("driveAt", () => {
     }
   });
 
-  it("PiCKCARE를 지나면 도로 끝까지 열리고, 엔딩 끝에서 길 전체가 켜진다", () => {
-    expect(revealSAt(at("pickcare", 0.75))).toBeCloseTo(ROAD_END, 6);
+  it("마지막 정류장(WALLY)을 지나면 도로 끝까지 열리고, 엔딩 끝에서 길 전체가 켜진다", () => {
+    expect(revealSAt(at("pickcare", 0.75))).toBeLessThan(ROAD_END);
+    expect(revealSAt(at("wally", 0.75))).toBeCloseTo(ROAD_END, 6);
     const end = driveAt(1);
     expect(end.revealS).toBeCloseTo(ROAD_END, 6);
     expect(end.ending).toBe(1);
-    expect(driveAt(at("pickcare", 0.5)).ending).toBe(0);
+    expect(driveAt(at("wally", 0.5)).ending).toBe(0);
   });
 
   it("차 자세는 정류장 경계에서 끊기지 않는다", () => {
@@ -188,9 +200,13 @@ describe("driveAt", () => {
     expect(speedAt(at("ending", 0.5))).toBe(0);
   });
 
-  it("주행 속도는 정류장 경계에서 이어진다", () => {
+  it("주행 속도는 정류장 경계에서 이어진다(경계 양쪽의 한쪽 미분이 같다)", () => {
+    // speedAt은 진행률 ±1e-4 평균이라, 여정이 길고 마지막 정류장(WALLY)이 짧으면 멈추는 경계에서 평균만으로 차이가 생긴다(3단계).
+    // 경계에서 실제로 멈칫하는지는 아주 작은 간격의 한쪽 미분으로 본다(화면당 경로, 정속 = 1)
+    const h = 1e-7;
+    const speed = (a: number, b: number) => (pathParamAt(b) - pathParamAt(a)) / (b - a) / SCROLL_LENGTH / UNITS_PER_SCREEN;
     for (const range of STOP_RANGES.slice(1)) {
-      expect(Math.abs(speedAt(range.start - 1e-4) - speedAt(range.start + 1e-4)), range.stop.id).toBeLessThan(0.01);
+      expect(Math.abs(speed(range.start - h, range.start) - speed(range.start, range.start + h)), range.stop.id).toBeLessThan(1e-3);
     }
   });
 });
@@ -210,8 +226,9 @@ describe("카메라", () => {
     for (let index = 1; index < progresses.length; index++) {
       const a = driveAt(progresses[index - 1]);
       const b = driveAt(progresses[index]);
-      // 진행률 1/4000 한 걸음. 엔딩에서는 높이 오르므로 더 크게 움직인다.
-      const limit = b.ending > 0 ? 6 : 1;
+      // 진행률 1/4000 한 걸음. 엔딩에서는 높이 오르므로 더 크게 움직인다. 한도는 2단계(17.5화면)에서 정한 값을 같은 스크롤 양으로
+      // 환산한다: 여정이 길어지면(3단계 20.5화면) 진행률 한 걸음이 더 많은 스크롤이다
+      const limit = (b.ending > 0 ? 6 : 1) * (SCROLL_LENGTH / 17.5);
       expect(distance(a.camera.position, b.camera.position), `p=${progresses[index]}`).toBeLessThan(limit);
       expect(distance(a.camera.target, b.camera.target), `p=${progresses[index]}`).toBeLessThan(limit);
     }

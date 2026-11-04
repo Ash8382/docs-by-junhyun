@@ -7,7 +7,7 @@ import {
   UnsignedByteType,
   type Texture,
 } from "three";
-import { HOLOGRAMS, LAYER } from "@/lib/journey/holograms";
+import { HOLOGRAM_LAYERS, LAYER } from "@/lib/journey/holograms";
 
 /**
  * 홀로그램 층 이미지 11장을 텍스처 배열 하나로 묶는다(스펙 3절 "텍스처 배열"). 실패는 두 갈래다.
@@ -69,7 +69,7 @@ let pending: Promise<LayerPixels[]> | null = null;
 
 /** 11장을 함께 받는다. React use()가 기다릴 수 있도록 같은 약속을 돌려준다(장면과 같은 Suspense 안에서 기다린다) */
 export function loadHologramLayers(): Promise<LayerPixels[]> {
-  pending ??= Promise.all(HOLOGRAMS.map((hologram) => loadLayer(hologram.layerFile)));
+  pending ??= Promise.all(HOLOGRAM_LAYERS.map((page) => loadLayer(page.layerFile)));
   return pending;
 }
 

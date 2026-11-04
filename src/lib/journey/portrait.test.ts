@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROAD_END, ROAD_START, driveAt, endingPoint, roadFrame, roadPoint, stopScreenSide, toCarFrame, type CameraPose } from "./drive";
-import { HOLOGRAMS, hologramsAt, imageCorners, pickcareFront } from "./holograms";
+import { HOLOGRAMS, REPO_HOLOGRAMS, hologramsAt, imageCorners, pickcareFront } from "./holograms";
 import { PORTRAIT_LENS, WIDE_LENS, lensFor, projectThrough } from "./lens";
 import { CARDS, activeCard, cardProgress, followPortrait, portraitCamera, portraitViewWeight, stopFocus, type PortraitView } from "./portrait";
 import { OVERVIEW_ARRIVAL, SCROLL_LENGTH, STOP_RANGES, rangeOf, stopAt, viewWeight, type Vec3 } from "./timeline";
@@ -51,7 +51,7 @@ const READING: { label: string; progress: number }[] = [
   ...STOP_RANGES.filter((range) => range.stop.kind === "project").flatMap((range) =>
     [0.3, 0.5, 0.7].map((within) => ({ label: `${range.stop.id} ${within}`, progress: at(range.stop.id, within) })),
   ),
-  ...HOLOGRAMS.filter((hologram) => hologram.act === 3).map((hologram) => ({ label: hologram.id, progress: cardProgress(hologram.id) })),
+  ...REPO_HOLOGRAMS.map((hologram) => ({ label: hologram.id, progress: cardProgress(hologram.id) })),
 ];
 
 function bounds(points: Vec3[], pose: CameraPose, aspect: number) {
@@ -261,14 +261,14 @@ describe("아래 고정 카드", () => {
       const screens = within * range.stop.length;
       // 경계(0.95화면)는 진행률 환산의 반올림으로 어느 쪽이든 될 수 있어 건너뛴다
       if (Math.abs(screens - (1.2 - 0.25)) < 1e-6) continue;
-      const expected = screens < 1.2 - 0.25 ? "pickcare" : HOLOGRAMS.filter((hologram) => hologram.act === 3)[pickcareFront(progress, "")].id;
+      const expected = screens < 1.2 - 0.25 ? "pickcare" : REPO_HOLOGRAMS[pickcareFront(progress, "")].id;
       expect(activeCard(progress, ""), within.toFixed(3)).toBe(expected);
     }
     expect(activeCard(at("pickcare", 0.5), "#pickcare/app")).toBe("pickcare/app");
   });
 
   it("카드마다 보이는 자리(cardProgress)에서 그 카드가 고른다", () => {
-    expect(CARDS).toHaveLength(16);
+    expect(CARDS).toHaveLength(17);
     for (const card of CARDS) expect(activeCard(cardProgress(card), ""), card).toBe(card);
   });
 });

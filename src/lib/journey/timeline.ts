@@ -41,6 +41,8 @@ export const STOPS: Stop[] = [
   { id: "pfplay", kind: "project", act: 2, length: 2, pin: true, slug: "pfplay" },
   { id: "act-3", kind: "act", act: 3, length: 0.5, pin: false },
   { id: "pickcare", kind: "hall", act: 3, length: 5, pin: true, slug: "pickcare" },
+  // 3단계(스펙 3절 "WALLY 정류장"): 다섯 화면을 넘기느라 2막 정류장(2)보다 길다. 차가 서 있는 1.5화면을 다섯 장이 0.3화면씩 나눈다
+  { id: "wally", kind: "project", act: 3, length: 3, pin: true, slug: "wally" },
   { id: "ending", kind: "ending", act: 0, length: 2, pin: false },
 ];
 
@@ -186,9 +188,15 @@ export function pathParamAt(progress: number): number {
 
 const PROJECT_STOPS = STOPS.filter((stop) => stop.kind === "project");
 
-/** 프로젝트의 제품 화면(2-3)이 화면의 어느 쪽에 서는가. 프로젝트 순서대로 왼쪽(-1)·오른쪽(1)을 번갈아 쓴다. 본문 패널은 반대편에 둔다. */
+/**
+ * 번갈아 규칙 대신 쪽을 정한 정류장. WALLY는 오른쪽(사용자 결정 2026-11-03): 왼쪽이면 정류장 카메라가 돌아보는 방향에 1막 절벽이
+ * 휴대폰 뒤로 크게 서고, 오른쪽이면 지나온 길이 굽이쳐 보인다(스펙 3절 "WALLY 정류장 (3단계)")
+ */
+const FIXED_SIDES: Readonly<Record<string, -1 | 1>> = { wally: 1 };
+
+/** 프로젝트의 제품 화면(2-3)이 화면의 어느 쪽에 서는가. 프로젝트 순서대로 왼쪽(-1)·오른쪽(1)을 번갈아 쓴다(FIXED_SIDES는 예외). 본문 패널은 반대편에 둔다. */
 export function objectSide(stop: Stop): -1 | 1 {
-  return PROJECT_STOPS.indexOf(stop) % 2 === 0 ? -1 : 1;
+  return FIXED_SIDES[stop.id] ?? (PROJECT_STOPS.indexOf(stop) % 2 === 0 ? -1 : 1);
 }
 
 /**

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CAR_END } from "./drive";
 import {
+  HOLOGRAM_LAYERS,
   FRAME_LIGHT,
   FRONT_LEAD,
   HOLOGRAMS,
@@ -21,7 +22,7 @@ import { HALL_REPO_END, HALL_REPO_START, STOPS, rangeOf, type Vec3 } from "./tim
 import { trailColor } from "./trail";
 
 describe("홀로그램 목록", () => {
-  it("1막 셋, 2막 셋, PiCKCARE 저장소 다섯 순서로 11개다", () => {
+  it("1막 셋, 2막 셋, PiCKCARE 저장소 다섯, WALLY 순서로 12개다", () => {
     expect(HOLOGRAMS.map((hologram) => hologram.id)).toEqual([
       "kokoa-clone",
       "todo-app",
@@ -34,6 +35,7 @@ describe("홀로그램 목록", () => {
       "pickcare/studio",
       "pickcare/app",
       "pickcare/cardnews",
+      "wally",
     ]);
     for (const hologram of HOLOGRAMS) {
       const stop = STOPS.find((item) => item.id === hologram.stopId);
@@ -78,12 +80,13 @@ describe("홀로그램 목록", () => {
       "#pickcare/studio",
       "#pickcare/app",
       "#pickcare/cardnews",
+      "#wally",
     ]);
   });
 
-  it("층 이미지 파일은 홀로그램마다 따로다", () => {
-    const files = HOLOGRAMS.map((hologram) => hologram.layerFile);
-    expect(new Set(files).size).toBe(HOLOGRAMS.length);
+  it("층 이미지 파일은 층(홀로그램의 쪽)마다 따로다", () => {
+    const files = HOLOGRAM_LAYERS.map((page) => page.layerFile);
+    expect(new Set(files).size).toBe(HOLOGRAM_LAYERS.length);
     for (const file of files) expect(file).toMatch(/^\/journey\/holograms\/[a-z0-9-]+\.webp$/);
   });
 });
@@ -219,11 +222,11 @@ describe("층 이미지 파일(scripts/build-holograms.ts)", () => {
     throw new Error(`알 수 없는 WebP 형식(${chunk}): ${file}`);
   }
 
-  it("홀로그램마다 층 크기(768×480)의 WebP가 있다", () => {
-    for (const hologram of HOLOGRAMS) {
-      const file = join(process.cwd(), "public", hologram.layerFile);
-      expect(existsSync(file), hologram.layerFile).toBe(true);
-      expect(webpSize(file), hologram.layerFile).toEqual({ width: LAYER.width, height: LAYER.height });
+  it("층마다 층 크기(768×480)의 WebP가 있다", () => {
+    for (const page of HOLOGRAM_LAYERS) {
+      const file = join(process.cwd(), "public", page.layerFile);
+      expect(existsSync(file), page.layerFile).toBe(true);
+      expect(webpSize(file), page.layerFile).toEqual({ width: LAYER.width, height: LAYER.height });
     }
   });
 });

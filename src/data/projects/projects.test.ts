@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { projects } from "./index";
 import { isItemGroups, type Inline, type ItemGroup, type Project, type Screen } from "./types";
-import { wally } from "./wally";
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -102,8 +101,9 @@ describe("프로젝트 데이터", () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it("7개가 종료일 순서로 등록돼 있다", () => {
+  it("8개가 끝난 날짜 순(진행 중인 프로젝트는 시작 날짜)으로 등록돼 있다", () => {
     // 여정(/journey)의 정류장 순서가 이 순서를 따른다. 시작일로 정렬하면 Stock2U가 EUTCHA 앞에 와 막 구분이 깨진다.
+    // 진행 중인 PiCKCARE는 시작 날짜(2025.09)로 쳐서 WALLY(2026.10 종료)가 그 뒤다(스펙 2절, 3단계)
     expect(projects.map((project) => project.slug)).toEqual([
       "kokoa-clone",
       "todo-app",
@@ -112,7 +112,19 @@ describe("프로젝트 데이터", () => {
       "tix2u",
       "pfplay",
       "pickcare",
+      "wally",
     ]);
+  });
+
+  it("기간으로 계산한 정렬 키(끝난 날짜, 진행 중이면 시작 날짜)가 줄지 않는다", () => {
+    const key = (period: string) => {
+      const [start, end] = period.split("~").map((part) => part.trim());
+      const date = /^\d{4}\.\d{2}/.test(end) ? end : start;
+      const [year, month, day = "00"] = date.split(".");
+      return `${year}${month}${day}`;
+    };
+    const keys = projects.map((project) => key(project.period));
+    expect(keys).toEqual([...keys].sort());
   });
 
   it("PiCKCARE 저장소의 짧은 id가 탭 순서대로 있다", () => {
@@ -138,8 +150,7 @@ describe("프로젝트 데이터", () => {
     expect(isItemGroups([])).toBe(false);
   });
 
-  // WALLY는 여정 정류장이 아직 없어 projects 밖에 두고 블로그 글로만 싣는다.
-  for (const project of [...projects, wally]) {
+  for (const project of projects) {
     describe(project.slug, () => {
       it("헤더 필드가 비어 있지 않다", () => {
         expect(project.title).not.toBe("");

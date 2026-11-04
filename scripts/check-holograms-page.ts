@@ -1,7 +1,7 @@
 import { Color, NoToneMapping, OrthographicCamera, Scene, WebGLRenderer } from "three";
 import { createLayerTexture, loadLayer, uploadChecked } from "@/components/journey/scene/hologramAtlas";
 import { createHologramMeshes, writeHolograms } from "@/components/journey/scene/hologramMeshes";
-import { HOLOGRAMS, LAYER, type HologramPlacement } from "@/lib/journey/holograms";
+import { HOLOGRAMS, HOLOGRAM_LAYERS, LAYER, hologramLoaded, type HologramPlacement } from "@/lib/journey/holograms";
 
 /**
  * check:holograms ①의 브라우저 쪽(scripts/check-holograms.ts가 esbuild로 묶어 띄운다). 실제 홀로그램 재질과 메시로 층 하나를
@@ -11,7 +11,7 @@ export const CANVAS = { width: 1024, height: 640 } as const;
 
 declare global {
   interface Window {
-    hologramCheck?: { loaded: boolean[]; uploaded: boolean; show(index: number): { left: number; top: number } };
+    hologramCheck?: { loaded: boolean[]; uploaded: boolean; show(index: number, page?: number): { left: number; top: number } };
   }
 }
 
@@ -27,18 +27,18 @@ async function main() {
   const camera = new OrthographicCamera(-CANVAS.width / 2, CANVAS.width / 2, CANVAS.height / 2, -CANVAS.height / 2, 0.1, 2000);
   camera.position.set(0, 0, 1000);
 
-  const layers = await Promise.all(HOLOGRAMS.map((hologram) => loadLayer(hologram.layerFile)));
+  const layers = await Promise.all(HOLOGRAM_LAYERS.map((page) => loadLayer(page.layerFile)));
   const texture = createLayerTexture(layers);
   const uploaded = uploadChecked(renderer, texture);
   const meshes = createHologramMeshes(texture);
   scene.add(meshes.screens);
-  const loaded = layers.map((layer) => layer !== null);
+  const loaded = HOLOGRAMS.map((hologram) => hologramLoaded(hologram, layers));
 
   window.hologramCheck = {
     loaded,
     uploaded,
     // 층 상자를 화소 단위(768×480)로 화면 가운데에 둔다. 왼쪽 위 모서리가 정수 화소라 텍셀 가운데가 화소 가운데에 온다
-    show(index) {
+    show(index, page = 0) {
       const placements: HologramPlacement[] = HOLOGRAMS.map((hologram, i) => ({
         id: hologram.id,
         center: [0, 0, 0],
@@ -49,7 +49,11 @@ async function main() {
         discOpacity: 0,
         colorS: 0,
       }));
-      writeHolograms(meshes, placements, [0, 0, 1000], { loaded, glow: HOLOGRAMS.map(() => 0) });
+      const pages = HOLOGRAMS.map((hologram, i) => {
+        const layer = hologram.layer + (i === index ? page : 0);
+        return { from: layer, to: layer, mix: 0 };
+      });
+      writeHolograms(meshes, placements, [0, 0, 1000], { loaded, glow: HOLOGRAMS.map(() => 0), pages });
       renderer.render(scene, camera);
       return { left: (CANVAS.width - LAYER.width) / 2, top: (CANVAS.height - LAYER.height) / 2 };
     },

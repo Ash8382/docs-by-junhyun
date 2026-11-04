@@ -1,8 +1,9 @@
-import { driveAt, roadFrame } from "./drive";
+import { SEEDED_ROAD_END, drawSegments, driveAt, roadFrame } from "./drive";
 import {
   LANDSCAPE_ACTS,
   LANDSCAPE_SEED,
   RULES,
+  BACKDROP,
   actEnd,
   actSights,
   actStart,
@@ -509,8 +510,10 @@ const CITY = {
 /**
  * 첨탑: 막 끝(마지막 도로 지점)에서 앞 along·옆 lateral(왼쪽 −), 높이, 바닥 반폭과 긴 축 배율, 기울기(m), 비틀림(rad), 고리 수,
  * 도로 아래 바닥(m), 색·켜짐 자리(막 시작에서 m, 3막이면 정류장 자리 s 200)
+ * 3단계(사용자 결정 2026-11-04): 길 끝이 WALLY 뒤로 옮겨지자 1440×900 3막 제목 끝에서 PiCKCARE 소개 카드에 걸려, 앞 42 → 60m·옆 −142 → −128m로
+ * 옮겼다(카드 오른쪽 끝 0.38보다 0.04 오른쪽, 꼭대기는 헤더에서 떨어진 y 0.10 이상, 도로에서 129m, 진입 카메라에서 약 17.2°)
  */
-const SPIRE = { along: 42, lateral: -142, height: 70, halfWidth: 11, stretch: 1.35, lean: 14, twist: 0.35, rings: 10, bottom: 50, light: 40 } as const;
+const SPIRE = { along: 60, lateral: -128, height: 70, halfWidth: 11, stretch: 1.35, lean: 14, twist: 0.35, rings: 10, bottom: 50, light: 40 } as const;
 
 /** 막 진입 주행 카메라(막 진입 정류장 가운데). 도시 높이와 빛나는 면을 이 카메라에 맞춘다 */
 export function cityView(act: number, acts: readonly LandscapeAct[] = LANDSCAPE_ACTS): Vec3 {
@@ -535,144 +538,152 @@ export function spireTip(act: number, acts: readonly LandscapeAct[] = LANDSCAPE_
 }
 
 function buildCity(act: number, acts: readonly LandscapeAct[]): LandscapePiece {
-  const random = rng(LANDSCAPE_SEED + 303);
   const writer = new PieceWriter();
   const start = actStart(act, acts);
   const from = appearFrom(act, acts);
   const view = cityView(act, acts);
   const spire = spireBase(act, acts);
   const sights = actSights(act);
-  const cityStart = actTitleEnd(act, acts);
-  const cityEnd = actEnd(act, acts) - CITY.endMargin;
-  for (let n = 0; n < CITY.count; n++) {
-    const s = cityStart + (cityEnd - cityStart) * random();
-    const side = random() < 0.5 ? -1 : 1;
-    const { origin, right, forward } = flatFrame(s);
-    const width = CITY.width[0] + CITY.width[1] * random();
-    const depth = CITY.width[0] + CITY.width[1] * random();
-    let lateral = side * (CITY.lateral[0] + width / 2 + CITY.lateral[1] * Math.pow(random(), 0.7));
-    lateral = pushOut(origin, right, side, lateral, RULES.push + width / 2);
-    let base: Vec3 = [origin[0] + right[0] * lateral, origin[1], origin[2] + right[2] * lateral];
+  const hallSights = sights.filter((sight) => sight.clear === BACKDROP.hall);
+  // 진입 카메라에서 첨탑을 가리는 건물은 두지 않는다
+  const spireDistance = Math.hypot(spire[0] - view[0], spire[2] - view[2]);
+  const blocksSpire = (base: Vec3, size: number): boolean => {
     const distance = Math.hypot(base[0] - view[0], base[2] - view[2]);
-    // 진입 카메라에서 2.5~7°로 보이는 높이: 지평선 위 낮은 띠가 되고 첨탑(약 17°)이 확연히 높다
-    const elevation = ((CITY.elevation[0] + CITY.elevation[1] * Math.pow(random(), 1.4)) * Math.PI) / 180;
-    const height = Math.max(CITY.height[0], Math.min(CITY.height[1], view[1] + distance * Math.tan(elevation) - origin[1]));
-    // 진입 카메라에서 첨탑을 가리는 건물은 두지 않는다
-    const spireDistance = Math.hypot(spire[0] - view[0], spire[2] - view[2]);
     let gap = Math.abs(Math.atan2(spire[2] - view[2], spire[0] - view[0]) - Math.atan2(base[2] - view[2], base[0] - view[0]));
     if (gap > Math.PI) gap = 2 * Math.PI - gap;
-    if (distance < spireDistance && gap < (CITY.spireGap * Math.PI) / 180 + Math.atan(Math.max(width, depth) / distance)) {
-      writer.exclude("building", "spire", base);
-      continue;
-    }
-    // 주요 건물(빛)은 진입 카메라에서 130m 밖만: 가까운 건물의 지붕선이 눈높이에서 선으로 떠 보이지 않게
-    const main = random() < CITY.main && distance > CITY.mainView;
-    const tiers = 1 + Math.floor(random() * 3);
-    const yaw = (random() - 0.5) * 0.25;
-    if (behindSight([base[0], base[1] + height / 2, base[2]], Math.max(width, depth), sights)) {
-      writer.exclude("building", "hologram", base);
-      continue;
-    }
-    random();
-    // 도로 방향에 맞춘 축(약간 비틀어)
-    const cos = Math.cos(yaw), sin = Math.sin(yaw);
-    const ax: Vec3 = [right[0] * cos + forward[0] * sin, 0, right[2] * cos + forward[2] * sin];
-    const az: Vec3 = [forward[0] * cos - right[0] * sin, 0, forward[2] * cos - right[2] * sin];
-    // 모든 정점이 도로에서 RULES.push 밖이 되게 바닥 대각선의 절반만큼 더 민다(뽑기는 그대로)
-    lateral = pushOut(origin, right, side, lateral, RULES.push + Math.hypot(width, depth) / 2);
-    base = [origin[0] + right[0] * lateral, origin[1], origin[2] + right[2] * lateral];
-    const footprint = [0, 1, 2, 3].flatMap((i): Vec3[] => {
-      const sx = i === 0 || i === 3 ? -1 : 1;
-      const sz = i < 2 ? -1 : 1;
-      const x = base[0] + (ax[0] * sx * width) / 2 + (az[0] * sz * depth) / 2;
-      const z = base[2] + (ax[2] * sx * width) / 2 + (az[2] * sz * depth) / 2;
-      return [
-        [x, origin[1] - CITY.below, z],
-        [x, origin[1] + height, z],
-      ];
-    });
-    const sight: Vec3 = [base[0], base[1] + height / 2, base[2]];
-    const radius = Math.max(width, depth);
-    // 민 자리에서 다시 본다: 도로 거리, 홀로그램 뒤 비우기(가운데·크기), 도로 끝 연장선(정점마다)
-    const reason: ExclusionReason | null = !cleared(base, RULES.push + Math.hypot(width, depth) / 2)
-      ? "clearance"
-      : behindSight(sight, radius, sights)
-        ? "hologram"
-        : inCorridor(footprint)
-          ? "corridor"
-          : null;
-    if (reason) {
-      writer.exclude("building", reason, base);
-      continue;
-    }
-    const layer = main ? 0 : Math.abs(lateral) > 110 ? 2 : 1;
-    // 빛나는 세로 모서리는 진입 카메라를 향한 면의 모서리
-    const cornerOffset = (i: number): [number, number] => {
-      const sx = i === 0 || i === 3 ? -1 : 1;
-      const sz = i < 2 ? -1 : 1;
-      return [(ax[0] * sx * width) / 2 + (az[0] * sz * depth) / 2, (ax[2] * sx * width) / 2 + (az[2] * sz * depth) / 2];
-    };
-    let glowFace = 0;
-    let glowDot = -Infinity;
-    for (let face = 0; face < 4; face++) {
-      const p0 = cornerOffset(face);
-      const p1 = cornerOffset((face + 1) % 4);
-      const facing = (p0[0] + p1[0]) * (view[0] - base[0]) + (p0[1] + p1[1]) * (view[2] - base[2]);
-      if (facing > glowDot) {
-        glowDot = facing;
-        glowFace = face;
+    return distance < spireDistance && gap < (CITY.spireGap * Math.PI) / 180 + Math.atan(size / distance);
+  };
+  const cityStart = actTitleEnd(act, acts);
+  const cityEnd = actEnd(act, acts) - CITY.endMargin;
+  // 2단계 도로 끝 안은 그때 뽑기 그대로, 늘어난 길에는 같은 밀도로 더 뽑는다(스펙 3절 "WALLY 정류장 (3단계)"의 "풍경과 길")
+  for (const segment of drawSegments(cityStart, cityEnd, SEEDED_ROAD_END - CITY.endMargin, CITY.count, LANDSCAPE_SEED + 303)) {
+    const random = rng(segment.seed);
+    for (let n = 0; n < segment.count; n++) {
+      const s = segment.from + (segment.to - segment.from) * random();
+      const side = random() < 0.5 ? -1 : 1;
+      const { origin, right, forward } = flatFrame(s);
+      const width = CITY.width[0] + CITY.width[1] * random();
+      const depth = CITY.width[0] + CITY.width[1] * random();
+      let lateral = side * (CITY.lateral[0] + width / 2 + CITY.lateral[1] * Math.pow(random(), 0.7));
+      lateral = pushOut(origin, right, side, lateral, RULES.push + width / 2);
+      let base: Vec3 = [origin[0] + right[0] * lateral, origin[1], origin[2] + right[2] * lateral];
+      const distance = Math.hypot(base[0] - view[0], base[2] - view[2]);
+      // 진입 카메라에서 2.5~7°로 보이는 높이: 지평선 위 낮은 띠가 되고 첨탑(약 17°)이 확연히 높다
+      const elevation = ((CITY.elevation[0] + CITY.elevation[1] * Math.pow(random(), 1.4)) * Math.PI) / 180;
+      const height = Math.max(CITY.height[0], Math.min(CITY.height[1], view[1] + distance * Math.tan(elevation) - origin[1]));
+      // 주요 건물(빛)은 진입 카메라에서 130m 밖만: 가까운 건물의 지붕선이 눈높이에서 선으로 떠 보이지 않게
+      const main = random() < CITY.main && distance > CITY.mainView;
+      const tiers = 1 + Math.floor(random() * 3);
+      const yaw = (random() - 0.5) * 0.25;
+      // 밀기 전 판정은 저장소 줄(hall) 시선만 본다. 2단계 난수 순서(여기서 빠지면 아래 자리 맞춤 난수를 뽑지 않는다)를 지키려는 것이다.
+      // 다른 정류장 시선(WALLY 등)과 첨탑 가림은 난수를 다 뽑은 뒤 본다. 그래야 길 끝을 따르는 규칙의 결과가 뒤 건물의 뽑기를 밀지 않는다(3단계)
+      if (behindSight([base[0], base[1] + height / 2, base[2]], Math.max(width, depth), hallSights)) {
+        writer.exclude("building", "hologram", base);
+        continue;
       }
-    }
-    const top = origin[1] + height;
-    let tierBottom = origin[1] - CITY.below;
-    let w = width;
-    let d = depth;
-    writer.begin("building", { point: sight, radius });
-    for (let tier = 0; tier < tiers; tier++) {
-      const tierTop = origin[1] + height * ((tier + 1) / tiers);
-      const corner = (i: number, y: number): Vec3 => {
+      random();
+      // 도로 방향에 맞춘 축(약간 비틀어)
+      const cos = Math.cos(yaw), sin = Math.sin(yaw);
+      const ax: Vec3 = [right[0] * cos + forward[0] * sin, 0, right[2] * cos + forward[2] * sin];
+      const az: Vec3 = [forward[0] * cos - right[0] * sin, 0, forward[2] * cos - right[2] * sin];
+      // 모든 정점이 도로에서 RULES.push 밖이 되게 바닥 대각선의 절반만큼 더 민다(뽑기는 그대로)
+      lateral = pushOut(origin, right, side, lateral, RULES.push + Math.hypot(width, depth) / 2);
+      base = [origin[0] + right[0] * lateral, origin[1], origin[2] + right[2] * lateral];
+      const footprint = [0, 1, 2, 3].flatMap((i): Vec3[] => {
         const sx = i === 0 || i === 3 ? -1 : 1;
         const sz = i < 2 ? -1 : 1;
-        return [base[0] + (ax[0] * sx * w) / 2 + (az[0] * sz * d) / 2, y, base[2] + (ax[2] * sx * w) / 2 + (az[2] * sz * d) / 2];
-      };
-      const values = (p: Vec3, ridge: number, ridge2: number): Values => ({
-        aS: s,
-        aActStart: start,
-        aAppearFrom: from,
-        aRidge: ridge,
-        aRidge2: ridge2,
-        aGlow: main ? 1 : 0,
-        aBelow: Math.max(0, origin[1] - p[1]),
-        aBelowTop: Math.max(0, top - p[1]),
-        aLayer: layer,
-        aEdge: 0,
-        aDissolve: 1,
-      });
-      for (let face = 0; face < 4; face++) {
-        const a = corner(face, tierBottom);
-        const b = corner(face, tierTop);
-        const c = corner((face + 1) % 4, tierTop);
-        const e = corner((face + 1) % 4, tierBottom);
-        const faceWidth = Math.hypot(c[0] - b[0], c[2] - b[2]);
-        const lit = face === glowFace;
-        const points: [Vec3, number][] = [
-          [a, 0],
-          [b, 0],
-          [c, 1],
-          [a, 0],
-          [c, 1],
-          [e, 1],
+        const x = base[0] + (ax[0] * sx * width) / 2 + (az[0] * sz * depth) / 2;
+        const z = base[2] + (ax[2] * sx * width) / 2 + (az[2] * sz * depth) / 2;
+        return [
+          [x, origin[1] - CITY.below, z],
+          [x, origin[1] + height, z],
         ];
-        // 지붕 빛은 맨 위 층만(아래 층 지붕선이 떠 보이지 않게)
-        for (const [p, t] of points) writer.vertex(p, values(p, tier === tiers - 1 ? tierTop - p[1] : NO_LINE, lit ? t * faceWidth : NO_LINE));
+      });
+      const sight: Vec3 = [base[0], base[1] + height / 2, base[2]];
+      const radius = Math.max(width, depth);
+      // 민 자리에서 다시 본다: 도로 거리, 홀로그램 뒤 비우기(가운데·크기), 도로 끝 연장선(정점마다)
+      const reason: ExclusionReason | null = !cleared(base, RULES.push + Math.hypot(width, depth) / 2)
+        ? "clearance"
+        : behindSight(sight, radius, sights)
+          ? "hologram"
+          : blocksSpire(base, Math.max(width, depth))
+            ? "spire"
+            : inCorridor(footprint)
+              ? "corridor"
+              : null;
+      if (reason) {
+        writer.exclude("building", reason, base);
+        continue;
       }
-      const roof = [corner(0, tierTop), corner(1, tierTop), corner(2, tierTop), corner(3, tierTop)];
-      for (const p of [roof[0], roof[1], roof[2], roof[0], roof[2], roof[3]]) writer.vertex(p, values(p, NO_LINE, NO_LINE));
-      tierBottom = tierTop;
-      w *= CITY.tierShrink;
-      d *= CITY.tierShrink;
+      const layer = main ? 0 : Math.abs(lateral) > 110 ? 2 : 1;
+      // 빛나는 세로 모서리는 진입 카메라를 향한 면의 모서리
+      const cornerOffset = (i: number): [number, number] => {
+        const sx = i === 0 || i === 3 ? -1 : 1;
+        const sz = i < 2 ? -1 : 1;
+        return [(ax[0] * sx * width) / 2 + (az[0] * sz * depth) / 2, (ax[2] * sx * width) / 2 + (az[2] * sz * depth) / 2];
+      };
+      let glowFace = 0;
+      let glowDot = -Infinity;
+      for (let face = 0; face < 4; face++) {
+        const p0 = cornerOffset(face);
+        const p1 = cornerOffset((face + 1) % 4);
+        const facing = (p0[0] + p1[0]) * (view[0] - base[0]) + (p0[1] + p1[1]) * (view[2] - base[2]);
+        if (facing > glowDot) {
+          glowDot = facing;
+          glowFace = face;
+        }
+      }
+      const top = origin[1] + height;
+      let tierBottom = origin[1] - CITY.below;
+      let w = width;
+      let d = depth;
+      writer.begin("building", { point: sight, radius });
+      for (let tier = 0; tier < tiers; tier++) {
+        const tierTop = origin[1] + height * ((tier + 1) / tiers);
+        const corner = (i: number, y: number): Vec3 => {
+          const sx = i === 0 || i === 3 ? -1 : 1;
+          const sz = i < 2 ? -1 : 1;
+          return [base[0] + (ax[0] * sx * w) / 2 + (az[0] * sz * d) / 2, y, base[2] + (ax[2] * sx * w) / 2 + (az[2] * sz * d) / 2];
+        };
+        const values = (p: Vec3, ridge: number, ridge2: number): Values => ({
+          aS: s,
+          aActStart: start,
+          aAppearFrom: from,
+          aRidge: ridge,
+          aRidge2: ridge2,
+          aGlow: main ? 1 : 0,
+          aBelow: Math.max(0, origin[1] - p[1]),
+          aBelowTop: Math.max(0, top - p[1]),
+          aLayer: layer,
+          aEdge: 0,
+          aDissolve: 1,
+        });
+        for (let face = 0; face < 4; face++) {
+          const a = corner(face, tierBottom);
+          const b = corner(face, tierTop);
+          const c = corner((face + 1) % 4, tierTop);
+          const e = corner((face + 1) % 4, tierBottom);
+          const faceWidth = Math.hypot(c[0] - b[0], c[2] - b[2]);
+          const lit = face === glowFace;
+          const points: [Vec3, number][] = [
+            [a, 0],
+            [b, 0],
+            [c, 1],
+            [a, 0],
+            [c, 1],
+            [e, 1],
+          ];
+          // 지붕 빛은 맨 위 층만(아래 층 지붕선이 떠 보이지 않게)
+          for (const [p, t] of points) writer.vertex(p, values(p, tier === tiers - 1 ? tierTop - p[1] : NO_LINE, lit ? t * faceWidth : NO_LINE));
+        }
+        const roof = [corner(0, tierTop), corner(1, tierTop), corner(2, tierTop), corner(3, tierTop)];
+        for (const p of [roof[0], roof[1], roof[2], roof[0], roof[2], roof[3]]) writer.vertex(p, values(p, NO_LINE, NO_LINE));
+        tierBottom = tierTop;
+        w *= CITY.tierShrink;
+        d *= CITY.tierShrink;
+      }
+      writer.end();
     }
-    writer.end();
   }
   return writer.finish(`journey-landscape-act${act}`, act);
 }

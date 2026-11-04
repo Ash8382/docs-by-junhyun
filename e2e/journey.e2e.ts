@@ -33,6 +33,7 @@ const STOP_IDS = [
   "pfplay",
   "act-3",
   "pickcare",
+  "wally",
   "ending",
 ];
 const EMAIL = "one31798883@gmail.com";
@@ -54,7 +55,7 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
-test("정류장 12개가 순서대로 있다", async ({ page }) => {
+test("정류장 13개가 순서대로 있다", async ({ page }) => {
   await page.goto("/journey");
   const ids = await page.locator("[data-stop]").evaluateAll((sections) =>
     sections.map((section) => section.getAttribute("data-stop")),
@@ -304,7 +305,7 @@ test("3D 장면 청크를 받지 못해도 본문과 진행 막대가 동작한�
   await expectFlat(page, "failed");
   await expect(page.locator("[data-journey-loading]")).toHaveCount(0);
   await expect(page.getByText("Application error")).toBeHidden();
-  await expect(page.locator("[data-stop]")).toHaveCount(12);
+  await expect(page.locator("[data-stop]")).toHaveCount(13);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
 });
@@ -332,7 +333,7 @@ test("렌더러를 만들지 못해도 틱마다 에러가 쏟아지지 않는�
   // 남는 하나는 렌더러를 만들지 못했다는, 처리되지 않은 거부다. three r181은 이 오류를 기록하는 catch에서
   // 매개변수 이름이 기록 함수(error)를 가려 메시지가 "… is not a function"으로 바뀌므로 문구는 보지 않는다.
   expect(errors.length, errors.slice(0, 3).join(" | ")).toBeLessThanOrEqual(1);
-  await expect(page.locator("[data-stop]")).toHaveCount(12);
+  await expect(page.locator("[data-stop]")).toHaveCount(13);
 });
 
 // 상세 패널의 스크롤 잠금(Lenis stop)이 풀렸는지 확인한다. 잠금이 남으면 html에 lenis-stopped가 붙고 휠이 먹지 않는다.
@@ -462,7 +463,7 @@ test("은하 이미지를 받지 못해도 본문과 진행 막대가 동작한�
   await page.route("**/journey/galaxy*", (route) => route.abort());
   await page.goto("/journey");
   await expectFlat(page, "failed");
-  await expect(page.locator("[data-stop]")).toHaveCount(12);
+  await expect(page.locator("[data-stop]")).toHaveCount(13);
   await page.getByRole("button", { name: "연락처로 이동" }).click();
   await expect(page.getByText(EMAIL)).toBeInViewport();
 });
@@ -590,9 +591,9 @@ test.describe("해상도 배율 2 화면", () => {
     await waitReady(page);
     const lite = await readStats(page);
     expect(lite.quality).toEqual({ tier: "lite", level: "lite", dpr: 1.5, galaxyWidth: 2048, bloomLevels: 6, luminanceScale: 0.5 });
-    // 텍스처 추정: 58.8MiB에서 은하가 32.0 → 8.0MiB(스펙 5절)
-    expect(lite.textureBytes / 2 ** 20).toBeGreaterThan(34.3);
-    expect(lite.textureBytes / 2 ** 20).toBeLessThan(35.3);
+    // 텍스처 추정: 58.8MiB에서 은하가 32.0 → 8.0MiB(스펙 5절), 3단계 WALLY 층 5장(768×480 밉맵, 장당 약 1.875MiB)이 더해져 약 44.2MiB
+    expect(lite.textureBytes / 2 ** 20).toBeGreaterThan(43.7);
+    expect(lite.textureBytes / 2 ** 20).toBeLessThan(44.7);
     expect(lite.renderTargetBytes).toBeLessThan(full.renderTargetBytes);
   });
 });
@@ -1675,7 +1676,7 @@ test("3D가 준비되면 홀로그램 11개가 켜지고 콘솔 에러가 없다
   const errors = collectErrors(page);
   await page.goto("/journey?debug=stats");
   await waitReady(page);
-  expect(await shownHolograms(page)).toHaveLength(11);
+  expect(await shownHolograms(page)).toHaveLength(12);
   expect(errors).toEqual([]);
 });
 
@@ -1684,7 +1685,7 @@ test("홀로그램 이미지 한 장을 받지 못하면 그 홀로그램만 빠
   await page.goto("/journey?debug=stats");
   await waitReady(page);
   const shown = await shownHolograms(page);
-  expect(shown).toHaveLength(10);
+  expect(shown).toHaveLength(11);
   expect(shown).not.toContain("stock2u");
   await page.keyboard.press("End");
   await expectEndingInView(page);
@@ -2614,6 +2615,7 @@ test("정류장(도는 중·머묾)과 엔딩에서 실제 카메라로 본 홀�
     ["tix2u", 0.85],
     ["pickcare", 0.06],
     ["pickcare", 0.5],
+    ["wally", 0.5],
     ["ending", 1],
   ];
   for (const [id, within] of views) {

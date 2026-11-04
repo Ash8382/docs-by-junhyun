@@ -18,9 +18,10 @@ import { rangeOf } from "@/lib/journey/timeline";
  * 2막 제목·Stock2U·Tix2U·PFPlay 끝, 3막 제목·PiCKCARE 머묾·떠날 때, 엔딩 — 열두 장, 3×4 한 장.
  * CAPTURE_SET=portrait는 세로 화면(2-4a, 스펙 3절 "세로 화면")을 본다: 풍경 묶음 열두 장에 PiCKCARE 앞·뒤 저장소 자리와 엔딩 가운데
  * (연락처가 오기 전)를 더한 열다섯 장, 5×3 한 장. CAPTURE_VIEWPORT=390x844처럼 세로 화면 크기와 함께 쓴다. 경량은 주소에 ?debug=stats&tier=lite.
+ * CAPTURE_SET=wally는 WALLY 정류장(3단계)의 도착·다섯 화면·떠남 일곱 장이다.
  * CAPTURE_ORDER=reverse면 같은 자리를 거꾸로 찍는다(파일 이름은 같다). 정방향과 compare-captures로 비교한다(스펙 8절 4항).
  * CAPTURE_SETTLE=3700처럼 자리마다 기다리는 시간(ms, 기본 2500)을 바꾼다.
- * CAPTURE_VIEWPORT=1280x720처럼 화면 크기를 바꾼다(기본 1440x900).
+ * CAPTURE_VIEWPORT=1280x720처럼 화면 크기를 바꾼다(기본 1440x900). CAPTURE_SCALE=2처럼 화면 배율을 바꾼다(기본 1).
  * 기본은 GPU를 쓰는 실제 Chrome 창이다.
  *
  * 사용법:
@@ -47,6 +48,8 @@ const VIEWPORT = (() => {
 const READY_TIMEOUT = 30_000;
 // 카메라 감쇠가 목표 자리에 닿을 때까지. CAPTURE_SETTLE로 바꾼다(역방향 비교에서 시간 흐름이 다른 정방향을 한 번 더 찍을 때)
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE ?? 2500);
+// 화면 배율. CAPTURE_SCALE=2처럼 레티나 화면을 흉내 낸다(WALLY 휴대폰 글자가 읽히는지 볼 때, 3단계)
+const SCALE = Number(process.env.CAPTURE_SCALE ?? 1);
 // 화면 비율 그대로 줄인다(16:9 화면을 16:10 칸에 맞추면 양옆의 패널이 잘린다)
 const TILE = { width: 480, height: Math.round((480 * VIEWPORT.height) / VIEWPORT.width) };
 
@@ -89,7 +92,20 @@ const LANDSCAPE_SHOTS: [string, string, number][] = [
   ["09-act-3", "act-3", 0.5],
   ["10-pickcare", "pickcare", 0.5],
   ["11-pickcare-leave", "pickcare", 0.97],
+  // 3단계: WALLY 머묾·떠남(기존 장면 이름을 바꾸지 않으려고 PiCKCARE 떠남과 엔딩 사이에 끼운다)
+  ["11a-wally", "wally", 0.5],
+  ["11b-wally-leave", "wally", 0.9],
   ["12-ending", "ending", 1],
+];
+
+/**
+ * WALLY 정류장(3단계, 스펙 3절 "WALLY 정류장"): 도착(t 0.1), 다섯 화면 각각의 가운데(차가 서 있는 0.25~0.75를 다섯으로 나눈 칸의
+ * 가운데), 떠남(t 0.9). CAPTURE_SET=wally
+ */
+const WALLY_SHOTS: [string, string, number][] = [
+  ["01-wally-arrive", "wally", 0.1],
+  ...[0, 1, 2, 3, 4].map((page): [string, string, number] => [`0${page + 2}-wally-page${page + 1}`, "wally", 0.25 + 0.1 * page + 0.05]),
+  ["07-wally-leave", "wally", 0.9],
 ];
 
 /** 세로 화면(2-4a): 풍경 묶음에 PiCKCARE 앞·뒤 저장소 자리와 엔딩 가운데(내려다보기를 마치고 연락처가 오기 전)를 더한다 */
@@ -216,7 +232,7 @@ async function main() {
   await mkdir(outDir, { recursive: true });
   const browser = await chromium.launch({ headless: HEADLESS, channel: HEADLESS ? "chromium" : undefined, args: ["--ignore-gpu-blocklist"] });
   try {
-    const page = await browser.newPage({ viewport: VIEWPORT });
+    const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: SCALE });
     // tsx(esbuild keepNames)가 evaluate에 넘기는 함수에 __name 호출을 끼워 넣을 수 있다. 브라우저에는 없어 빈 껍데기를 심는다.
     await page.addInitScript("window.__name = (target) => target;");
     await page.goto(TARGET_URL, { waitUntil: "load" });
@@ -235,7 +251,9 @@ async function main() {
                   ? LANDSCAPE_SHOTS
                   : SET === "portrait"
                     ? PORTRAIT_SHOTS
-                    : SHOTS,
+                    : SET === "wally"
+                      ? WALLY_SHOTS
+                      : SHOTS,
           );
     // 거꾸로 찍어도 한 장으로 붙일 때는 이름 순서(정방향)로 둔다
     if (REVERSE) files.sort();

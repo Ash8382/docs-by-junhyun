@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ROAD_END, ROAD_START, driveAt, roadFrame } from "./drive";
+import { ROAD_END, ROAD_START, SEEDED_ROAD_END, drawSegments, driveAt, roadFrame } from "./drive";
+import phase2 from "./__fixtures__/landscape-phase2.json";
+import { landscapePieces } from "./landscapeBuild";
 import { luminance } from "./holograms";
 import {
   ALWAYS,
@@ -154,7 +156,7 @@ describe("자리 규칙", () => {
 
   it("홀로그램 가운데는 그 시선 안이고, 옆으로 크게 벗어난 자리는 아니다", () => {
     expect(actSights(2).map((sight) => sight.clear)).toEqual([25, 25, 25]);
-    expect(actSights(3).map((sight) => sight.clear)).toEqual([18, 18, 18, 18, 18]);
+    expect(actSights(3).map((sight) => sight.clear)).toEqual([18, 18, 18, 18, 18, 25]);
     for (const sight of [...actSights(2), ...actSights(3)]) {
       const ahead: [number, number, number] = [
         sight.camera[0] + sight.direction[0] * 60,
@@ -178,5 +180,63 @@ describe("화면 투영", () => {
     expect(center.depth).toBeGreaterThan(0);
     const above = projectPoint(pose, [pose.target[0], pose.target[1] + 5, pose.target[2]], 1.6);
     expect(above.y).toBeLessThan(0.5);
+  });
+});
+
+describe("길이 늘어도 2단계 뽑기를 고정한다(스펙 3절 WALLY 정류장 '풍경과 길')", () => {
+  it("2단계 도로 끝 안이면 구간 하나다", () => {
+    expect(drawSegments(170, 258, 258, 141, 7)).toEqual([{ from: 170, to: 258, count: 141, seed: 7 }]);
+  });
+
+  it("2단계 도로 끝을 넘으면 늘어난 구간에만 같은 밀도로 더 뽑는다(다른 시드)", () => {
+    expect(drawSegments(170, 288, 258, 141, 7)).toEqual([
+      { from: 170, to: 258, count: 141, seed: 7 },
+      { from: 258, to: 288, count: 48, seed: 8 },
+    ]);
+  });
+
+  it("2단계 도로 끝 너머에서만 뽑는 구간(나중 막)은 그대로 한 구간이다", () => {
+    expect(drawSegments(300, 400, 258, 50, 9)).toEqual([{ from: 300, to: 400, count: 50, seed: 9 }]);
+  });
+
+  it("2단계 도로 끝은 PiCKCARE 구간 끝에 꼬리 길이를 더한 자리(260m)다", () => {
+    expect(SEEDED_ROAD_END).toBe(260);
+  });
+
+  it("2단계 기준(__fixtures__/landscape-phase2.json)과 달라진 것은 길 끝을 따르는 규칙과 늘어난 구간뿐이다", () => {
+    // 3단계: 첨탑·첨탑 가림·도로 끝 연장선·WALLY 뒤 ±25°가 새 길 끝을 따른다(사용자 결정). 그 밖의 2단계 요소는 그대로여야 한다
+    // 기준 JSON은 소수 넷째 자리로 반올림했으므로 문자열이 아니라 허용 오차로 같은 요소를 찾는다
+    type Box = { kind: string; min: readonly number[]; max: readonly number[] };
+    const same = (a: Box, b: Box) => a.kind === b.kind && [...a.min, ...a.max].every((value, i) => Math.abs(value - [...b.min, ...b.max][i]) < 1e-3);
+    const key = (item: Box) => `${item.kind} ${[...item.min, ...item.max].map((value) => value.toFixed(1)).join(",")}`;
+    const reappeared: string[] = [];
+    let unmatchedBuildings = 0;
+    let unmatchedSpires = 0;
+    for (const piece of landscapePieces()) {
+      const before = phase2.pieces.find((item) => item.name === piece.name);
+      expect(before, piece.name).toBeDefined();
+      if (!before) continue;
+      // 2단계에 있다가 지금 빠진 요소는 같은 자리에서 길 끝을 따르는 규칙으로 빠졌다
+      for (const item of before.items) {
+        if (piece.items.some((now) => same(now, item))) continue;
+        const center = [(item.min[0] + item.max[0]) / 2, 0, (item.min[2] + item.max[2]) / 2];
+        const exclusion = piece.excluded.find((entry) => entry.kind === item.kind && Math.hypot(entry.point[0] - center[0], entry.point[2] - center[2]) < 15);
+        if (item.kind === "spire") continue;
+        expect(exclusion?.reason ?? "없음", `${piece.name} ${key(item)}`).toMatch(/^(spire|corridor|hologram)$/);
+      }
+      // 지금 있는 요소는 2단계와 같거나, 2단계에 빠졌다가 다시 나타났거나, 옮겨진 첨탑과 늘어난 구간의 건물이다
+      for (const item of piece.items) {
+        if (before.items.some((old) => same(item, old))) continue;
+        const center = [(item.min[0] + item.max[0]) / 2, 0, (item.min[2] + item.max[2]) / 2];
+        const was = before.excluded.find((entry) => entry.kind === item.kind && Math.hypot(entry.point[0] - center[0], entry.point[2] - center[2]) < 15);
+        if (was && was.reason !== "clearance") reappeared.push(`${piece.name} ${item.kind} (${was.reason})`);
+        else if (item.kind === "spire") unmatchedSpires += 1;
+        else if (item.kind === "building") unmatchedBuildings += 1;
+        else expect.unreachable(`${piece.name}: 2단계에 없던 ${key(item)}`);
+      }
+    }
+    expect(unmatchedSpires).toBe(1);
+    expect(unmatchedBuildings).toBeLessThanOrEqual(48);
+    console.info(`다시 나타난 요소 ${reappeared.length}: ${reappeared.join(" · ")}, 새 건물 ${unmatchedBuildings}`);
   });
 });

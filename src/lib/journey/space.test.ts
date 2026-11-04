@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROAD_END, ROAD_START, driveAt, roadFrame } from "./drive";
 import { DUST_CLEARANCE, DUST_COUNT, SKY_ROTATION, dustField, seededRandom } from "./space";
+import phase2 from "./__fixtures__/landscape-phase2.json";
 
 const dust = dustField(DUST_COUNT, 7);
 
@@ -36,7 +37,8 @@ describe("우주", () => {
 
   it("같은 씨앗이면 같은 자리에 먼지를 둔다", () => {
     expect(dustField(50, 3)).toEqual(dustField(50, 3));
-    expect(dust).toHaveLength(DUST_COUNT * 3);
+    // 2단계 도로 끝(260m)까지 DUST_COUNT개, 늘어난 30m(3단계 WALLY)에 같은 밀도로 77개
+    expect(dust).toHaveLength((DUST_COUNT + 77) * 3);
   });
 
   it("별 먼지는 도로 가장자리에서 DUST_CLEARANCE 넘게 떨어져 있다", () => {
@@ -60,5 +62,17 @@ describe("우주", () => {
 
   it("하늘 방향은 x축으로 기울여 은하수 띠가 도로 앞쪽에 오게 한다", () => {
     expect(SKY_ROTATION).toEqual([1.2, 0, 0]);
+  });
+});
+
+describe("별 먼지는 길이 늘어도 2단계 자리를 지킨다(스펙 3절 WALLY 정류장 '풍경과 길')", () => {
+  it("앞 700개는 2단계 기준(__fixtures__/landscape-phase2.json)과 같다", () => {
+    phase2.dust.forEach((value, index) => expect(dust[index]).toBeCloseTo(value, 3));
+  });
+
+  it("도로 끝이 290m면 늘어난 30m에만 77개를 더 뿌리고 앞 700개는 그대로다", () => {
+    const longer = dustField(DUST_COUNT, 7, 290);
+    expect(longer.length).toBe((700 + 77) * 3);
+    phase2.dust.forEach((value, index) => expect(longer[index]).toBeCloseTo(value, 3));
   });
 });

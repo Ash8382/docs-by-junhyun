@@ -11,6 +11,9 @@ import {
 } from "three";
 import {
   HOLOGRAMS,
+  PHONE_CORNER,
+  textureRect,
+  type PageState,
   LAYER,
   drawOrder,
   isPointerTarget,
@@ -45,11 +48,22 @@ const RECTS = HOLOGRAMS.map((hologram) => {
   return [rect.x / LAYER.width, rect.y / LAYER.height, rect.width / LAYER.width, rect.height / LAYER.height] as const;
 });
 
+/** 층 이미지 안 텍스처 영역(층 비율). 돌려 넣은 쪽(WALLY)은 그림 영역과 다르다. 한 홀로그램의 쪽들은 같다 */
+const TEXTURES = HOLOGRAMS.map((hologram) => {
+  const rect = textureRect(hologram.pages[0]);
+  return [rect.x / LAYER.width, rect.y / LAYER.height, rect.width / LAYER.width, rect.height / LAYER.height] as const;
+});
+
+/** 모양: (돌려 넣었으면 1, 모서리 반지름의 그림 폭 비율). 휴대폰(WALLY)만 둥글다 */
+const SHAPES = HOLOGRAMS.map((hologram) => [hologram.pages[0].rotated ? 1 : 0, hologram.placement === "phone" ? PHONE_CORNER : 0] as const);
+
 export interface HologramFrame {
   /** 층을 받은 홀로그램. 받지 못한 홀로그램은 화면·테두리·빛기둥을 숨기고 원반만 남긴다 */
   loaded: readonly boolean[];
   /** 홀로그램마다 테두리가 밝아진 정도(0 쉬는 때 ~ 1 호버·포커스) */
   glow: readonly number[];
+  /** 홀로그램마다 보이는 쪽(pageAt). 없으면 첫 층이다 */
+  pages?: readonly PageState[];
 }
 
 export interface HologramMeshes {
@@ -68,11 +82,14 @@ function attribute(size: number, count: number): InstancedBufferAttribute {
 
 export function createHologramMeshes(atlas: DataArrayTexture): HologramMeshes {
   const screenGeometry = new PlaneGeometry(1, 1);
-  screenGeometry.setAttribute("aLayer", attribute(1, COUNT));
+  // 층: 보이는 쪽(from)·다음 쪽(to)·넘어간 정도(mix). 쪽이 하나면 from = to, mix 0이다(WALLY만 스크롤로 넘긴다)
+  screenGeometry.setAttribute("aLayer", attribute(3, COUNT));
   screenGeometry.setAttribute("aRect", attribute(4, COUNT));
   screenGeometry.setAttribute("aBox", attribute(2, COUNT));
   screenGeometry.setAttribute("aColor", attribute(3, COUNT));
   screenGeometry.setAttribute("aState", attribute(2, COUNT));
+  screenGeometry.setAttribute("aTex", attribute(4, COUNT));
+  screenGeometry.setAttribute("aShape", attribute(2, COUNT));
   const screens = new InstancedMesh(screenGeometry, createScreenMaterial(atlas), COUNT);
   screens.name = "journey-holograms";
   // 칸이 매 프레임 움직여 경계 구가 맞지 않는다. 그리기는 늘 하고(11칸), 레이캐스트용 경계 구는 쓸 때 다시 잰다
@@ -113,6 +130,25 @@ export function createHologramMeshes(atlas: DataArrayTexture): HologramMeshes {
 }
 
 /**
+ * 점 (x, y)가 그림(가운데 center, 반폭·반높이 half)을 reach만큼 두른 둥근 사각형 안인가(m). 모서리 반지름 radius는 넓힌 사각형의
+ * 모서리를 둥글게 한다. radius가 0이면 반폭 + reach, 반높이 + reach의 사각형과 같다. 셰이더의 테두리 자리와 같은 식이다
+ */
+export function insideFrame(
+  x: number,
+  y: number,
+  centerX: number,
+  centerY: number,
+  halfWidth: number,
+  halfHeight: number,
+  radius: number,
+  reach: number,
+): boolean {
+  const dx = Math.abs(x - centerX) - (halfWidth + reach - radius);
+  const dy = Math.abs(y - centerY) - (halfHeight + reach - radius);
+  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - radius <= 0;
+}
+
+/**
  * 광선이 맞은 판의 점(uv)이 그림을 두른 테두리 선 안쪽인가. 판은 층 상자에 여백을 더한 크기라, 상자보다 좁거나 낮은 그림
  * (세로 화면 app, 가로로 긴 cardnews 등)은 옆이나 위아래가 비어 있다. 셰이더(hologramMaterial)의 테두리 자리와 같은 식이다
  */
@@ -130,7 +166,9 @@ function withinFrame(geometry: PlaneGeometry, slot: number, uv: Vector2 | undefi
   const centerX = (left + width / 2 - 0.5) * boxWidth;
   const centerY = (0.5 - top - height / 2) * boxHeight;
   const reach = 0.8 * margin + FRAME_BORDER * presence;
-  return Math.abs(x - centerX) <= (width * boxWidth) / 2 + reach && Math.abs(y - centerY) <= (height * boxHeight) / 2 + reach;
+  // 휴대폰은 그림 폭의 일정 비율로 모서리를 둥글게 자른다(셰이더와 같다)
+  const radius = (geometry.getAttribute("aShape") as InstancedBufferAttribute).getY(slot) * width * boxWidth;
+  return insideFrame(x, y, centerX, centerY, (width * boxWidth) / 2, (height * boxHeight) / 2, radius, reach);
 }
 
 /** 레이캐스트의 칸 번호를 홀로그램 번호로 되돌린다 */
@@ -159,6 +197,8 @@ export function writeHolograms(meshes: HologramMeshes, placements: readonly Holo
   const { screens, lights } = meshes;
   const layer = screens.geometry.getAttribute("aLayer") as InstancedBufferAttribute;
   const rect = screens.geometry.getAttribute("aRect") as InstancedBufferAttribute;
+  const tex = screens.geometry.getAttribute("aTex") as InstancedBufferAttribute;
+  const shape = screens.geometry.getAttribute("aShape") as InstancedBufferAttribute;
   const box = screens.geometry.getAttribute("aBox") as InstancedBufferAttribute;
   const color = screens.geometry.getAttribute("aColor") as InstancedBufferAttribute;
   const state = screens.geometry.getAttribute("aState") as InstancedBufferAttribute;
@@ -176,8 +216,11 @@ export function writeHolograms(meshes: HologramMeshes, placements: readonly Holo
     const { right, up, normal } = visible ? placementBasis(placement, camera) : HIDDEN;
     const margin = 2 * FRAME_MARGIN * presence;
     place(screens, slot, right, up, normal, placement.center, visible ? placement.box[0] + margin : 0, visible ? placement.box[1] + margin : 0);
-    layer.setX(slot, index);
+    const page = frame.pages?.[index] ?? { from: HOLOGRAMS[index].layer, to: HOLOGRAMS[index].layer, mix: 0 };
+    layer.setXYZ(slot, page.from, page.to, page.mix);
     rect.setXYZW(slot, ...RECTS[index]);
+    tex.setXYZW(slot, ...TEXTURES[index]);
+    shape.setXY(slot, ...SHAPES[index]);
     box.setXY(slot, Math.max(placement.box[0], 1e-3), Math.max(placement.box[1], 1e-3));
     color.setXYZ(slot, ...trailColor(placement.colorS));
     state.setXY(slot, presence, frame.glow[index]);
@@ -207,7 +250,7 @@ export function writeHolograms(meshes: HologramMeshes, placements: readonly Holo
     lightColor.setXYZ(2 * index + 1, ...trailColor(placement.colorS));
     lightState.setXY(2 * index + 1, placement.discOpacity, 1);
   });
-  for (const changed of [layer, rect, box, color, state, lightColor, lightState]) changed.needsUpdate = true;
+  for (const changed of [layer, rect, tex, shape, box, color, state, lightColor, lightState]) changed.needsUpdate = true;
   screens.instanceMatrix.needsUpdate = true;
   lights.instanceMatrix.needsUpdate = true;
   // 레이캐스트는 경계 구로 먼저 거른다. 칸이 움직였으니 다음 레이캐스트에서 다시 재게 한다

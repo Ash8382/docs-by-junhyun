@@ -3,8 +3,8 @@ import { pickcare } from "@/data/projects/pickcare";
 import { DETAIL_SLUGS, activeRepo, journeyHash, parseJourneyHash } from "./hash";
 
 describe("해시", () => {
-  it("상세가 있는 프로젝트는 코코아톡을 뺀 6개다", () => {
-    expect(DETAIL_SLUGS).toEqual(["todo-app", "eutcha", "stock2u", "tix2u", "pfplay", "pickcare"]);
+  it("상세가 있는 프로젝트는 코코아톡을 뺀 7개다", () => {
+    expect(DETAIL_SLUGS).toEqual(["todo-app", "eutcha", "stock2u", "tix2u", "pfplay", "pickcare", "wally"]);
   });
 
   it("프로젝트 해시를 읽는다", () => {

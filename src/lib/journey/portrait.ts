@@ -1,6 +1,6 @@
 import { damp } from "./damp";
-import { CAMERA_DAMPING, carCenter, driveAt, fromCarFrame, toCarFrame, type CameraPose, type DriveState, type RoadFrame } from "./drive";
-import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT, hologramsAt, pickcareFront } from "./holograms";
+import { CAMERA_DAMPING, carCenter, driveAt, endingPoint, fromCarFrame, offsetPose, toCarFrame, type CameraPose, type DriveState, type RoadFrame } from "./drive";
+import { FRONT_LEAD, HOLOGRAMS, REPO_COUNT, REPO_HOLOGRAMS, hologramsAt, pickcareFront } from "./holograms";
 import { HALL_REPO_END, HALL_REPO_START, STOPS, endingPhases, overviewWeight, rangeOf, smoothstep, stopAt, viewWeight, type Vec3 } from "./timeline";
 
 /**
@@ -11,6 +11,12 @@ import { HALL_REPO_END, HALL_REPO_START, STOPS, endingPhases, overviewWeight, ra
  * 정류장 구도 사이를 "정류장 시점으로 돈 정도" 하나로 보간하고 감쇠도 그 값에 건다(followPortrait). 그래서 카메라가 차를 가로지르지 않고,
  * 감쇠 중에도 차가 화면 가운데 근처에 있다(차 기준 직교 좌표로 감쇠하면 PFPlay 끝과 빠른 스크롤에서 차가 화면을 채우거나 화면 밖으로 밀렸다).
  */
+/**
+ * 흰 점에서 세로 엔딩 끝 카메라까지의 오프셋(m). 2단계에서 맞춘 자리 [12.9, 109, −175.6]·시선 [9.5, 12.9, −223.6]에서 그때 흰 점(도로 끝
+ * 260m)을 뺀 값이다. 흰 점을 따라 옮겨 길이 늘어도 화면 구도가 같다(3단계)
+ */
+export const PORTRAIT_FOCUS_OFFSET: CameraPose = { position: [3.7594, 96.0785, 53.4406], target: [0.3594, -0.0215, 5.4406] };
+
 export const PORTRAIT = {
   /** 주행: 차 뒤 back(m)·노면 위 height(m)에서 차 가운데의 정면 방향 ahead(m) 앞, 높이 aheadHeight(m)를 본다 */
   chase: { back: 9, height: 3.4, ahead: 14, aheadHeight: -0.6 },
@@ -25,12 +31,13 @@ export const PORTRAIT = {
    * 엔딩 내려다보기: 가로 화면(OVERVIEW)과 같은 각도로, 길 전체가 헤더 아래부터 화면 위 60% 안(y 0.10~0.57)에 들도록 거리(약 433m,
    * 카메라 먼 끝 600m 안)와 시선을 맞췄다. 길이 앞뒤로 긴 모양이라 세로로 길게 보인다(390×844에서 x 0.375~0.625)
    */
-  overview: { position: [27.4, 392.6, 94.3] as Vec3, target: [12.5, 14.4, -116.3] as Vec3 },
+  // 3단계(WALLY)에서 길이 30m 늘어 다시 맞췄다: 시선 방향은 그대로, 길 중심 이동(z −11.2m)의 0.85만큼 옮기고 1.08배 물렸다(거리 약 468m, 2단계 433m)
+  overview: { position: [28.6, 422.9, 101.6] as Vec3, target: [12.5, 14.4, -125.8] as Vec3 },
   /**
    * 엔딩 끝에서 흰 점으로 다가간 자리(병합 뒤). 내려다보기와 같은 시선 방향으로 흰 점에서 110m 떨어져 점 뒤에 은하가 그대로 있고,
    * 흰 점이 위쪽 가운데(화면 (0.50, 0.25))에 오도록 맞췄다. 연락처 패널은 아래쪽이다(portrait.test.ts가 세로 화면 네 크기로 확인)
    */
-  focus: { position: [12.9, 109, -175.6] as Vec3, target: [9.5, 12.9, -223.6] as Vec3 },
+  focus: offsetPose(endingPoint(), PORTRAIT_FOCUS_OFFSET),
 } as const;
 
 function add(a: Vec3, b: Vec3): Vec3 {
@@ -215,7 +222,7 @@ export function followPortrait(follow: PortraitView | null, state: DriveState, d
 // ── 아래 고정 카드 ─────────────────────────────────────────
 
 /** PiCKCARE 저장소 카드(홀로그램 id와 같다: pickcare/<저장소>) */
-const REPO_CARDS = HOLOGRAMS.filter((hologram) => hologram.act === 3).map((hologram) => hologram.id);
+const REPO_CARDS = REPO_HOLOGRAMS.map((hologram) => hologram.id);
 
 /** PiCKCARE 소개 카드는 저장소 패널 구간이 시작하기 이만큼(화면) 앞까지 보인다 */
 export const HALL_INTRO_LEAD = 0.25;

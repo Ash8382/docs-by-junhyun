@@ -1,4 +1,4 @@
-import { ROAD_END, ROAD_START, roadFrame } from "./drive";
+import { ROAD_END, ROAD_START, SEEDED_ROAD_END, drawSegments, roadFrame } from "./drive";
 import type { Vec3 } from "./timeline";
 
 /**
@@ -32,22 +32,28 @@ export function seededRandom(seed: number): () => number {
   };
 }
 
-/** 도로 양옆, 가장자리에서 DUST_CLEARANCE 너머에 흩어진 별 먼지 자리. 옆 방향은 수평(뱅킹을 따르지 않는다)이다 */
-export function dustField(count: number, seed: number): Float32Array {
-  const random = seededRandom(seed);
-  const positions = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    const s = ROAD_START + random() * (ROAD_END - ROAD_START);
-    const frame = roadFrame(s);
-    const side = random() < 0.5 ? -1 : 1;
-    const offset = side * (frame.width / 2 + DUST_CLEARANCE + random() * DUST_SPREAD);
-    const flat = Math.hypot(frame.tangent[0], frame.tangent[2]);
-    const right: Vec3 = [-frame.tangent[2] / flat, 0, frame.tangent[0] / flat];
-    const height = DUST_HEIGHT[0] + random() * (DUST_HEIGHT[1] - DUST_HEIGHT[0]);
-    positions.set(
-      [frame.position[0] + right[0] * offset, frame.position[1] + height, frame.position[2] + right[2] * offset],
-      i * 3,
-    );
+/**
+ * 도로 양옆, 가장자리에서 DUST_CLEARANCE 너머에 흩어진 별 먼지 자리. 옆 방향은 수평(뱅킹을 따르지 않는다)이다.
+ * 2단계 도로 끝까지는 count개를 그대로 뽑고, 늘어난 길에는 같은 밀도로 더 뽑는다(drawSegments). 그래서 길이 늘어도 앞 먼지는 그대로다
+ */
+export function dustField(count: number, seed: number, roadEnd: number = ROAD_END): Float32Array {
+  const segments = drawSegments(ROAD_START, roadEnd, SEEDED_ROAD_END, count, seed);
+  const positions = new Float32Array(segments.reduce((sum, segment) => sum + segment.count, 0) * 3);
+  let i = 0;
+  for (const segment of segments) {
+    const random = seededRandom(segment.seed);
+    for (let n = 0; n < segment.count; n++, i++) placeDust(positions, i, segment.from + random() * (segment.to - segment.from), random);
   }
   return positions;
+}
+
+/** 도로 s 자리의 먼지 하나(i번째)를 둔다. 난수는 옆·거리·높이 순서로 뽑는다(2단계와 같은 순서) */
+function placeDust(positions: Float32Array, i: number, s: number, random: () => number): void {
+  const frame = roadFrame(s);
+  const side = random() < 0.5 ? -1 : 1;
+  const offset = side * (frame.width / 2 + DUST_CLEARANCE + random() * DUST_SPREAD);
+  const flat = Math.hypot(frame.tangent[0], frame.tangent[2]);
+  const right: Vec3 = [-frame.tangent[2] / flat, 0, frame.tangent[0] / flat];
+  const height = DUST_HEIGHT[0] + random() * (DUST_HEIGHT[1] - DUST_HEIGHT[0]);
+  positions.set([frame.position[0] + right[0] * offset, frame.position[1] + height, frame.position[2] + right[2] * offset], i * 3);
 }

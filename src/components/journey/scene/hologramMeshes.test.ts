@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DataArrayTexture, Matrix4, PerspectiveCamera, Raycaster, Vector2, Vector3, type Intersection } from "three";
-import { HOLOGRAMS, type HologramPlacement } from "@/lib/journey/holograms";
+import { HOLOGRAMS, HOLOGRAM_LAYERS, type HologramPlacement } from "@/lib/journey/holograms";
 import type { Vec3 } from "@/lib/journey/timeline";
-import { createHologramMeshes, hologramAt, writeHolograms, type HologramMeshes } from "./hologramMeshes";
+import { createHologramMeshes, hologramAt, insideFrame, writeHolograms, type HologramMeshes } from "./hologramMeshes";
 
 const index = (id: string) => HOLOGRAMS.findIndex((hologram) => hologram.id === id);
 
 function atlas(): DataArrayTexture {
-  return new DataArrayTexture(new Uint8Array(4 * 4 * 4 * HOLOGRAMS.length), 4, 4, HOLOGRAMS.length);
+  return new DataArrayTexture(new Uint8Array(4 * 4 * 4 * HOLOGRAM_LAYERS.length), 4, 4, HOLOGRAM_LAYERS.length);
 }
 
 /** 모든 홀로그램을 숨긴 자리에, 주어진 홀로그램만 카메라를 향해 세운다 */
@@ -58,7 +58,7 @@ describe("홀로그램 메시", () => {
     meshes.dispose();
   });
 
-  it("칸마다 층 번호·보이는 정도가 그 칸에 그린 홀로그램의 값이다", () => {
+  it("칸마다 층(쪽을 주지 않으면 그 홀로그램의 첫 층)·보이는 정도가 그 칸에 그린 홀로그램의 값이다", () => {
     const meshes = createHologramMeshes(atlas());
     writeHolograms(
       meshes,
@@ -70,9 +70,21 @@ describe("홀로그램 메시", () => {
     const state = meshes.screens.geometry.getAttribute("aState");
     for (let slot = 0; slot < HOLOGRAMS.length; slot++) {
       const hologram = meshes.order[slot];
-      expect(layer.getX(slot)).toBe(hologram);
+      expect([layer.getX(slot), layer.getY(slot), layer.getZ(slot)]).toEqual([HOLOGRAMS[hologram].layer, HOLOGRAMS[hologram].layer, 0]);
       const expected = hologram === index("pfplay") ? 0.7 : hologram === index("stock2u") ? 1 : 0;
       expect(state.getX(slot)).toBeCloseTo(expected, 6);
+    }
+    meshes.dispose();
+  });
+
+  it("쪽을 주면 칸마다 그 칸 홀로그램의 쪽(from, to, mix)을 쓴다(WALLY 화면 넘김)", () => {
+    const meshes = createHologramMeshes(atlas());
+    const pages = HOLOGRAMS.map((hologram, i) => ({ from: hologram.layer, to: hologram.layer + (hologram.pages.length - 1), mix: i / 100 }));
+    writeHolograms(meshes, placements({ wally: { center: [0, 0, -10] } }), [0, 0, 0], { loaded: allLoaded, glow: noGlow, pages });
+    const layer = meshes.screens.geometry.getAttribute("aLayer");
+    for (let slot = 0; slot < HOLOGRAMS.length; slot++) {
+      const page = pages[meshes.order[slot]];
+      expect([layer.getX(slot), layer.getY(slot), layer.getZ(slot)]).toEqual([page.from, page.to, Math.fround(page.mix)]);
     }
     meshes.dispose();
   });
@@ -137,6 +149,47 @@ describe("홀로그램 메시", () => {
     expect(z.normalize().z).toBeCloseTo(1, 6);
     expect(x.length()).toBeGreaterThan(6.4);
     expect(y.length()).toBeGreaterThan(4);
+    meshes.dispose();
+  });
+
+  it("둥근 모서리 판정: 반지름 0이면 사각형 판정과 같다(무작위 점 1,000개)", () => {
+    let seed = 1;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+    for (let n = 0; n < 1000; n++) {
+      const x = random() * 3;
+      const y = random() * 3;
+      const rectangle = Math.abs(x - 0.2) <= 1.5 + 0.1 && Math.abs(y + 0.1) <= 2 + 0.1;
+      expect(insideFrame(x, y, 0.2, -0.1, 1.5, 2, 0, 0.1), `${x},${y}`).toBe(rectangle);
+    }
+  });
+
+  it("둥근 모서리 판정: 반지름이 있으면 모서리 바깥은 맞지 않고 변 가운데는 맞는다", () => {
+    const [half, radius, reach] = [[1, 2], 0.4, 0.1] as const;
+    const corner = [half[0] + reach, half[1] + reach];
+    // 모서리에서 대각선으로 0.9·반지름 안쪽: 사각형이면 안이지만 둥글게 자른 바깥이다
+    const inset = 0.9 * radius * (1 - Math.SQRT1_2);
+    expect(insideFrame(corner[0] - inset, corner[1] - inset, 0, 0, half[0], half[1], radius, reach)).toBe(false);
+    expect(insideFrame(corner[0] - 0.01, 0, 0, 0, half[0], half[1], radius, reach)).toBe(true);
+    expect(insideFrame(0, corner[1] - 0.01, 0, 0, half[0], half[1], radius, reach)).toBe(true);
+  });
+
+  it("WALLY 칸에는 돌린 층의 텍스처 영역과 휴대폰 모양(돌림 1, 모서리 0.12)을, 다른 칸에는 그림 영역과 0을 쓴다", () => {
+    const meshes = createHologramMeshes(atlas());
+    writeHolograms(meshes, placements({ wally: { center: [0, 0, -10] } }), [0, 0, 0], { loaded: allLoaded, glow: noGlow });
+    const tex = meshes.screens.geometry.getAttribute("aTex");
+    const rect = meshes.screens.geometry.getAttribute("aRect");
+    const shape = meshes.screens.geometry.getAttribute("aShape");
+    for (let slot = 0; slot < HOLOGRAMS.length; slot++) {
+      const hologram = HOLOGRAMS[meshes.order[slot]];
+      const values = [tex.getX(slot), tex.getY(slot), tex.getZ(slot), tex.getW(slot)];
+      if (hologram.id === "wally") {
+        expect(values.map((value) => Math.round(value * 1e6) / 1e6)).toEqual([0, 63 / 480, 1, 353 / 480].map((value) => Math.round(Math.fround(value) * 1e6) / 1e6));
+        expect([shape.getX(slot), shape.getY(slot)]).toEqual([1, Math.fround(0.12)]);
+      } else {
+        expect(values).toEqual([rect.getX(slot), rect.getY(slot), rect.getZ(slot), rect.getW(slot)]);
+        expect([shape.getX(slot), shape.getY(slot)]).toEqual([0, 0]);
+      }
+    }
     meshes.dispose();
   });
 });

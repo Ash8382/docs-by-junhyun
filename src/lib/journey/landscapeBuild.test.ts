@@ -64,14 +64,17 @@ describe("막별 풍경 메시", () => {
     }
   });
 
-  it("요소 수와 뺀 까닭: 암석 74개 가운데 56개(홀로그램 뒤 14, 도로 끝 연장선 4), 건물 141채 가운데 102채(홀로그램 뒤 39)", () => {
+  // 3단계(WALLY): 길 끝이 옮겨져 연장선 띠가 돌아 2막 암석 3개가 다시 나타났고(연장선 4 → 1), 3막은 늘어난 길에 48채를 더 뽑았다.
+  // WALLY 휴대폰은 길 오른쪽이라 정류장 카메라가 지나온 3막 도시를 돌아보고, 그 뒤 ±25°에서 기존 건물까지 빠진다. 옮겨진 첨탑 가림도
+  // 뺀다. 2단계(56개·102채)에서 바뀐 장면은 사용자가 승인했다(2026-11-03, 계획 Task 4). 휴대폰 1.2배와 첨탑 이동(2026-11-04)으로 다시 셌다
+  it("요소 수와 뺀 까닭: 암석 74개 가운데 59개(홀로그램 뒤 14, 도로 끝 연장선 1), 건물 189채(141 + 늘어난 길 48) 가운데 114채(홀로그램 뒤 73, 첨탑 가림 2)", () => {
     const count = (item: LandscapePiece) => {
       const reasons: Record<string, number> = {};
       for (const entry of item.excluded) reasons[entry.reason] = (reasons[entry.reason] ?? 0) + 1;
       return { placed: item.items.length, reasons };
     };
-    expect(count(piece("journey-landscape-act2"))).toEqual({ placed: 56, reasons: { hologram: 14, corridor: 4 } });
-    expect(count(piece("journey-landscape-act3"))).toEqual({ placed: 102, reasons: { hologram: 39 } });
+    expect(count(piece("journey-landscape-act2"))).toEqual({ placed: 59, reasons: { hologram: 14, corridor: 1 } });
+    expect(count(piece("journey-landscape-act3"))).toEqual({ placed: 114, reasons: { hologram: 73, spire: 2 } });
     expect(piece("journey-landscape-act1").excluded).toEqual([]);
   });
 
@@ -144,9 +147,11 @@ describe("첨탑", () => {
     ["pickcare", 0.03],
     ["pickcare", 0.97],
   ];
+  // WALLY 도착·떠날 때(3단계)는 보지 않는다: 길 끝이 WALLY 뒤로 옮겨져 도착 때 꼭대기가 헤더에 걸리고 떠날 때는 화면 밖인데,
+  // PiCKCARE 머묾처럼 휴대폰이 주인공인 자리라 그대로 둔다(사용자 결정 2026-11-03, 스펙 3절 "WALLY 정류장 (3단계)")
 
-  it("3막 제목·진입 주행·도착·떠날 때 16:10·16:9 화면 안에 선다", () => {
-    for (const [id, within] of VIEWS) {
+  function expectOnScreen(views: [string, number][]): void {
+    for (const [id, within] of views) {
       const range = rangeOf(id);
       const pose = driveAt(range.start + (range.end - range.start) * within).camera;
       for (const aspect of ASPECTS) {
@@ -159,6 +164,25 @@ describe("첨탑", () => {
         expect(tip.y, label).toBeLessThan(0.5);
       }
     }
+  }
+
+  it("3막 제목·진입 주행·PiCKCARE 도착·떠날 때 16:10·16:9 화면 안에 선다", () => {
+    expectOnScreen(VIEWS);
+  });
+
+  it("3막 제목 끝에서 첨탑이 PiCKCARE 소개 카드(화면 왼쪽 0.38까지)보다 오른쪽에 선다(1440×900·1280×720, 3단계)", () => {
+    // e2e와 같이 도로 높이 위 정점의 화면 사각형으로 본다(scene/landscapeGeometry의 spireRect)
+    const spire = piece("journey-landscape-spire");
+    const range = rangeOf("act-3");
+    const pose = driveAt(range.end).camera;
+    for (const aspect of [1440 / 900, 1280 / 720]) {
+      let left = Infinity;
+      for (let index = 0; index < spire.positions.length / 3; index++) {
+        if (spire.scalars.aBelow[index] > 0) continue;
+        left = Math.min(left, projectPoint(pose, vertex(spire, index), aspect).x);
+      }
+      expect(left, aspect.toFixed(2)).toBeGreaterThan(0.4);
+    }
   });
 
   it("PiCKCARE에 머무는 동안에는 화면에 서지 않는다(카메라가 내려다본다)", () => {
@@ -170,7 +194,7 @@ describe("첨탑", () => {
     expect(onScreen(tip) && onScreen(base)).toBe(false);
   });
 
-  it("진입 카메라에서 확연히 높아 보인다: 건물 90%의 2배, 가장 높아 보이는 건물의 1.8배 넘게", () => {
+  function apparentHeights(): { spire: number; tops: number[] } {
     const view = cityView(3);
     const elevation = ([x, y, z]: Vec3) => Math.atan2(y - view[1], Math.hypot(x - view[0], z - view[2]));
     const city = piece("journey-landscape-act3");
@@ -181,8 +205,16 @@ describe("첨탑", () => {
         return top;
       })
       .sort((a, b) => a - b);
-    const spire = elevation(spireTip(3));
+    return { spire: elevation(spireTip(3)), tops };
+  }
+
+  it("진입 카메라에서 확연히 높아 보인다: 건물 90%의 2배 넘게", () => {
+    const { spire, tops } = apparentHeights();
     expect(spire).toBeGreaterThan(2 * tops[Math.floor(tops.length * 0.9)]);
+  });
+
+  it("진입 카메라에서 가장 높아 보이는 건물의 1.8배 넘게 높아 보인다", () => {
+    const { spire, tops } = apparentHeights();
     expect(spire).toBeGreaterThan(1.8 * tops[tops.length - 1]);
   });
 });

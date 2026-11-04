@@ -37,13 +37,14 @@ describe("정류장", () => {
       ["pfplay", 2],
       ["act-3", 0.5],
       ["pickcare", 5],
+      ["wally", 3],
       ["ending", 2],
     ]);
-    expect(TOTAL_LENGTH).toBe(18.5);
-    expect(SCROLL_LENGTH).toBe(17.5);
+    expect(TOTAL_LENGTH).toBe(21.5);
+    expect(SCROLL_LENGTH).toBe(20.5);
   });
 
-  it("프로젝트 정류장이 데이터의 종료일 순서와 같다", () => {
+  it("프로젝트 정류장이 데이터 순서(끝난 날짜 순, 진행 중은 시작 날짜)와 같다", () => {
     expect(STOPS.filter((stop) => stop.slug).map((stop) => stop.slug)).toEqual(
       projects.map((project) => project.slug),
     );
@@ -52,12 +53,13 @@ describe("정류장", () => {
   it("막 배정과 고정 구간이 스펙과 같다", () => {
     expect(["kokoa-clone", "todo-app", "eutcha"].map((id) => rangeOf(id).stop.act)).toEqual([1, 1, 1]);
     expect(["stock2u", "tix2u", "pfplay"].map((id) => rangeOf(id).stop.act)).toEqual([2, 2, 2]);
-    expect(rangeOf("pickcare").stop.act).toBe(3);
+    expect(["pickcare", "wally"].map((id) => rangeOf(id).stop.act)).toEqual([3, 3]);
     expect(STOPS.filter((stop) => stop.pin).map((stop) => stop.id)).toEqual([
       "stock2u",
       "tix2u",
       "pfplay",
       "pickcare",
+      "wally",
     ]);
   });
 
@@ -151,8 +153,17 @@ describe("진행 거리", () => {
     }
   });
 
-  it("프로젝트 제품 화면은 왼쪽·오른쪽을 번갈아 선다", () => {
-    expect(STOPS.filter((stop) => stop.kind === "project").map((stop) => objectSide(stop))).toEqual([-1, 1, -1, 1, -1, 1]);
+  it("프로젝트 제품 화면은 왼쪽·오른쪽을 번갈아 서고, WALLY만 오른쪽이다(사용자 결정)", () => {
+    // WALLY는 번갈아 규칙대로면 왼쪽인데, 그러면 정류장 카메라가 돌아보는 방향에 1막 절벽이 휴대폰 뒤로 크게 선다(3단계)
+    expect(STOPS.filter((stop) => stop.kind === "project").map((stop) => [stop.id, objectSide(stop)])).toEqual([
+      ["kokoa-clone", -1],
+      ["todo-app", 1],
+      ["eutcha", -1],
+      ["stock2u", 1],
+      ["tix2u", -1],
+      ["pfplay", 1],
+      ["wally", 1],
+    ]);
   });
 
   it("엔딩 구간 앞부분(OVERVIEW_ARRIVAL)에서 내려다보기가 끝난다", () => {
@@ -188,7 +199,8 @@ describe("진행 거리", () => {
   it("정류장이 경로에서 차지하는 거리 구간을 준다", () => {
     expect(pathSpan("intro")).toEqual({ from: 0, to: 4 });
     expect(pathSpan("act-2")).toEqual({ from: 18, to: 20 });
-    expect(pathSpan("pickcare")).toEqual({ from: 34, to: PATH_LENGTH });
+    expect(pathSpan("pickcare")).toEqual({ from: 34, to: 44 });
+    expect(pathSpan("wally")).toEqual({ from: 44, to: PATH_LENGTH });
   });
 });
 

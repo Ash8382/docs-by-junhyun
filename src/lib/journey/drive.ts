@@ -30,8 +30,35 @@ export const ROAD_SCALE = 5;
 export const CAR_END = PATH_LENGTH * ROAD_SCALE;
 /** 도로 시작. 출발선(s = 0) 뒤로 카메라가 설 자리를 둔다 */
 export const ROAD_START = -12;
+/** 차가 멈춘 자리 너머로 열린 길이 더 이어지는 거리(m) */
+export const ROAD_TAIL = 40;
 /** 도로 끝. 차가 멈춘 자리 너머로 열린 길이 더 이어진다 */
-export const ROAD_END = CAR_END + 40;
+export const ROAD_END = CAR_END + ROAD_TAIL;
+/**
+ * 2단계 도로 끝(m): PiCKCARE 구간 끝에 꼬리를 더한 자리. 이 앞에서 뽑은 풍경(도시)과 별 먼지는 길이 늘어도 범위·개수·난수 순서를
+ * 고정한다(스펙 3절 "WALLY 정류장 (3단계)"의 "풍경과 길"). 뽑기에만 쓴다. 첨탑과 자리 규칙은 지금 도로 끝(ROAD_END)을 따른다
+ */
+export const SEEDED_ROAD_END = pathSpan("pickcare").to * ROAD_SCALE + ROAD_TAIL;
+
+/** 자리를 뽑는 구간 하나: 도로 s 범위, 뽑을 개수, 난수 시드 */
+export interface DrawSegment {
+  from: number;
+  to: number;
+  count: number;
+  seed: number;
+}
+
+/**
+ * from~to에 count개를 뽑는 구간들. 2단계 도로 끝(seededEnd) 안은 그대로 한 구간이고, 넘는 만큼은 같은 밀도의 늘어난 구간을 다른
+ * 시드(seed + 1)로 더한다. 그래서 길이 늘어도 앞 구간의 뽑기가 바뀌지 않는다
+ */
+export function drawSegments(from: number, to: number, seededEnd: number, count: number, seed: number): DrawSegment[] {
+  if (to <= seededEnd || from >= seededEnd) return [{ from, to, count, seed }];
+  return [
+    { from, to: seededEnd, count, seed },
+    { from: seededEnd, to, count: Math.round((count * (to - seededEnd)) / (seededEnd - from)), seed: seed + 1 },
+  ];
+}
 /** 평소 열린 끝이 차 앞으로 앞서는 거리(m) */
 export const REVEAL_LEAD = 30;
 /** 열린 끝과 차 사이의 최소 간격(m). 차 길이(약 4.6m)의 2.5배 */
@@ -295,7 +322,8 @@ export function stopScreenSide(stop: Stop): -1 | 1 {
  * 엔딩 내려다보기 자리. 출발선 뒤 높은 곳에서 길 전체를 본다. 길 전체가 헤더 아래에 들고,
  * 넓은 화면에서는 오른쪽 연락처 패널의 왼쪽에 놓인다(drive.test.ts가 화면 비율 넷으로 확인).
  */
-export const OVERVIEW: CameraPose = { position: [45, 255, 50], target: [35, 0, -92] };
+// 3단계(WALLY)에서 길이 30m 늘어 다시 맞췄다: 시선 방향은 그대로, 길 중심 이동(z −11.2m)의 0.55만큼 옮기고 1.055배 물렸다(2단계 [45, 255, 50] → [35, 0, −92])
+export const OVERVIEW: CameraPose = { position: [45.5, 269, 51.6], target: [35, 0, -98.2] };
 
 /** 엔딩의 흰 점 자리: 길 끝, 노면 위 0.6m. 빛이 출발점부터 여기로 흘러 모인다(병합 뒤, 사용자 결정 "여정이 하나의 빛이 되다") */
 export function endingPoint(): Vec3 {
@@ -303,11 +331,22 @@ export function endingPoint(): Vec3 {
 }
 
 /**
+ * 흰 점에서 엔딩 끝 카메라까지의 오프셋(m). 2단계에서 맞춘 자리 [12.2, 91.5, −185.3]·시선 [26.9, 12.9, −211]에서 그때 흰 점
+ * [9.1406, 12.9215, −229.0406](도로 끝 260m)을 뺀 값이다. 흰 점을 따라 옮겨 길이 늘어도 화면 구도가 같다(3단계, 스펙 3절 "WALLY 정류장")
+ */
+export const FOCUS_OFFSET: CameraPose = { position: [3.0594, 78.5785, 43.7406], target: [17.7594, -0.0215, 18.0406] };
+
+/** 흰 점 point에 오프셋을 더한 자세 */
+export function offsetPose(point: Vec3, offset: CameraPose): CameraPose {
+  return { position: add(point, offset.position), target: add(point, offset.target) };
+}
+
+/**
  * 엔딩 끝에서 흰 점으로 다가간 자리. 내려다보기(OVERVIEW)와 같은 시선 방향으로 흰 점에서 90m 떨어져, 점 뒤에 내려다보던 은하가 그대로
  * 있다(길을 따라 앞을 보면 별만 드문 하늘이었다). 흰 점이 넓은 화면의 오른쪽 연락처 패널 왼쪽(16:9에서 화면 (0.33, 0.42), 16:10에서
  * 0.31, 4:3에서 0.27)에 오도록 시선을 옮겼다(drive.test.ts가 화면 비율 셋으로 확인)
  */
-export const ENDING_FOCUS: CameraPose = { position: [12.2, 91.5, -185.3], target: [26.9, 12.9, -211] };
+export const ENDING_FOCUS: CameraPose = offsetPose(endingPoint(), FOCUS_OFFSET);
 
 function orbit(car: RoadFrame, angle: number, radius: number, height: number, side: number): Vec3 {
   const back = scale(car.tangent, -radius * Math.cos(angle));

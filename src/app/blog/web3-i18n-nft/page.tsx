@@ -66,8 +66,7 @@ export default function Web3I18nNftPage() {
             BAYC(Bored Ape Yacht Club), CryptoPunks 같은 프로젝트가 대표적이다.
           </p>
           <p>
-            PFPlay에서는 사용자가 자신의 PFP NFT를 프로필로 설정하고
-            그것으로 아이덴티티를 표현하는 소셜 기능을 구현해야 했다.
+            PFPlay에서는 사용자가 자신의 PFP NFT를 프로필로 설정해 아이덴티티를 표현하는 소셜 기능을 구현해야 했다.
             NFT 메타데이터를 조회하고 이미지를 렌더링하고 소유권을 검증하는 등의 프론트엔드 작업이 필요했다.
           </p>
         </section>

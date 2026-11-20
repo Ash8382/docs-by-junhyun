@@ -48,7 +48,7 @@ export default function PickcareFrontendArchitecturePage() {
             인증 인터셉터를 설계하면서
             <strong>토큰 만료 60초 전에 선제적으로 리프레시하는 proactive 전략</strong>을 채택했다.
             401이 터지면 그때 리프레시하는 단순한 방식은 쓰지 않았다.
-            사용자가 &quot;갑자기 로그아웃됐어요&quot;라고 느끼는 순간을 원천 차단하는 설계다.
+            미리 리프레시해 두면 사용자가 &quot;갑자기 로그아웃됐어요&quot;라고 느끼는 순간이 원천 차단된다.
           </p>
           <div className="bg-secondary/50 rounded-lg p-4 text-sm font-mono space-y-1 not-prose">
             <p>Request → 토큰 만료 60초 전? → 선제 리프레시 → 정상 요청</p>
@@ -58,11 +58,11 @@ export default function PickcareFrontendArchitecturePage() {
           <p>
             특히 동시 다발 요청 시 리프레시가 중복 호출되지 않도록 <strong>구독자 큐(subscriber queue) 패턴</strong>을 적용했다.
             토큰 리프레시가 진행 중이면 다른 요청들은 큐에 대기했다가, 리프레시 완료 후 새 토큰으로 일괄 재시도한다.
-            이건 실무에서 race condition 버그를 직접 겪어보지 않으면 넣기 어려운 방어 로직이다.
+            실무에서 race condition 버그를 직접 겪어보지 않으면 이런 방어 로직은 넣기 어렵다.
           </p>
           <p>
-            동시성 처리와 선제 리프레시까지 고려한 건 사용자 경험과 안정성 양쪽 모두를 챙긴 설계였다.
             대부분의 프로젝트는 401 → 리프레시 → 재시도의 단순 흐름만 구현한다.
+            여기에 동시성 처리와 선제 리프레시까지 고려해서 사용자 경험과 안정성을 둘 다 챙겼다.
           </p>
         </section>
 
@@ -77,7 +77,7 @@ export default function PickcareFrontendArchitecturePage() {
             />
           </div>
           <p>
-            React Query를 쓰면서 query key를 문자열로 하드코딩하는 프로젝트가 많다.
+            React Query를 쓰면서 query key를 문자열로 하드코딩하는 프로젝트가 많은데
             픽케어에서는 <strong>쿼리 키 팩토리 패턴</strong>을 전체 프로젝트에 일관되게 적용했다.
           </p>
           <pre className="text-sm"><code>{`export const magazineKeys = {
@@ -88,7 +88,7 @@ export default function PickcareFrontendArchitecturePage() {
   votes: (id) => [...magazineKeys.all, "votes", id] as const,
 };`}</code></pre>
           <p>
-            이 패턴의 진짜 가치는 <strong>캐시 무효화가 계층적으로 동작</strong>한다는 점이다.
+            이 패턴을 쓰면 무엇보다 <strong>캐시 무효화가 계층적으로 동작</strong>한다.
             <code>magazineKeys.lists()</code>를 무효화하면 모든 리스트 쿼리가 무효화되고,
             <code>magazineKeys.all</code>을 무효화하면 매거진 관련 전체 캐시가 날아간다.
             <code>as const</code>로 타입 추론도 잡혀서 실수가 어렵다.
@@ -103,8 +103,8 @@ export default function PickcareFrontendArchitecturePage() {
         <section>
           <h2>3. 서버 상태와 클라이언트 상태의 명확한 분리</h2>
           <p>
-            상태 관리에서 가장 흔한 실수는 &quot;모든 걸 Redux에 넣는 것&quot;이다.
-            픽케어에서는 이 경계를 아키텍처 레벨에서 명확하게 나눴다.
+            상태 관리에서는 &quot;모든 걸 Redux에 넣는 것&quot;이 가장 흔한 실수다.
+            픽케어에서는 이 경계를 아키텍처 차원에서 명확하게 나눴다.
           </p>
           <div className="overflow-x-auto not-prose my-4">
             <table className="w-full text-sm border-collapse">
@@ -145,8 +145,7 @@ export default function PickcareFrontendArchitecturePage() {
             Redux 보일러플레이트가 비대해지지 않으면서 서버 상태의 캐싱/재검증/갱신은 React Query가 알아서 처리한다.
           </p>
           <p>
-            &quot;이 상태는 어디에 둬야 하지?&quot;라는 질문에 대한 답이 아키텍처 레벨에서 이미 정해져 있다.
-            팀원이 합류해도 혼란 없이 따라갈 수 있는 구조다.
+            &quot;이 상태는 어디에 둬야 하지?&quot;라는 질문에 대한 답이 아키텍처에 이미 정해져 있어서 팀원이 합류해도 혼란 없이 따라갈 수 있다.
           </p>
         </section>
 
@@ -167,9 +166,10 @@ export default function PickcareFrontendArchitecturePage() {
             <p>3. CDN URL 반환</p>
           </div>
           <p>
-            기술 부채를 인지하고 실제로 개선한 것, 그리고 레거시 코드를 바로 삭제하지 않고
-            <code>deprecated</code>로 관리한 것 모두 실무적인 판단이었다.
-            급하게 삭제했다가 의존하는 곳에서 터지는 것보다, 점진적으로 제거하는 게 안전하다.
+            기술 부채를 인지하고 실제로 개선했다.
+            레거시 코드는 바로 삭제하지 않고<code>deprecated</code>로 관리했다.
+            둘 다 실무적인 판단이었다.
+            급하게 삭제했다가 의존하는 곳에서 터지는 것보다 점진적으로 제거하는 게 안전하다.
           </p>
         </section>
 
@@ -203,7 +203,7 @@ export default function PickcareFrontendArchitecturePage() {
           <p>
             ProseMirror 기반의 에디터 확장을 이 수준으로 구현하려면 Document Model, Node/Mark 체계,
             Plugin 시스템을 상당히 깊이 이해해야 한다.
-            &quot;에디터 라이브러리 갖다 쓴 것&quot;과 &quot;에디터 확장을 직접 설계한 것&quot;은 차원이 다른 작업이었다.
+            &quot;에디터 라이브러리 갖다 쓴 것&quot;과 &quot;에디터 확장을 직접 설계한 것&quot;은 작업의 차원이 달랐다.
           </p>
         </section>
 
@@ -221,7 +221,7 @@ export default function PickcareFrontendArchitecturePage() {
           <p>
             Atomic Design의 계층(Atoms → Molecules → Organisms → Templates)을 기본 뼈대로 잡되
             <strong>Molecules/Organisms 내부는 feature 기반으로 디렉토리를 분리</strong>했다.
-            220개 이상의 컴포넌트를 관리하면서도 구조가 무너지지 않은 이유다.
+            덕분에 220개 이상의 컴포넌트를 관리하면서도 구조가 무너지지 않았다.
           </p>
           <pre className="text-sm"><code>{`Molecule/
 ├── comments/     (댓글 기능 11개 컴포넌트)
@@ -233,7 +233,7 @@ export default function PickcareFrontendArchitecturePage() {
           <p>
             순수 Atomic Design만 고집하면 &quot;이 컴포넌트가 Molecule인가 Organism인가&quot;로 끝없이 논쟁하게 된다.
             feature 디렉토리를 섞어 실용적으로 풀었다.
-            아키텍처 원칙을 교조적으로 따르지 않고 팀의 현실에 맞게 변형한 것이 오히려 더 나은 결과를 만들었다.
+            아키텍처 원칙을 교조적으로 따르지 않고 팀의 현실에 맞게 변형했더니 오히려 결과가 더 좋았다.
           </p>
         </section>
 
@@ -250,8 +250,8 @@ export default function PickcareFrontendArchitecturePage() {
 └── api/            → API 라우트`}</code></pre>
           <p>
             <code>(protected)</code> 그룹의 layout에서 인증 체크를 한 번만 하면 하위 모든 페이지에 자동 적용된다.
-            개별 페이지마다 <code>useAuth</code> 체크를 반복하지 않아도 되는 구조다.
-            App Router의 설계 의도를 정확히 이해하고 활용한 패턴이라고 생각한다.
+            개별 페이지마다 <code>useAuth</code> 체크를 반복하지 않아도 된다.
+            App Router의 설계 의도를 정확히 이해하고 활용했다고 생각한다.
           </p>
         </section>
 
@@ -269,7 +269,7 @@ export default function PickcareFrontendArchitecturePage() {
             <li><strong>포커스 스타일</strong>: <code>focus:ring-2 focus:ring-main/20</code> 패턴 일관 적용</li>
           </ul>
           <p>
-            사이드 프로젝트에서 접근성까지 챙기는 경우는 드물지만,
+            사이드 프로젝트에서 접근성까지 챙기는 경우는 드물지만
             기본 구조를 잡아두면 나중에 확장하기가 훨씬 수월하다.
           </p>
         </section>
@@ -282,7 +282,7 @@ export default function PickcareFrontendArchitecturePage() {
           </p>
           <p>
             개념은 쉽지만 엣지 케이스가 까다로웠다.
-            특히 <code>isLiked</code> 동기화 누락 버그를 잡으면서,
+            특히 <code>isLiked</code> 동기화 누락 버그를 잡으면서
             서버 상태와 로컬 상태의 동기화가 Optimistic Update에서 가장 어려운 부분이라는 걸 체감했다.
             네트워크 에러 시 롤백 처리, 동시 클릭 시 상태 일관성 유지 등을 직접 부딪히며 해결했다.
           </p>
@@ -300,7 +300,7 @@ if (isDev) console.log('🚀 [API REQUEST]', { url, method, params });`}</code><
             <li>환경변수 검증 유틸리티 (<code>validateEnv</code>)</li>
           </ul>
           <p>
-            &quot;내가 쓰기 편하게&quot; 만든 부분이지만 이런 DX 투자가 개발 속도에 직접적으로 영향을 준다.
+            &quot;내가 쓰기 편하게&quot; 만든 부분이지만 이런 DX 투자는 개발 속도를 직접 끌어올린다.
             팀 프로젝트에서는 온보딩 시간도 줄었다.
           </p>
         </section>
@@ -309,15 +309,14 @@ if (isDev) console.log('🚀 [API REQUEST]', { url, method, params });`}</code><
         <section>
           <h2>마무리</h2>
           <p>
-            이 글에서 정리한 10가지 패턴의 공통점은, 각각의 결정에 <strong>실무적인 근거</strong>가 있다는 것이다.
+            이 글에서 정리한 10가지 패턴은 공통적으로 각각의 결정에 <strong>실무적인 근거</strong>가 있다.
             토큰 리프레시에 구독자 큐를 넣은 이유, Query Key를 팩토리로 만든 이유,
             S3 직접 업로드를 deprecated 처리한 이유 — 전부 실제 문제를 겪고 나서 도입한 해결책이다.
           </p>
           <p>
             물론 개선할 여지도 있다.
-            에러 바운더리 활용도를 더 높이고 싶고, 테스트 코드도 보강해야 한다.
-            하지만 아키텍처의 일관성을 유지하면서 각 영역의 기술적 깊이를 확보한 건
-            팀과 프로덕트 모두에게 좋은 투자였다고 생각한다.
+            에러 바운더리 활용도를 더 높이고 싶고 테스트 코드도 보강해야 한다.
+            하지만 아키텍처의 일관성을 유지하면서 각 영역의 기술적 깊이를 확보했으니 팀에도 프로덕트에도 좋은 투자였다고 생각한다.
           </p>
         </section>
       </div>

@@ -205,7 +205,7 @@ CORS 헤더를 설정하는 프록시 서버를 만들어줘. use context7`}</co
         <section>
           <h2>실제로 써보니</h2>
           <p>
-            직접 써보면서 느낀 점은, <strong>&quot;use context7&quot; 한 마디가 생각보다 큰 차이</strong>를 만든다는 것이다.
+            직접 써보면서 <strong>&quot;use context7&quot; 한 마디가 생각보다 큰 차이</strong>를 만든다는 걸 느꼈다.
             특히 빠르게 업데이트되는 라이브러리(Next.js, React Query, Tailwind 등)를 다룰 때
             deprecated 코드를 받아서 삽질하는 시간이 확실히 줄었다.
           </p>
@@ -214,7 +214,7 @@ CORS 헤더를 설정하는 프록시 서버를 만들어줘. use context7`}</co
             주요 라이브러리 대부분은 지원하며 미지원 라이브러리도 요청하면 추가해준다고 한다.
           </p>
           <p>
-            AI 코딩 도구를 본격적으로 쓰고 있다면 Context7은 거의 필수에 가까운 MCP라고 생각한다.
+            AI 코딩 도구를 본격적으로 쓰고 있다면 Context7은 필수에 가까운 MCP라고 생각한다.
             설치 1분, 사용법 &quot;use context7&quot; 한 줄이면 끝이니 한번 설치해보길 추천한다.
           </p>
         </section>

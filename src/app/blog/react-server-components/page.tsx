@@ -48,7 +48,7 @@ export default function ReactServerComponentsPage() {
         <section>
           <h2>SSR vs RSC</h2>
           <p>
-            <strong>SSR(Server-Side Rendering)</strong>은 서버에서 HTML을 생성해 클라이언트에 전달하고,
+            <strong>SSR(Server-Side Rendering)</strong>은 서버에서 HTML을 생성해 클라이언트에 전달하고
             클라이언트에서 hydration을 통해 인터랙티브하게 만드는 방식입니다.
             컴포넌트의 JavaScript 번들은 여전히 클라이언트로 전송됩니다.
           </p>

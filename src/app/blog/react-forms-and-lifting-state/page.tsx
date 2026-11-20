@@ -71,7 +71,7 @@ export default function ReactFormsAndLiftingStatePage() {
             이 패턴의 핵심 원칙:
           </p>
           <ul>
-            <li>State는 해당 데이터를 필요로 하는 컴포넌트들의 공통 부모에 위치시킨다</li>
+            <li>State는 해당 데이터가 필요한 컴포넌트들의 공통 부모에 위치시킨다</li>
             <li>부모가 State를 소유하고 자식에게 값과 변경 함수를 Props로 전달한다</li>
             <li>데이터는 항상 위에서 아래로 흐른다 (단방향 데이터 흐름)</li>
           </ul>

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "ESLint를 oxlint로 바꾸려다 꺼져 있던 CI 린트부터 살린 이야기 - 이준현",
-  description: "픽케어 메인 서비스에서 ESLint를 oxlint·oxfmt로 바꿀지 검토한 기록. CI에서 빠져 있던 린트를 먼저 살리고, 18.1초 대 0.31초 속도와 규칙 111개 중 104개 이식, 규칙별 탐지 일치 여부를 메인 레포에서 직접 쟀다.",
+  description: "픽케어 메인 서비스에서 ESLint를 oxlint·oxfmt로 바꿀지 검토한 기록. CI에서 빠져 있던 린트를 먼저 살리고 18.1초 대 0.31초 속도와 규칙 111개 중 104개 이식, 규칙별 탐지 일치 여부를 메인 레포에서 직접 쟀다.",
 };
 
 export default function EslintOxlintOxfmtReviewPage() {
@@ -41,13 +41,14 @@ export default function EslintOxlintOxfmtReviewPage() {
 
         <p>
           ESLint 자리에 <strong>oxlint</strong>(린터)와 <strong>oxfmt</strong>(포매터)를 쓰는 걸 검토했다.
-          둘 다 Oxc 프로젝트가 Rust로 만든 도구다. 픽케어는 메인 서비스, biz, 앱까지 모든 프로젝트가 ESLint를 쓰고 있어서,
+          둘 다 Oxc 프로젝트가 Rust로 만든 도구다.
+          픽케어는 메인 서비스, biz, 앱까지 모든 프로젝트가 ESLint를 쓰고 있어서
           바꾼다면 레포마다 사정을 한 번에 정리해 둘 필요가 있었다.
         </p>
 
         <p>
           검토를 시작하면서 먼저 정한 방침은 이렇다. 지금 ESLint를 통째로 걷어내지 않는다.
-          단계를 나눠서 진행하고, 단계가 끝날 때마다 다음으로 갈지(go) 멈출지(no-go)를 판단한다.
+          단계를 나눠서 진행하고 단계가 끝날 때마다 다음으로 갈지(go) 멈출지(no-go)를 판단한다.
         </p>
 
         <p>
@@ -59,7 +60,7 @@ export default function EslintOxlintOxfmtReviewPage() {
           <h2>먼저 지금 상태부터 쟀다</h2>
           <p>
             이슈를 쓴 10월 8일에 메인 서비스 레포에서 <code>eslint .</code>를 돌린 결과다.
-            1,050개 파일을 검사하는 데 약 20초가 걸렸고, <strong>에러 237개, 경고 469개</strong>가 나왔다.
+            1,050개 파일을 검사하는 데 약 20초가 걸렸고 <strong>에러 237개, 경고 469개</strong>가 나왔다.
             레포의 TS/TSX 파일은 1,044개다.
           </p>
           <table>
@@ -92,7 +93,7 @@ export default function EslintOxlintOxfmtReviewPage() {
             취지의 제외 사유 주석이 남아 있었다.
           </p>
           <p>
-            그런데 <code>eslint.config.mjs</code>는 이미 flat config로 고쳐져 있었고, 돌려 보면 잘 동작했다.
+            그런데 <code>eslint.config.mjs</code>는 이미 flat config로 고쳐져 있었고 돌려 보면 잘 동작했다.
             린트를 뺀 이유는 진작 사라졌는데 빼 둔 상태만 그대로 남아 있었던 것이다.
           </p>
           <p>
@@ -119,7 +120,7 @@ export default function EslintOxlintOxfmtReviewPage() {
             이걸 다룰 방법을 세 가지 놓고 봤다.
           </p>
           <ol>
-            <li><strong>baseline 허용</strong>: 지금 있는 위반은 기록해 두고, 새로 생기는 위반만 막는다.</li>
+            <li><strong>baseline 허용</strong>: 지금 있는 위반은 기록해 두고 새로 생기는 위반만 막는다.</li>
             <li><strong>일부 규칙을 warn으로 강등</strong>: 에러가 몰린 규칙을 경고로 낮춰 CI를 통과시킨다.</li>
             <li><strong>점진 수정</strong>: 에러를 조금씩 고쳐 나가면서 규칙을 하나씩 에러로 올린다.</li>
           </ol>
@@ -287,7 +288,7 @@ npx oxlint`}</code></pre>
           <ul>
             <li>
               <strong><code>no-autofocus</code> 3건</strong>: oxlint는 <code>role=&quot;dialog&quot;</code> 안의 <code>autoFocus</code>를 예외로 둔다.
-              다이얼로그가 열릴 때 안쪽 요소로 포커스를 옮기는 건 흔한 패턴이라, 버그라기보다 규칙 해석 차이에 가깝다.
+              다이얼로그가 열릴 때 안쪽 요소로 포커스를 옮기는 건 흔한 패턴이라 버그라기보다 규칙 해석 차이에 가깝다.
             </li>
             <li>
               <strong><code>preserve-manual-memoization</code> 1건</strong>: 같은 위치를 <code>exhaustive-deps</code> 경고가 잡는다.
@@ -300,11 +301,12 @@ npx oxlint`}</code></pre>
           <h2>병행 구성은 이득이 없었다</h2>
           <p>
             처음 계획에는 <code>eslint-plugin-oxlint</code>로 oxlint를 ESLint 앞단에 세우는 병행 구성도 있었다.
-            oxlint가 처리하는 규칙은 ESLint에서 끄고, oxlint에 없는 규칙만 ESLint가 맡는 방식이다.
+            oxlint가 처리하는 규칙은 ESLint에서 끄고 oxlint에 없는 규칙만 ESLint가 맡는 방식이다.
             전환 부담을 줄이면서 속도를 챙기려는 구성이다.
           </p>
           <p>
-            실제로 돌려 보니 <strong>15초</strong>가 걸렸다. ESLint에 남는 설정용 규칙 때문에 React Compiler가 여전히 돌아서,
+            실제로 돌려 보니 <strong>15초</strong>가 걸렸다.
+            ESLint에 남는 설정용 규칙 때문에 React Compiler가 여전히 돌아서
             oxlint가 맡는 규칙을 ESLint에서 꺼도 3초밖에 줄지 않았다.
             그러니 메인 서비스에서는 &quot;병행&quot;이라는 선택지가 사실상 없다. 전환하거나, 유지하거나 둘 중 하나다.
           </p>
@@ -314,7 +316,7 @@ npx oxlint`}</code></pre>
           <h2>이슈에 틀리게 적은 것</h2>
           <p>
             검토를 시작할 때 이슈에 &quot;oxlint의 React Compiler 계열 규칙은 문서상 experimental&quot;이라고 적었는데, 틀린 내용이었다.
-            oxlint 1.79(8월 18일)부터 정식 규칙이고, 이식 여부를 확인하지 못했던 <code>static-components</code> 등도 이미 들어와 있다.
+            oxlint 1.79(8월 18일)부터 정식 규칙이고 이식 여부를 확인하지 못했던 <code>static-components</code> 등도 이미 들어와 있다.
           </p>
           <p>
             문서와 블로그 글만으로 정리한 비교표는 금방 낡는다. oxc처럼 릴리스가 빠른 도구는 더 그렇다.
@@ -325,7 +327,8 @@ npx oxlint`}</code></pre>
         <section>
           <h2>oxfmt는 포매터를 새로 들이는 일이다</h2>
           <p>
-            린터는 &quot;바꾸는&quot; 일이지만, 포매터는 메인 레포에 원래 없었으니 &quot;새로 들이는&quot; 일이다. 그래서 따로 결정하기로 했다.
+            린터는 &quot;바꾸는&quot; 일이지만 포매터는 메인 레포에 원래 없었으니 &quot;새로 들이는&quot; 일이다.
+            그래서 따로 결정하기로 했다.
           </p>
           <p>
             포맷 규칙은 지금 코드에서 가장 많이 쓰는 스타일에 맞췄다. 큰따옴표(97%), 세미콜론, es5 방식 끝 쉼표, 80자 줄 길이다.
@@ -334,7 +337,8 @@ npx oxlint`}</code></pre>
           </p>
           <p>
             하나 더 걸리는 게 있었다. 80자 설정에서는 <strong>한 번 포맷해서 끝나지 않는 파일이 2~4개</strong> 있다.
-            두 번 돌려야 결과가 고정된다. 포맷 검사를 CI에 걸기 전에 짚고 넘어가야 할 부분이다.
+            두 번 돌려야 결과가 고정된다.
+            포맷 검사를 CI에 걸기 전에 따져 보고 넘어가야 할 부분이다.
           </p>
           <p>그래서 oxfmt는 도입한다면 이런 순서를 밟아야 한다.</p>
           <ol>
@@ -369,7 +373,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs`}</code></pre>
           <ul>
             <li>도구를 바꾸기 전에 <strong>CI에서 린트가 돌고 있는지</strong>부터 봐야 한다. 메인 서비스는 낡은 주석 하나 때문에 린트가 빠져 있었다.</li>
             <li>메인 레포 실측에서 oxlint는 <strong>0.31초</strong>, ESLint는 18.1초였다. CI 추정으로는 약 2초 대 41초다.</li>
-            <li>켜진 규칙 111개 중 <strong>104개가 그대로 옮겨지고</strong>, 빠지는 7개는 지금 코드에서 0건이다. 주요 규칙은 같은 줄에서 일치했다.</li>
+            <li>켜진 규칙 111개 중 <strong>104개가 그대로 옮겨지고</strong> 빠지는 7개는 지금 코드에서 0건이다. 주요 규칙은 같은 줄에서 일치했다.</li>
             <li>에러가 146건 늘어난 건 ESLint 쪽 React Compiler가 <code>try/finally</code> 컴포넌트를 건너뛰어서 못 잡던 위반이다.</li>
             <li>ESLint와 oxlint를 나란히 두는 병행 구성은 React Compiler가 계속 돌아서 이득이 거의 없다.</li>
             <li>oxfmt는 900개 넘는 파일을 바꾸는 신규 도입이라 팀 합의, 일괄 포맷 시점, 버전 고정을 따로 정해야 한다.</li>

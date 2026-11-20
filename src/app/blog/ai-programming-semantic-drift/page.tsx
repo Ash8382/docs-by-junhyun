@@ -38,7 +38,7 @@ export default function AiProgrammingSemanticDriftPage() {
 
         <p>
           흥미로운 글을 읽었다. AI로 코딩할 때 왜 &quot;그럴듯한 코드인데 실행하면 여기저기 터지는&quot; 현상이 반복되는지,
-          그리고 그 근본 원인이 무엇인지 새로운 시각으로 짚는다.
+          그리고 그 근본 원인이 무엇인지 새로운 시각으로 풀어낸다.
         </p>
 
         <section>
@@ -49,7 +49,7 @@ export default function AiProgrammingSemanticDriftPage() {
             버그가 한 군데에 그치지 않고 코드베이스 전반에 산재한다. 하나를 고치면 다른 곳이 깨지는 연쇄 반응이 일어난다.
           </p>
           <p>
-            핵심 원인은 LLM이 <strong>평평한(유클리드) 임베딩 공간</strong>에서 동작한다는 점이다.
+            핵심 원인으로 LLM이 <strong>평평한(유클리드) 임베딩 공간</strong>에서 동작한다는 점을 꼽는다.
             이 공간에서는 &quot;정답으로 가는 경로&quot;와 &quot;버그로 가는 경로&quot;의 비용이 동일하다.
             모델 입장에서는 두 경로를 구분할 인센티브가 없다.
           </p>
@@ -62,7 +62,7 @@ export default function AiProgrammingSemanticDriftPage() {
             <strong>에너지 지형(Lyapunov cost field)</strong>을 부여하자고 제안한다.
           </p>
           <p>
-            &quot;버그로 향하는 경로&quot;를 비싸게, &quot;정답으로 향하는 경로&quot;를 싸게 만드는 것이 핵심이다.
+            핵심만 말하면 &quot;버그로 향하는 경로&quot;를 비싸게, &quot;정답으로 향하는 경로&quot;를 싸게 만든다.
           </p>
         </section>
 
@@ -79,7 +79,7 @@ export default function AiProgrammingSemanticDriftPage() {
           <p>
             이 구조에서 에러 연쇄 경로는 정답 경로 대비 <strong>5~7배</strong> 비용이 커진다고 주장한다.
             측지선(geodesic)과 어트랙터(attractor) 개념을 활용해서 사후 필터링이 아니라
-            <strong>생성 이전부터</strong> 잘못된 경로가 불리해지도록 유도한다는 점이 흥미롭다.
+            <strong>생성 이전부터</strong> 잘못된 경로가 불리해지도록 유도하는 대목이 흥미롭다.
           </p>
         </section>
 

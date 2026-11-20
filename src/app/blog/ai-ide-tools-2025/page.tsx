@@ -44,9 +44,7 @@ export default function AiIdeTools2025Page() {
         <section>
           <h2>Conductor - Git Worktree 기반 병렬 AI 작업</h2>
           <p>
-            <a href="https://docs.conductor.build/" target="_blank" rel="noreferrer">Conductor</a>는
-            AI를 활용한 병렬 작업에 특화된 도구다.
-            가장 재미있는 점은 <strong>Git Worktree</strong>를 활용한다는 것이다.
+            <a href="https://docs.conductor.build/" target="_blank" rel="noreferrer">Conductor</a>는 AI를 활용한 병렬 작업에 특화된 도구다. <strong>Git Worktree</strong>를 활용한다는 점이 가장 재미있다.
           </p>
           <p>
             AI 에이전트마다 독립된 작업 공간(워크트리)을 자동으로 생성해서 돌린다.

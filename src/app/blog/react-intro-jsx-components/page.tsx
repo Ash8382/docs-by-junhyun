@@ -93,7 +93,7 @@ export default function ReactIntroPage() {
             State가 변경되면 React는 해당 컴포넌트를 다시 렌더링한다.
           </p>
           <p>
-            Lifecycle은 컴포넌트가 생성(mount)되고, 업데이트되고, 제거(unmount)되는 과정이다.
+            Lifecycle은 컴포넌트가 생성(mount)되고 업데이트되고 제거(unmount)되는 과정이다.
             함수형 컴포넌트에서는 <code>useEffect</code> Hook으로 라이프사이클을 다룬다.
           </p>
         </section>

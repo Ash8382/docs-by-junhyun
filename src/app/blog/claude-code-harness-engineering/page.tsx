@@ -52,7 +52,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
           총 <strong>7개 파트, 30개 장, 45개 문서</strong>로 구성되어 있다.
           Claude Code v2.1.88의 복원 소스 코드를 기반으로 에이전트 루프, 프롬프트 엔지니어링, 컨텍스트 관리,
           프롬프트 캐싱, 보안/권한, 고급 하위시스템까지 전부 해부해둔다.
-          분량이 방대해서 전부 읽긴 어렵지만, 개인적으로 가장 흥미로웠던 <strong>25장 — 하네스 엔지니어링 6대 원칙</strong>을 중심으로 정리해본다.
+          분량이 방대해서 전부 읽긴 어렵지만 개인적으로 가장 흥미로웠던 <strong>25장 — 하네스 엔지니어링 6대 원칙</strong>을 중심으로 정리해본다.
         </p>
 
         {/* 하네스 엔지니어링이란 */}
@@ -121,7 +121,7 @@ export default function ClaudeCodeHarnessEngineeringPage() {
           <p>
             캐시 중단을 감지하기 위해 팀은 <strong>거의 20개 필드를 추적</strong>한다
             (<code>systemHash</code>, <code>toolsHash</code>, <code>perToolHashes</code>, <code>betas</code> 등).
-            주석에는 BigQuery에서 추출한 정량 데이터까지 박혀 있다.
+            주석에는 BigQuery에서 추출한 정량 데이터까지 적혀 있다.
           </p>
           <pre><code>{`/** Per-tool schema hash. Diffed to name which tool's description changed
  * when toolSchemasChanged but added=removed=0 (77% of tool breaks per
@@ -161,7 +161,7 @@ const TOOL_DEFAULTS = {
             심지어 <code>isConcurrencySafe()</code>가 예외를 던지면 catch 블록도 보수적으로 <code>false</code>를 반환한다.
           </p>
           <p>
-            권한 모드도 동일하다: <code>default</code> → <code>acceptEdits</code> → <code>plan</code> → <code>bypassPermissions</code> 순서로 점점 허용 범위가 넓어지지만,
+            권한 모드도 동일하다: <code>default</code> → <code>acceptEdits</code> → <code>plan</code> → <code>bypassPermissions</code> 순서로 점점 허용 범위가 넓어지지만
             시스템 기본값은 가장 제한적인 <code>default</code>다. 사용자가 적극적으로 완화해야 한다.
           </p>
           <p>
@@ -244,11 +244,12 @@ const TOOL_DEFAULTS = {
 const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3`}</code></pre>
           <p>
             3번 연속 실패하면 시스템은 &quot;압축 중단&quot; 상태로 래치된다.
-            주석에 박힌 BigQuery 데이터(1,279개 세션, 하루 250K API 호출 낭비)가 엔지니어링 근거로 그대로 기록되어 있다.
+            BigQuery 데이터(1,279개 세션, 하루 250K API 호출 낭비)가 엔지니어링 근거로 주석에 그대로 기록되어 있다.
           </p>
           <p>
             베타 헤더 래칭, 캐시 TTL 자격 래칭(<code>should1hCacheTTL()</code>) 등도 같은 패턴이다.
-            세션 내내 한 번 결정된 값은 바뀌지 않는다. 바뀌면 캐시가 깨지고, 캐시가 깨지면 돈이 샌다.
+            세션 내내 한 번 결정된 값은 바뀌지 않는다.
+            바뀌면 캐시가 깨지고 캐시가 깨지면 돈이 샌다.
           </p>
           <p>
             안티패턴은 <strong>상태 스래싱</strong>이다. 매 요청마다 설정을 다시 계산하면 상태가 진동하고

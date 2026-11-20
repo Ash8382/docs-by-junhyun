@@ -36,7 +36,7 @@ export default function PythonPycharmPage() {
         </div>
 
         <p>
-          프론트엔드 중심으로 공부하다가, Python도 한번 경험해보고 싶어서 학습을 시작했고,
+          프론트엔드 중심으로 공부하다가, Python도 한번 경험해보고 싶어서 학습을 시작했다.
           PyCharm IDE 설정부터 Python 기초 문법까지 정리해둔다.
         </p>
 

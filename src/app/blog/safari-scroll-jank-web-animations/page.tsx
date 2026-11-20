@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Safari 스크롤 끊김 삽질 끝에 만난 2018년 WebKit 글 - 이준현",
-  description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고, requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",
+  description: "Safari에서 스크롤 연동 애니메이션이 끊기는 근본 원인을 WebKit 공식 문서와 버그 트래커로 추적하고 requestAnimationFrame 기반 스크롤 효과를 Scroll-driven Animations로 옮기는 방법을 정리.",
 };
 
 export default function SafariScrollJankWebAnimationsPage() {
@@ -32,7 +32,7 @@ export default function SafariScrollJankWebAnimationsPage() {
         <p>
           <a href="https://fitpet.co.kr/" target="_blank" rel="noreferrer">핏펫(fitpet.co.kr)</a> 사이트를
           <strong> Safari에서 스크롤</strong>해 본 적이 있다면 아마 미묘한 위화감을 느꼈을 것이다.
-          Chrome에서는 매끄럽게 흐르던 스크롤 연동 효과들이, Safari에서는 스크롤할 때마다
+          Chrome에서는 부드럽게 흐르던 스크롤 연동 효과들이, Safari에서는 스크롤할 때마다
           살짝 <strong>덜컹거리고 끊긴다(jank)</strong>. 콘텐츠가 스크롤을 한 박자 늦게 따라오는,
           그 미세하게 &quot;출렁이는&quot; 느낌 말이다.
         </p>
@@ -85,7 +85,7 @@ window.addEventListener("scroll", () => {
             현대 브라우저는 <strong>스크롤을 메인 스레드에서 처리하지 않는다.</strong>
             메인 스레드는 자바스크립트 실행, 스타일 계산, 레이아웃, 페인트를 모두 담당한다.
             이게 바쁘면 스크롤까지 버벅인다. 그래서 브라우저들은 스크롤을 <strong>별도의 스레드</strong>로 분리해
-            메인 스레드가 아무리 바빠도 스크롤 자체는 매끄럽게 유지되도록 만들었다.
+            메인 스레드가 아무리 바빠도 스크롤 자체는 부드럽게 유지되도록 만들었다.
           </p>
           <p>
             WebKit 공식 문서는 이 <strong>&quot;async scrolling(비동기 스크롤)&quot;</strong> 구조를 이렇게 설명한다.
@@ -135,7 +135,7 @@ window.addEventListener("scroll", () => {
           <h2>&quot;애플이 알고도 안 고쳤다?&quot;의 진실</h2>
           <p>
             &quot;Safari가 이 문제를 알면서도 오래 방치했다&quot;는 이야기를 들었을 수도 있다.
-            <strong>절반은 맞고 절반은 틀리다.</strong> 정확히 짚어보자.
+            <strong>절반은 맞고 절반은 틀리다.</strong> 정확히 따져 보자.
           </p>
           <p>
             우선 비동기 스크롤로 인한 jank는 <strong>버그가 아니라 의도된 트레이드오프</strong>다.
@@ -193,7 +193,7 @@ element.getAnimations();     // 실행 중인 애니메이션 조회`}</code></p
           <p>
             핵심은 <strong>&quot;브라우저 엔진이 애니메이션을 효율적으로 돌리는 능력은 그대로 두면서,
             자바스크립트로 정교하게 제어할 수 있게 한다&quot;</strong>는 설계 철학이다.
-            이 WAAPI라는 토대 위에 훗날 <strong>Scroll Timeline / View Timeline</strong>이 얹혔다.
+            이 WAAPI라는 토대 위에 훗날 <strong>Scroll Timeline / View Timeline</strong>이 만들어졌다.
             2018년의 그 글이 2025~2026년 Safari의 스크롤 jank 해법으로 이어진 것이다.
           </p>
         </section>
@@ -306,13 +306,13 @@ hero.animate(
           <ul>
             <li>Safari 스크롤 jank의 범인은 대개 <strong>비동기 스크롤 + 메인 스레드 rAF의 desync</strong>다. 내 코드가 아니라 아키텍처 문제인 경우가 많다.</li>
             <li>이건 <strong>&quot;스크롤 우선&quot;을 택한 트레이드오프</strong>다. 다만 근본 해법(Scroll-driven Animations)이 Chrome보다 약 2년 늦게 왔다.</li>
-            <li>해법의 뿌리는 <strong>2018년 WebKit의 Web Animations API</strong>이고 그 위에 Scroll/View Timeline이 얹혔다.</li>
+            <li>해법의 뿌리는 <strong>2018년 WebKit의 Web Animations API</strong>이고 그 위에 Scroll/View Timeline이 만들어졌다.</li>
             <li><code>scroll()</code>/<code>view()</code> 타임라인으로 애니메이션을 <strong>컴포지터로 넘기면</strong> desync 자체가 사라진다.</li>
-            <li>단, <strong>transform·opacity만 컴포지터에서 공짜</strong>이고, <code>@supports</code> 폴백을 잊지 말 것.</li>
+            <li>단, <strong>transform·opacity만 컴포지터에서 공짜</strong>이고 <code>@supports</code> 폴백을 잊지 말 것.</li>
           </ul>
           <p>
             나는 아직 내 서비스에 이 마이그레이션을 완전히 적용하진 못했다. 하지만 원인을 아는 것과 모르는 것은 하늘과 땅 차이다.
-            같은 증상으로 삽질하고 있다면, 이 글이 그 삽질을 조금은 줄여주길 바란다.
+            같은 증상으로 삽질하고 있다면 이 글이 그 삽질을 조금은 줄여주길 바란다.
           </p>
         </section>
 

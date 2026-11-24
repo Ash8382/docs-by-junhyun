@@ -133,7 +133,7 @@ describe("프로젝트 데이터", () => {
     expect(pickcare.repos.map((repo) => repo.id)).toEqual(["frontend", "biz", "studio", "app", "cardnews"]);
   });
 
-  it("PiCKCARE app 저장소는 App Store 공식 스크린샷 세 장(홈·픽라운지·픽키랩)을 가진다", () => {
+  it("PiCKCARE app 저장소는 앱 소개 화면 여섯 장(홈·픽라운지·픽키랩·매거진·픽스팟·반려행사마당)을 가진다", () => {
     const pickcare = projects.find((project) => project.slug === "pickcare");
     if (pickcare?.kind !== "repos") throw new Error("PiCKCARE는 저장소 구조 글이어야 합니다");
     const app = pickcare.repos.find((repo) => repo.id === "app");
@@ -141,6 +141,9 @@ describe("프로젝트 데이터", () => {
       "/projects/pickcare/app/home.webp",
       "/projects/pickcare/app/lounge.webp",
       "/projects/pickcare/app/pickylab.webp",
+      "/projects/pickcare/app/magazine.webp",
+      "/projects/pickcare/app/pickspot.webp",
+      "/projects/pickcare/app/events.webp",
     ]);
   });
 

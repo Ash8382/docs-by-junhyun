@@ -304,21 +304,39 @@ export const pickcare = {
       screens: [
         {
           src: "/projects/pickcare/app/home.webp",
-          alt: "PiCKCARE 앱 홈 화면(App Store 스크린샷)",
-          width: 645,
-          height: 1395,
+          alt: "PiCKCARE 앱 홈 화면",
+          width: 603,
+          height: 1311,
         },
         {
           src: "/projects/pickcare/app/lounge.webp",
-          alt: "PiCKCARE 앱 픽라운지 화면(App Store 스크린샷)",
-          width: 645,
-          height: 1395,
+          alt: "PiCKCARE 앱 픽라운지 화면",
+          width: 603,
+          height: 1311,
         },
         {
           src: "/projects/pickcare/app/pickylab.webp",
-          alt: "PiCKCARE 앱 픽키랩 화면(App Store 스크린샷)",
-          width: 645,
-          height: 1395,
+          alt: "PiCKCARE 앱 픽키랩 화면",
+          width: 603,
+          height: 1311,
+        },
+        {
+          src: "/projects/pickcare/app/magazine.webp",
+          alt: "PiCKCARE 앱 매거진 화면",
+          width: 603,
+          height: 1311,
+        },
+        {
+          src: "/projects/pickcare/app/pickspot.webp",
+          alt: "PiCKCARE 앱 픽스팟 화면",
+          width: 603,
+          height: 1311,
+        },
+        {
+          src: "/projects/pickcare/app/events.webp",
+          alt: "PiCKCARE 앱 반려행사마당 화면",
+          width: 603,
+          height: 1311,
         },
       ],
       cases: [

@@ -10,7 +10,7 @@ import sharp from "sharp";
  * 결과는 public/projects/<경로>.webp이고 크기는 2880×1800이다. 데이터(src/data/projects/*.ts)의 width/height도 그 값이다.
  * 홀로그램 층 이미지는 이 캡처에서 만들므로 찍은 뒤 npm run build:holograms도 돌린다.
  * dismiss가 있는 대상은 그 글자를 눌러 첫 방문 대화상자를 닫은 뒤 찍는다.
- * PiCKCARE 앱(App Store)과 PFPlay 안쪽 화면처럼 로그인이 필요한 화면은 사용자가 직접 넣는다.
+ * PiCKCARE 앱(디자인팀 이미지, npm run build:app-screens)과 PFPlay 안쪽 화면처럼 로그인이 필요한 화면은 사용자가 직접 넣는다.
  */
 const TARGETS = [
   { file: "todo-app/home", url: "https://geezers-io.github.io/todo-app-assignment/" },

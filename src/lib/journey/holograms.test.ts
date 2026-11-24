@@ -94,7 +94,7 @@ describe("홀로그램 목록", () => {
 describe("층 안 그림 영역", () => {
   it("층(768×480) 안에 비율대로 가운데 넣고 정수 화소다", () => {
     expect(layerRect(2880, 1800)).toEqual({ x: 0, y: 0, width: 768, height: 480 });
-    expect(layerRect(645, 1395)).toEqual({ x: 273, y: 0, width: 222, height: 480 });
+    expect(layerRect(603, 1311)).toEqual({ x: 273, y: 0, width: 221, height: 480 });
     expect(layerRect(1543, 378)).toEqual({ x: 0, y: 146, width: 768, height: 188 });
   });
 

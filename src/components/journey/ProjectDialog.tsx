@@ -194,7 +194,7 @@ function DetailHeader({ project }: { project: Project }) {
 
 /**
  * 원본 폭의 절반까지만 키워 레티나에서도 선명하게 보인다(썸네일이 작은 Stock2U·Tix2U 포함).
- * 세로로 긴 휴대폰 화면(PiCKCARE app, WALLY)은 한 줄에 셋씩 나란히 둔다. 위아래로 쌓으면 패널 몇 화면을 차지한다.
+ * 세로로 긴 휴대폰 화면(PiCKCARE app 여섯, WALLY 다섯)은 한 줄에 셋씩 나란히 둔다. 위아래로 쌓으면 패널 몇 화면을 차지한다.
  * 가로 화면과 섞여 있으면(WALLY: 썸네일 + 휴대폰 다섯) 가로 화면을 먼저 쌓고 휴대폰 격자를 그 아래에 둔다. 크레딧은 화면 아래에 둔다.
  */
 function Screens({ screens, credit }: { screens: Screen[]; credit?: Inline }) {

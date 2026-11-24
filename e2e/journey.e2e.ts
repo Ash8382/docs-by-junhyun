@@ -235,12 +235,14 @@ test("PiCKCARE biz 상세의 배포 주소는 밑줄 친 새 탭 링크이고 �
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("PiCKCARE app 탭은 App Store 화면 세 장을 한 줄에 보인다", async ({ page }) => {
+test("PiCKCARE app 탭은 앱 소개 화면 여섯 장을 한 줄에 셋씩 두 줄로 보인다", async ({ page }) => {
   await page.goto("/journey#pickcare/app");
   const screens = page.getByRole("tabpanel").getByRole("region", { name: "제품 화면" }).getByRole("img");
-  await expect(screens).toHaveCount(3);
+  await expect(screens).toHaveCount(6);
   const tops = await screens.evaluateAll((images) => images.map((image) => Math.round(image.getBoundingClientRect().top)));
-  expect(new Set(tops).size).toBe(1);
+  expect(new Set(tops.slice(0, 3)).size).toBe(1);
+  expect(new Set(tops.slice(3)).size).toBe(1);
+  expect(tops[3]).toBeGreaterThan(tops[0]);
 });
 
 test("열린 패널 위의 휠은 패널만 스크롤한다", async ({ page }) => {

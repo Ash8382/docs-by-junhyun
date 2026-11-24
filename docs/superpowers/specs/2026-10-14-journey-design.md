@@ -534,7 +534,7 @@ TypeScript 모듈 한 곳에 두고 셰이더는 같은 상수와 같은 식을 
 
 **쓰는 이미지.** 프로젝트의 홈 화면 캡처(`public/projects/<slug>/home.webp`)가 있으면 그것,
 없으면(코코아톡·Stock2U·Tix2U) 썸네일이다. PiCKCARE는 저장소마다 첫 화면이고(cardnews는 첫 장이
-빈 틀인 마스터 4종이라 완성 세트 `set-1`), app은 App Store 공식 스크린샷의 홈 화면이다(6절). Todo App은 가운데 카드만 잘라 쓴다. 홀로그램마다 쓸 원본과
+빈 틀인 마스터 4종이라 완성 세트 `set-1`), app은 앱 소개 화면 여섯 장 가운데 홈 화면이다(6절). Todo App은 가운데 카드만 잘라 쓴다. 홀로그램마다 쓸 원본과
 잘라 쓸 영역은 데이터가 아니라 `holograms.ts`가 정한다(6절 "3D 정보를 담지 않는다").
 
 **자리와 연출.** 수치는 시안에서 출발해 안전 영역·겹침 테스트로 맞춘 값이다(2026-10-16, 2-3a
@@ -1560,7 +1560,7 @@ WebP로 저장한다. 기존 썸네일(`public/*-thumb.*`)은 블로그가 쓰�
 | PiCKCARE frontend | https://pickcare.co.kr/ |
 | PiCKCARE biz (CRM) | https://crm.pickcare.co.kr/ (PiCKYCHART). 2026-10-23에 www.biz.pickcare.co.kr에서 새로 배포해 다시 찍었다(`npm run capture:screens -- pickcare/biz/home` 뒤 `npm run build:holograms`). 소개 줄은 배포 주소만 알리고 판매·고객 여부는 말하지 않는다(사용자 결정). 여정 카드는 Tab 차례가 상세 링크뿐이라 주소를 글자로만 보이고(`plainLinks`), 상세 패널과 블로그 글에서 누른다 |
 | PiCKCARE studio | https://studio.pickcare.co.kr/ |
-| PiCKCARE app | App Store 소개 페이지(id6809377321)의 공식 스크린샷 3장(홈·라운지·피키랩, 2-3a). iTunes lookup으로 주소를 얻어 `645x1398bb.jpg` 크기로 한 번 받고, WebP로 `public/projects/pickcare/app/`에 둔다. 상세 패널과 홀로그램(홈)이 함께 쓴다 |
+| PiCKCARE app | 디자인팀이 만든 앱 소개 화면 6장(홈·픽라운지·픽키랩·매거진·픽스팟·반려행사마당, 1206×2622 PNG). 처음(2-3a)에는 App Store 소개 페이지(id6809377321)의 공식 스크린샷 3장을 받아 썼고, 2026-11-24에 이 6장으로 바꿨다. `npm run build:app-screens -- <원본 폴더>`가 폭 603px(원본의 절반, WALLY 화면과 같은 크기)의 WebP로 `public/projects/pickcare/app/`에 둔다. 상세 패널과 홀로그램(홈)이 함께 쓴다. 홈이 바뀌면 `npm run build:holograms`로 층 이미지(`pickcare-app.webp`)를 다시 만든다 |
 | WALLY | 비공개 저장소라 공개 화면이 없다. WALLY 저장소의 목 모드(`EXPO_PUBLIC_API_MOCK`)를 iOS 시뮬레이터(iPhone 17 Pro)에서 딥링크로 열어 찍은 다섯 장(시작·홈·지출·하루·예산, 603×1311)과 썸네일(1600×900, 휴대폰 세 대). 앱 화면 디자인은 디자인팀 작업이라 크레딧을 단다. 3단계는 이 다섯 장을 그대로 쓴다. 새로 찍을 때의 제약은 10절 "영수증 촬영 장면" |
 | PiCKCARE cardnews | 배포 화면 없음. 사용자가 넣은 Figma 캡처 3장: 마스터 4종(1190×391), 완성 세트 2개(카드 5장 + 인스타 캡션, 1543×378 · 1554×362). 구현 때 `masters`, `set-1`, `set-2`로 이름을 바꾸고 WebP로 변환한다 |
 
@@ -1605,7 +1605,7 @@ WebP로 저장한다. 기존 썸네일(`public/*-thumb.*`)은 블로그가 쓰�
 | 은하 `galaxy.webp` | 1,688,262바이트 |
 | 차(`public/journey/car/` 전체) | 3,360,199바이트 |
 | 홀로그램 WebP 11장(2-3a, 새 파일 전부가 순증가분) | 계획 작성 때 빌드 산출물 합계 203,436바이트, 브라우저가 받은 양 206,535바이트(응답 본문 203,436 + 헤더 3,099). 구현에서 다시 잰다 |
-| PiCKCARE app 스크린샷 3장(2-3a) | 파일 140,882바이트. 상세 패널의 app 탭을 열 때만 next/image로 줄여 받는다(계획 작성 때 본문 27,414 + 헤더 1,264바이트) |
+| PiCKCARE app 화면(2-3a에 3장, 2026-11-24에 6장으로 교체) | 6장 파일 합계 280,888바이트(3장일 때 140,882바이트). 상세 패널의 app 탭을 열 때만 next/image로 줄여 받는다(3장일 때 계획 작성 본문 27,414 + 헤더 1,264바이트, 6장은 다시 재지 않았다) |
 
 2D 썸네일은 3D에서 감춰도 지금처럼 받는다(감추는 방식이 화면에서만 감추기라서). 그래서
 홀로그램 파일만 순증가분이다.

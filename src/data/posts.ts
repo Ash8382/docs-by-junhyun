@@ -12,6 +12,15 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "software-webgl-e2e-flaky",
+    title: "흔들리던 e2e의 원인은 GPU 없이 그리는 WebGL이었다",
+    description: "3D 포트폴리오 페이지의 e2e가 12번 중 10번 실패하던 원인을 찾아봤다. 범인은 키 입력이 아니라 GPU 없이 SwiftShader로 그리는 WebGL이 메인 스레드를 4초 붙잡은 것이었다. 소프트웨어 GL을 가려 처음부터 2D로 여는 방법과 Chrome 139부터 막힌 SwiftShader 자동 대체까지 직접 확인한 기록.",
+    date: "2026.11.25",
+    category: "post",
+    tags: ["WebGL", "SwiftShader", "Playwright", "e2e", "Three.js"],
+    image: "/posts/software-webgl-3d.webp",
+  },
+  {
     slug: "eslint-oxlint-oxfmt-review",
     title: "ESLint를 oxlint로 바꾸려다 꺼져 있던 CI 린트부터 살린 이야기",
     description: "픽케어 메인 서비스에서 ESLint를 oxlint·oxfmt로 바꿀지 검토한 기록. CI에서 빠져 있던 린트를 먼저 살리고 18.1초 대 0.31초 속도와 규칙 111개 중 104개 이식, 규칙별 탐지 일치 여부를 메인 레포에서 직접 쟀다.",
